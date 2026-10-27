@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Modulul 1 din cursul de electrotehnică de bază: câmpul electrostatic și câmpul electric imprimat.">
+    <title>Modulul 1: Câmp electrostatic și imprimat | Electrotehnică de bază</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+    <style>
+      :root { --bg:#eef1f0; --panel:#fbfcfb; --ink:#1b2430; --muted:#5a6672; --line:#c9d1d3; --grid:#dfe5e6; --copper:#b5652b; --cur:#2457a6; --drop:#b83a2e; --ok:#2f7d4f; --warn:#a86a00; --wire:#2a333d; --soft:#f4e9df; --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif; --f-body:"Barlow","Segoe UI",Arial,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace; }
+      @media (prefers-color-scheme:dark) { :root { --bg:#12171c; --panel:#1a2128; --ink:#e4e9ec; --muted:#97a3ad; --line:#2f3a44; --grid:#26303a; --copper:#e08a4c; --cur:#6f9ee8; --drop:#ec6b5e; --ok:#5cc08a; --warn:#e0a640; --wire:#c9d2d8; --soft:#222d36; color-scheme:dark; } }
+      * { box-sizing:border-box; }
+      body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 var(--f-body); padding:20px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+      main { max-width:1180px; margin:auto; }
+      a { color:var(--copper); font-family:var(--f-display); font-weight:600; }
+      .eyebrow { color:var(--muted); font-family:var(--f-display); font-size:13px; font-weight:600; letter-spacing:.08em; margin:1.8rem 0 .45rem; text-transform:uppercase; }
+      h1 { border-bottom:2px solid var(--ink); font-family:var(--f-display); font-size:clamp(28px,3.8vw,40px); letter-spacing:.01em; line-height:1.08; margin:0; padding-bottom:10px; }
+      h2 { font-family:var(--f-display); font-size:22px; letter-spacing:.01em; margin:2.5rem 0 .55rem; }
+      .lead, .muted { color:var(--muted); }
+      .lead { font-size:17px; max-width:72ch; }
+      .card { background:var(--panel); border:1px solid var(--line); border-radius:6px; margin-top:1.25rem; padding:14px 16px; }
+      .formula { background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--copper); border-radius:6px; color:var(--ink); font-family:var(--f-mono); font-size:14px; font-weight:600; margin:1rem 0; padding:12px 14px; text-align:center; }
+      .vector { display:inline-block; font-style:italic; position:relative; }
+      .vector::after { content:"→"; font-size:.72em; left:50%; line-height:1; position:absolute; top:-.72em; transform:translateX(-50%); }
+      .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); }
+      .diagram { align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:6px; display:flex; gap:1rem; justify-content:center; margin:1.25rem 0; min-height:150px; padding:1.5rem; }
+      .image-card { background:var(--panel); border:1px solid var(--line); border-radius:6px; margin:1.25rem 0; padding:1rem; }
+      .image-card img { display:block; height:auto; margin:auto; max-width:100%; }
+      .field-figure { background:var(--panel); border:1px solid var(--line); border-radius:6px; margin:1.25rem 0; padding:1rem; }
+      .field-figure svg { display:block; height:auto; margin:auto; max-width:100%; }
+      figcaption { color:var(--muted); font-size:.9rem; margin-top:.75rem; text-align:center; }
+      .charge { align-items:center; border-radius:50%; color:#fff; display:flex; font-size:2rem; font-weight:800; height:74px; justify-content:center; width:74px; }
+      .positive { background:var(--drop); }
+      .negative { background:var(--cur); }
+      .arrow { color:var(--cur); font-size:2.3rem; font-weight:800; }
+      ul { padding-left:1.3rem; }
+      .check { border-left:5px solid var(--ok); }
+      @media (max-width:700px) { body { padding:16px 14px 32px; } .eyebrow { margin-top:1.5rem; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="index.html">← Înapoi la module</a>
+      <p class="eyebrow">Modulul 01</p>
+      <h1>Câmpul electrostatic și câmpul electric imprimat</h1>
+      <p class="lead">
+        Studiul câmpului electric pornește din electrostatică și conduce către explicarea
+        surselor de tensiune. În acest modul sunt introduse câmpul creat de sarcini,
+        reprezentarea sa prin linii de câmp și câmpul electric imprimat din sursele reale.
+      </p>
+
+      <h2>1. Câmpul electric în electrostatică</h2>
+      <p>
+        În electrostatică, sarcinile electrice sunt considerate în repaus. O sarcină sursă
+        Q creează în spațiul din jurul său un câmp electric. Dacă într-un punct P se
+        introduce o sarcină de probă pozitivă q<sub>0</sub>, asupra ei acționează forța
+        electrică <span class="vector">F</span>. Câmpul electric este definit local prin:
+      </p>
+      <div class="formula"><span class="vector">E</span>(P) = lim<sub>q<sub>0</sub>→0</sub> <span class="vector">F</span> / q<sub>0</sub></div>
+      <p>
+        Așadar, <span class="vector">E</span> este un <strong>vector</strong>: are modul,
+        direcție și sens. Sensul său este cel al forței care ar acționa asupra unei sarcini
+        de probă pozitive. Unitatea SI este N/C; echivalent, se poate scrie V/m.
+      </p>
+
+      <h2>2. Câmpul unei sarcini punctiforme</h2>
+      <p>
+        Pentru o sarcină punctiformă Q, aflată într-un mediu cu permitivitatea ε, legea lui
+        Coulomb și definiția câmpului conduc la expresia vectorială:
+      </p>
+      <div class="formula"><span class="vector">E</span>(<span class="vector">r</span>) = (1 / 4πε) · Q / r² · <span class="vector">u</span><sub>r</sub></div>
+      <p>
+        Vectorul unitar <span class="vector">u</span><sub>r</sub> indică direcția radială,
+        de la sarcina sursă spre punctul observat. Pentru Q &gt; 0, câmpul este orientat
+        spre exterior; pentru Q &lt; 0, sensul său este spre sarcină. În vid,
+        1/(4πε<sub>0</sub>) = k ≈ 8,99 · 10<sup>9</sup> N·m²/C².
+      </p>
+      <div class="grid">
+        <div class="card"><strong>Dependență de distanță</strong><br><span class="muted">Dacă distanța se dublează, modulul câmpului devine de patru ori mai mic.</span></div>
+        <div class="card"><strong>Dependență de sarcină</strong><br><span class="muted">Modulul câmpului crește proporțional cu |Q|.</span></div>
+      </div>
+
+      <h2>3. Liniile de câmp electric</h2>
+      <p>
+        Liniile de câmp sunt o reprezentare grafică a vectorului
+        <span class="vector">E</span>. Tangenta la o linie într-un punct indică direcția
+        vectorului câmp, iar densitatea mai mare a liniilor indică un câmp mai intens.
+        Liniile pornesc de la sarcini pozitive și se termină pe sarcini negative sau la infinit.
+        Ele nu se intersectează: într-un punct, câmpul are o singură direcție bine definită.
+      </p>
+      <figure class="field-figure">
+        <svg viewBox="0 0 640 230" role="img" aria-labelledby="positive-field-caption">
+          <title id="positive-field-caption">Liniile câmpului electric ale unei sarcini punctiforme pozitive</title>
+          <defs><marker id="arrow-positive" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#365ee8"/></marker></defs>
+          <g stroke="#365ee8" stroke-width="3" fill="none" marker-end="url(#arrow-positive)">
+            <path d="M320 115 L320 18"/><path d="M320 115 L403 52"/><path d="M320 115 L460 115"/>
+            <path d="M320 115 L403 178"/><path d="M320 115 L320 212"/><path d="M320 115 L237 178"/>
+            <path d="M320 115 L180 115"/><path d="M320 115 L237 52"/>
+          </g>
+          <circle cx="320" cy="115" r="29" fill="#e05263"/><text x="320" y="126" text-anchor="middle" fill="#fff" font-size="32" font-weight="700">+</text>
+        </svg>
+        <figcaption>Liniile câmpului unei sarcini punctiforme pozitive sunt radiale și orientate spre exterior.</figcaption>
+      </figure>
+      <figure class="field-figure">
+        <svg viewBox="0 0 640 240" role="img" aria-labelledby="dipole-field-caption">
+          <title id="dipole-field-caption">Liniile câmpului electric pentru un dipol electric</title>
+          <defs><marker id="arrow-dipole" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#365ee8"/></marker></defs>
+          <g stroke="#365ee8" stroke-width="3" fill="none" marker-end="url(#arrow-dipole)">
+            <path d="M260 120 C290 35 350 35 380 120"/><path d="M260 120 C300 70 340 70 380 120"/>
+            <path d="M260 120 C300 170 340 170 380 120"/><path d="M260 120 C290 205 350 205 380 120"/>
+            <path d="M260 120 C300 120 340 120 380 120"/>
+          </g>
+          <circle cx="250" cy="120" r="26" fill="#e05263"/><text x="250" y="130" text-anchor="middle" fill="#fff" font-size="29" font-weight="700">+</text>
+          <circle cx="390" cy="120" r="26" fill="#365ee8"/><text x="390" y="130" text-anchor="middle" fill="#fff" font-size="29" font-weight="700">−</text>
+        </svg>
+        <figcaption>Într-un dipol electric, liniile de câmp pornesc de la sarcina pozitivă și se termină pe sarcina negativă.</figcaption>
+      </figure>
+      <figure class="field-figure">
+        <svg viewBox="0 0 640 210" role="img" aria-labelledby="uniform-field-caption">
+          <title id="uniform-field-caption">Linii de câmp electric uniform între două plăci paralele</title>
+          <defs><marker id="arrow-uniform" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#365ee8"/></marker></defs>
+          <rect x="95" y="20" width="22" height="170" fill="#e05263"/><rect x="523" y="20" width="22" height="170" fill="#365ee8"/>
+          <text x="106" y="116" text-anchor="middle" fill="#fff" font-size="24" font-weight="700">+</text><text x="534" y="116" text-anchor="middle" fill="#fff" font-size="24" font-weight="700">−</text>
+          <g stroke="#365ee8" stroke-width="3" marker-end="url(#arrow-uniform)"><path d="M135 50 H500"/><path d="M135 82 H500"/><path d="M135 114 H500"/><path d="M135 146 H500"/><path d="M135 178 H500"/></g>
+        </svg>
+        <figcaption>Între două plăci paralele suficient de mari, departe de margini, câmpul este aproximativ uniform.</figcaption>
+      </figure>
+
+      <h2>4. Principiul superpoziției</h2>
+      <p>
+        Câmpul produs de mai multe sarcini este suma vectorială a câmpurilor produse de
+        fiecare sarcină în parte. Pentru N sarcini punctiforme:
+      </p>
+      <div class="formula"><span class="vector">E</span><sub>total</sub>(P) = Σ<sub>i=1</sub><sup>N</sup> <span class="vector">E</span><sub>i</sub>(P)</div>
+      <p>
+        Suma trebuie efectuată pe componente. De exemplu, dacă într-un punct
+        <span class="vector">E</span><sub>1</sub> = 3<span class="vector">i</span> N/C și
+        <span class="vector">E</span><sub>2</sub> = −4<span class="vector">j</span> N/C,
+        atunci <span class="vector">E</span><sub>total</sub> =
+        3<span class="vector">i</span> − 4<span class="vector">j</span> N/C, iar modulul este 5 N/C.
+      </p>
+
+      <h2>5. Potențial electric și tensiune</h2>
+      <p>
+        În electrostatică, câmpul este conservativ. Diferența de potențial dintre punctele
+        A și B se definește prin integrala de linie:
+      </p>
+      <div class="formula">V(B) − V(A) = −∫<sub>A</sub><sup>B</sup> <span class="vector">E</span> · d<span class="vector">l</span></div>
+      <p>
+        Relația arată că vectorul câmp este orientat spre scăderea potențialului. Pentru un
+        câmp uniform între plăci, dacă deplasarea are loc pe direcția câmpului,
+        U = E · d în modul.
+      </p>
+
+      <h2>6. Câmpul electric imprimat</h2>
+      <p>
+        Într-un circuit închis, câmpul electrostatic din conductor ar redistribui sarcinile
+        până la echilibru, iar curentul ar înceta. În interiorul unei surse, forțe de natură
+        chimică, mecanică sau termică deplasează sarcinile în sens opus câmpului
+        electrostatic. Câmpul asociat acestor forțe se numește
+        <strong>câmp electric imprimat</strong>.
+      </p>
+      <div class="card">
+        <strong>Distincție esențială:</strong> câmpul electrostatic este produs de distribuția
+        sarcinilor; câmpul imprimat este produs de mecanismul intern al sursei și menține
+        separarea sarcinilor, deci tensiunea la borne.
+      </div>
+
+      <h2>7. Exemplu: pila Volta</h2>
+      <p>
+        Pila Volta este un exemplu de sursă electrochimică. Două metale diferite, separate
+        de un electrolit, formează o celulă galvanică. Reacțiile chimice de la electrozi
+        separă sarcinile: un electrod devine negativ, iar celălalt pozitiv.
+      </p>
+      <div class="diagram" aria-label="Pila Volta formată din zinc și cupru">
+        <div class="charge negative">Zn</div><span class="arrow">| electrolit |</span><div class="charge positive">Cu</div>
+      </div>
+      <p>
+        Când bornele sunt conectate printr-un conductor, electronii circulă prin circuitul
+        exterior de la borna negativă spre borna pozitivă. Energia chimică din pilă este
+        transformată în energie electrică, iar câmpul electric imprimat reface permanent
+        separarea sarcinilor cât timp reacțiile chimice pot continua.
+      </p>
+
+      <h2>8. Exemplu: seria galvanică</h2>
+      <p>
+        Seria galvanică compară comportamentul metalelor într-un anumit electrolit.
+        Metalele mai active pot ceda mai ușor electroni și devin anod într-un cuplu
+        galvanic, iar metalele mai nobile tind să devină catod. Cu cât două metale sunt
+        mai depărtate în serie, cu atât diferența de potențial dintre ele poate fi mai mare.
+      </p>
+      <figure class="image-card">
+        <img src="R.jpg" alt="Diagramă a seriei galvanice pentru diferite metale și aliaje">
+        <figcaption>Seria galvanică: poziția relativă a metalelor ajută la alegerea unui cuplu galvanic.</figcaption>
+      </figure>
+      <p>
+        De exemplu, zincul și cuprul formează un cuplu potrivit pentru ilustrarea unei pile:
+        zincul este mai activ și tinde să fie anodul, iar cuprul este mai nobil și tinde să
+        fie catodul. În practică, seria trebuie folosită pentru mediul indicat de diagramă,
+        deoarece comportamentul metalelor depinde de electrolit.
+      </p>
+
+      <h2>9. Tensiunea electromotoare</h2>
+      <p>
+        Tensiunea electromotoare, notată de obicei cu <strong>E</strong> sau <strong>ε</strong>,
+        reprezintă lucrul efectuat de forțele câmpului imprimat pentru a transporta o unitate
+        de sarcină prin interiorul sursei.
+      </p>
+      <div class="formula">ε = W<sub>imprimat</sub> / q</div>
+      <p class="muted">Tensiunea electromotoare se măsoară în volți (V).</p>
+
+      <div class="card check">
+        <strong>Verifică-te:</strong>
+        <ul>
+          <li>Precizează direcția câmpului unei sarcini punctiforme pozitive și a uneia negative.</li>
+          <li>De ce liniile de câmp electric nu se pot intersecta?</li>
+          <li>Calculează modulul câmpului rezultant pentru 3<span class="vector">i</span> − 4<span class="vector">j</span> N/C.</li>
+          <li>Ce rol are câmpul electric imprimat într-o pilă Volta?</li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>

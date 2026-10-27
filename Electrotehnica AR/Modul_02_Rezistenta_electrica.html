@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Modulul 2 din cursul de electrotehnică de bază: rezistență, rezistivitate și gruparea rezistoarelor.">
+    <title>Modulul 2: Rezistența electrică | Electrotehnică de bază</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+    <style>
+      :root { --bg:#eef1f0; --panel:#fbfcfb; --ink:#1b2430; --muted:#5a6672; --line:#c9d1d3; --grid:#dfe5e6; --copper:#b5652b; --cur:#2457a6; --drop:#b83a2e; --ok:#2f7d4f; --warn:#a86a00; --wire:#2a333d; --soft:#f4e9df; --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif; --f-body:"Barlow","Segoe UI",Arial,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace; }
+      @media (prefers-color-scheme:dark) { :root { --bg:#12171c; --panel:#1a2128; --ink:#e4e9ec; --muted:#97a3ad; --line:#2f3a44; --grid:#26303a; --copper:#e08a4c; --cur:#6f9ee8; --drop:#ec6b5e; --ok:#5cc08a; --warn:#e0a640; --wire:#c9d2d8; --soft:#222d36; color-scheme:dark; } }
+      * { box-sizing:border-box; }
+      body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 var(--f-body); padding:20px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+      main { max-width:1180px; margin:auto; }
+      a { color:var(--copper); font-family:var(--f-display); font-weight:600; }
+      .eyebrow { color:var(--muted); font-family:var(--f-display); font-size:13px; font-weight:600; letter-spacing:.08em; margin:1.8rem 0 .45rem; text-transform:uppercase; }
+      h1 { border-bottom:2px solid var(--ink); font-family:var(--f-display); font-size:clamp(28px,3.8vw,40px); letter-spacing:.01em; line-height:1.08; margin:0; padding-bottom:10px; }
+      h2 { font-family:var(--f-display); font-size:22px; letter-spacing:.01em; margin:2.5rem 0 .55rem; }
+      .lead, .muted { color:var(--muted); }
+      .lead { font-size:17px; max-width:72ch; }
+      .card { background:var(--panel); border:1px solid var(--line); border-radius:6px; margin-top:1.25rem; padding:14px 16px; }
+      .formula { background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--copper); border-radius:6px; color:var(--ink); font-family:var(--f-mono); font-size:14px; font-weight:600; margin:1rem 0; padding:12px 14px; text-align:center; }
+      .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); }
+      .circuit { align-items:center; display:flex; flex-wrap:wrap; gap:.7rem; justify-content:center; min-height:105px; }
+      .wire { background:var(--wire); height:3px; width:42px; }
+      .resistor { border:3px solid var(--drop); border-radius:4px; color:var(--drop); font-family:var(--f-mono); font-weight:800; padding:.3rem .6rem; }
+      .parallel { display:grid; gap:.55rem; }
+      .parallel-row { align-items:center; display:flex; }
+      .check { border-left:5px solid var(--ok); }
+      ul { padding-left:1.3rem; }
+      @media (max-width:700px) { body { padding:16px 14px 32px; } .eyebrow { margin-top:1.5rem; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="index.html">← Înapoi la module</a>
+      <p class="eyebrow">Modulul 02</p>
+      <h1>Rezistența electrică și rezistoarele</h1>
+      <p class="lead">
+        Acest modul explică opoziția la trecerea curentului electric, materialele din
+        care sunt realizate conductoarele și modurile principale de grupare a rezistoarelor.
+      </p>
+
+      <h2>1. Rezistența electrică</h2>
+      <p>
+        Rezistența electrică, notată cu <strong>R</strong>, exprimă opoziția unui conductor
+        la trecerea curentului electric. Unitatea sa de măsură este ohmul, notat cu
+        <strong>Ω</strong>. Conform legii lui Ohm:
+      </p>
+      <div class="formula">R = U / I</div>
+      <p class="muted">U este tensiunea în volți (V), iar I este intensitatea curentului în amperi (A).</p>
+      <div class="card">
+        Dacă la bornele unui rezistor de 10 Ω se aplică 20 V, curentul este I = U / R = 20 / 10 = 2 A.
+      </div>
+
+      <h2>2. Rezistivitatea</h2>
+      <p>
+        Rezistivitatea, notată cu <strong>ρ</strong>, este o proprietate a materialului.
+        Cu cât rezistivitatea este mai mică, cu atât materialul conduce mai bine curentul.
+        Cuprul și aluminiul sunt folosite frecvent ca materiale conductoare.
+      </p>
+      <div class="formula">R = ρ · l / S</div>
+      <div class="grid">
+        <div class="card"><strong>ρ</strong><br><span class="muted">rezistivitatea materialului, în Ω·m</span></div>
+        <div class="card"><strong>l</strong><br><span class="muted">lungimea conductorului, în m</span></div>
+        <div class="card"><strong>S</strong><br><span class="muted">aria secțiunii conductorului, în m²</span></div>
+      </div>
+      <p>
+        Un conductor mai lung are o rezistență mai mare. Pentru același material și aceeași
+        lungime, un conductor cu secțiune mai mare are o rezistență mai mică.
+      </p>
+
+      <h2>3. Rezistoare grupate în serie</h2>
+      <p>
+        Într-o grupare serie, rezistoarele sunt parcurse de același curent. Rezistența
+        echivalentă este suma rezistențelor individuale.
+      </p>
+      <div class="formula">R<sub>ech</sub> = R<sub>1</sub> + R<sub>2</sub> + ... + R<sub>n</sub></div>
+      <div class="card circuit" aria-label="Două rezistoare grupate în serie">
+        <span class="wire"></span><span class="resistor">R1</span><span class="wire"></span><span class="resistor">R2</span><span class="wire"></span>
+      </div>
+      <p>Două rezistoare de 4 Ω și 6 Ω în serie au rezistența echivalentă de 10 Ω.</p>
+
+      <h2>4. Rezistoare grupate în paralel</h2>
+      <p>
+        Într-o grupare paralel, tensiunea este aceeași la bornele fiecărui rezistor, iar
+        curentul se împarte între ramuri.
+      </p>
+      <div class="formula">1 / R<sub>ech</sub> = 1 / R<sub>1</sub> + 1 / R<sub>2</sub> + ... + 1 / R<sub>n</sub></div>
+      <div class="card circuit" aria-label="Două rezistoare grupate în paralel">
+        <span class="wire"></span><div class="parallel"><div class="parallel-row"><span class="resistor">R1</span></div><div class="parallel-row"><span class="resistor">R2</span></div></div><span class="wire"></span>
+      </div>
+      <p>
+        Pentru două rezistoare se poate folosi relația rapidă:
+        R<sub>ech</sub> = (R<sub>1</sub> · R<sub>2</sub>) / (R<sub>1</sub> + R<sub>2</sub>).
+        Rezistența echivalentă în paralel este întotdeauna mai mică decât cea mai mică rezistență din grup.
+      </p>
+
+      <div class="card check">
+        <strong>Verifică-te:</strong>
+        <ul>
+          <li>Ce se întâmplă cu rezistența unui fir dacă îi mărim lungimea?</li>
+          <li>Care este rezistența echivalentă a două rezistoare de 3 Ω și 7 Ω în serie?</li>
+          <li>Într-o grupare paralel, ce mărime este egală pe toate ramurile?</li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>
