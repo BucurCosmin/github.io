@@ -1,0 +1,658 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Circuit simplu: sursă reală și sarcină</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: bench instrument — circuit "plate" left, control panel right, two plots beneath; stacks to one column on phones */
+:root{
+  --bg:#eef1f0; --panel:#fbfcfb; --ink:#1b2430; --muted:#5a6672; --line:#c9d1d3; --grid:#dfe5e6;
+  --copper:#b5652b; --cur:#2457a6; --drop:#b83a2e; --ok:#2f7d4f; --warn:#a86a00; --wire:#2a333d;
+  --heat0:#fbfcfb;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow","Segoe UI",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171c; --panel:#1a2128; --ink:#e4e9ec; --muted:#97a3ad; --line:#2f3a44; --grid:#26303a;
+  --copper:#e08a4c; --cur:#6f9ee8; --drop:#ec6b5e; --ok:#5cc08a; --warn:#e0a640; --wire:#c9d2d8; --heat0:#1a2128; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171c; --panel:#1a2128; --ink:#e4e9ec; --muted:#97a3ad; --line:#2f3a44; --grid:#26303a;
+  --copper:#e08a4c; --cur:#6f9ee8; --drop:#ec6b5e; --ok:#5cc08a; --warn:#e0a640; --wire:#c9d2d8; --heat0:#1a2128; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;border-bottom:2px solid var(--ink);padding-bottom:10px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3.4vw,34px);margin:0;letter-spacing:.01em;text-wrap:balance}
+h1 span{color:var(--copper)}
+.sub{color:var(--muted);margin:2px 0 0;max-width:62ch}
+.eq{font-family:var(--f-mono);font-size:13px;color:var(--muted);white-space:nowrap}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;min-width:0}
+.label{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+svg text{font-family:var(--f-body)}
+#circuit{width:100%;height:auto;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.04em;padding:3px 10px;border-radius:999px;border:1px solid currentColor}
+.ctrl{display:grid;gap:14px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:6px 10px;align-items:center}
+.row label{font-weight:600;grid-column:1/-1;display:flex;justify-content:space-between;gap:8px}
+.row label small{font-weight:400;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--copper)}
+.num{display:flex;align-items:center;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+.num input{width:100%;min-width:0;border:0;background:transparent;color:var(--ink);font:13px var(--f-mono);padding:5px 6px;text-align:right}
+.num span{font:13px var(--f-mono);color:var(--muted);padding-right:6px}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font:600 13px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--copper);color:var(--copper)}
+button.on{background:var(--copper);border-color:var(--copper);color:var(--panel)}
+.toggle{display:flex;align-items:center;gap:8px;font-weight:500}
+.read{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+@media (max-width:560px){.read{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cell{background:var(--panel);padding:10px 12px;min-width:0}
+.cell .k{font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cell .v{font-family:var(--f-mono);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .f{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.sym{text-transform:none;letter-spacing:0;font-style:italic}
+.v.cur{color:var(--cur)} .v.drop{color:var(--drop)} .v.cop{color:var(--copper)}
+.bars{display:grid;gap:10px;margin-top:4px}
+.bar{display:grid;gap:4px}
+.bar .t{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);gap:8px;flex-wrap:wrap}
+.track{height:16px;border-radius:3px;background:var(--grid);display:flex;overflow:hidden}
+.track i{display:block;height:100%;transition:width .15s}
+.plots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.plots{grid-template-columns:minmax(0,1fr)}}
+.plot svg{width:100%;height:auto;display:block}
+.plot .tick{font:11px var(--f-mono);fill:var(--muted)}
+.plot text{paint-order:stroke;stroke:var(--panel);stroke-width:3px;stroke-linejoin:round}
+.plot .ax{font:12px var(--f-body);fill:var(--muted)}
+.note{color:var(--muted);font-size:13.5px;margin:6px 0 0}
+.explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.explain{grid-template-columns:minmax(0,1fr)}}
+.explain h3{font-family:var(--f-display);font-size:17px;margin:0 0 4px}
+.explain p{margin:0;font-size:14px;color:var(--muted)}
+.explain code{font-family:var(--f-mono);font-size:12.5px;color:var(--ink)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tabs a{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;color:var(--muted);text-decoration:none;padding:8px 14px;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;margin-bottom:-1px}
+.tabs a:hover{color:var(--copper)}
+.tabs a[aria-current="page"]{color:var(--ink);background:var(--panel);border-color:var(--line)}
+.view{display:grid;gap:16px}
+.view[hidden]{display:none!important}
+#batt{width:100%;height:auto;display:block}
+.verdict h3{font-family:var(--f-display);font-size:20px;margin:2px 0 4px}
+.verdict p{margin:0;max-width:90ch}
+.verdict{border-left:5px solid var(--muted)}
+.verdict.ok{border-left-color:var(--ok)} .verdict.ok h3{color:var(--ok)}
+.verdict.warn{border-left-color:var(--warn)} .verdict.warn h3{color:var(--warn)}
+.verdict.bad{border-left-color:var(--drop)} .verdict.bad h3{color:var(--drop)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{font-family:var(--f-mono);font-size:13px;text-align:right;padding:7px 8px;border-bottom:1px solid var(--grid);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr.hl td{background:color-mix(in srgb,var(--copper) 14%,transparent);color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){.track i{transition:none}}
+</style>
+
+<div class="wrap">
+  <nav class="tabs" aria-label="Pagini">
+    <a href="#circuit" data-v="circuit">Circuit simplu</a>
+    <a href="#acumulator" data-v="acumulator">Acumulatorul plumb-acid</a>
+  </nav>
+  <div id="v-circuit" class="view">
+  <header>
+    <div>
+      <h1>Circuit simplu: <span>sursă reală</span> și sarcină</h1>
+      <p class="sub">Modificați t.e.m. <b>E</b>, rezistența internă <b>r</b> și rezistența de sarcină <b>R</b>. Curentul, tensiunea la borne, căderea internă și puterile se recalculează imediat. Însoțește Cursul 1 de Electrocinetică.</p>
+    </div>
+    <div class="eq">I = E/(R+r) &nbsp;·&nbsp; U = E − r·I</div>
+  </header>
+
+  <div class="grid">
+    <section class="card" aria-label="Schema circuitului">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <p class="label" style="margin:0">Schema</p>
+        <div class="chips" id="chips"></div>
+      </div>
+      <svg id="circuit" viewBox="0 0 560 360" role="img" aria-label="Sursă cu t.e.m. E și rezistență internă r conectată la rezistența de sarcină R">
+        <defs>
+          <marker id="aCur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--cur)"/></marker>
+          <marker id="aDrop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--drop)"/></marker>
+        </defs>
+        <!-- source box -->
+        <rect x="4" y="34" width="208" height="292" rx="8" fill="none" stroke="var(--muted)" stroke-dasharray="6 5" stroke-width="1.2"/>
+        <text x="117" y="346" text-anchor="middle" font-size="13" fill="var(--muted)">sursa reală</text>
+        <text x="460" y="346" text-anchor="middle" font-size="13" fill="var(--muted)">receptor (sarcină)</text>
+        <!-- wires -->
+        <path id="loop" d="M90 250 L90 70 L470 70 L470 290 L90 290 Z" fill="none" stroke="none"/>
+        <g stroke="var(--wire)" stroke-width="2.6" fill="none" stroke-linecap="round">
+          <path d="M90 236 L90 196"/><path d="M90 104 L90 70 L254 70"/><path d="M262 70 L320 70" id="wTop2"/>
+          <path d="M320 70 L470 70 L470 112"/><path d="M470 248 L470 290 L262 290"/><path d="M254 290 L90 290 L90 252"/>
+        </g>
+        <!-- switch (open circuit) -->
+        <g id="sw"><line id="swBlade" x1="320" y1="70" x2="356" y2="70" stroke="var(--wire)" stroke-width="2.6" stroke-linecap="round"/></g>
+        <!-- battery: long plate + on top -->
+        <line x1="66" y1="236" x2="114" y2="236" stroke="var(--wire)" stroke-width="3"/>
+        <line x1="78" y1="252" x2="102" y2="252" stroke="var(--wire)" stroke-width="6"/>
+        <text x="122" y="232" font-size="14" fill="var(--muted)">+</text>
+        <text x="56" y="250" text-anchor="end" font-size="20" font-style="italic" fill="var(--ink)">E</text>
+        <text x="56" y="270" text-anchor="end" font-size="12" font-family="var(--f-mono)" fill="var(--muted)" id="tE">12 V</text>
+        <!-- r -->
+        <rect id="rBody" x="76" y="104" width="28" height="92" rx="3" fill="var(--heat0)" stroke="var(--wire)" stroke-width="2.4"/>
+        <text x="56" y="150" text-anchor="end" font-size="20" font-style="italic" fill="var(--ink)">r</text>
+        <text x="56" y="170" text-anchor="end" font-size="12" font-family="var(--f-mono)" fill="var(--muted)" id="tr">0,5 Ω</text>
+        <!-- ΔU arrow -->
+        <line x1="128" y1="110" x2="128" y2="190" stroke="var(--drop)" stroke-width="2" marker-end="url(#aDrop)"/>
+        <text x="138" y="146" font-size="15" fill="var(--drop)" font-style="italic">ΔU</text>
+        <text x="138" y="164" font-size="12" font-family="var(--f-mono)" fill="var(--drop)" id="tdU">5 V</text>
+        <!-- terminals -->
+        <circle cx="258" cy="70" r="5" fill="var(--panel)" stroke="var(--wire)" stroke-width="2.2"/>
+        <circle cx="258" cy="290" r="5" fill="var(--panel)" stroke="var(--wire)" stroke-width="2.2"/>
+        <text x="258" y="56" text-anchor="middle" font-size="15" fill="var(--ink)">+</text>
+        <text x="258" y="314" text-anchor="middle" font-size="17" fill="var(--ink)">−</text>
+        <!-- U arrow -->
+        <line x1="258" y1="84" x2="258" y2="274" stroke="var(--cur)" stroke-width="2" marker-end="url(#aCur)"/>
+        <rect x="266" y="160" width="86" height="40" rx="4" fill="var(--panel)" stroke="var(--cur)" stroke-width="1"/>
+        <text x="275" y="177" font-size="13" fill="var(--cur)" font-style="italic">U (voltmetru)</text>
+        <text x="275" y="194" font-size="13" font-family="var(--f-mono)" font-weight="600" fill="var(--cur)" id="tU">7 V</text>
+        <!-- I label -->
+        <line x1="380" y1="52" x2="430" y2="52" stroke="var(--cur)" stroke-width="2" marker-end="url(#aCur)" id="iArrow"/>
+        <text x="380" y="42" font-size="15" fill="var(--cur)" font-style="italic">I = <tspan font-family="var(--f-mono)" font-style="normal" font-weight="600" id="tI">10 A</tspan></text>
+        <!-- R -->
+        <rect id="RBody" x="456" y="112" width="28" height="136" rx="3" fill="var(--heat0)" stroke="var(--wire)" stroke-width="2.4"/>
+        <text x="496" y="176" font-size="20" font-style="italic" fill="var(--ink)">R</text>
+        <text x="496" y="196" font-size="12" font-family="var(--f-mono)" fill="var(--muted)" id="tR">0,7 Ω</text>
+        <text x="496" y="214" font-size="12" font-family="var(--f-mono)" fill="var(--copper)" id="tP">70 W</text>
+        <g id="dots"></g>
+      </svg>
+      <p class="note">Punctele arată sensul convențional al curentului (de la + prin sarcină spre −); viteza lor crește cu I. Culoarea rezistoarelor arată puterea disipată prin efect Joule.</p>
+    </section>
+
+    <section class="card ctrl" aria-label="Parametri">
+      <p class="label" style="margin:0">Parametri</p>
+      <div class="row">
+        <label for="sE">t.e.m. E <small>tensiunea în gol</small></label>
+        <input type="range" id="sE" min="0" max="480" step="1">
+        <div class="num"><input id="nE" type="number" step="0.1" min="0" inputmode="decimal"><span>V</span></div>
+      </div>
+      <div class="row">
+        <label for="sr">Rezistența internă r <small>scară logaritmică</small></label>
+        <input type="range" id="sr" min="0" max="1000" step="1">
+        <div class="num"><input id="nr" type="number" step="any" min="0.0001" inputmode="decimal"><span>Ω</span></div>
+      </div>
+      <div class="row">
+        <label for="sR">Rezistența de sarcină R <small>stânga extremă = scurtcircuit</small></label>
+        <input type="range" id="sR" min="0" max="1000" step="1">
+        <div class="num"><input id="nR" type="number" step="any" min="0" inputmode="decimal"><span>Ω</span></div>
+      </div>
+      <label class="toggle" for="open"><input type="checkbox" id="open"> Întrerupător deschis (mers în gol, R → ∞)</label>
+      <div class="btns">
+        <button type="button" id="bMatch" title="Setează R egal cu r">R = r (putere maximă)</button>
+        <button type="button" id="bShort">R = 0 (scurtcircuit)</button>
+      </div>
+      <div>
+        <p class="label">Exemple din curs</p>
+        <div class="btns" id="presets"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="read" aria-label="Rezultate">
+    <div class="cell"><div class="k">Curent <span class="sym">I</span></div><div class="v cur" id="oI"></div><div class="f">E / (R + r)</div></div>
+    <div class="cell"><div class="k">Tensiune la borne <span class="sym">U</span></div><div class="v cur" id="oU"></div><div class="f">R·I = E − r·I</div></div>
+    <div class="cell"><div class="k">Cădere internă <span class="sym">ΔU</span></div><div class="v drop" id="odU"></div><div class="f">r·I</div></div>
+    <div class="cell"><div class="k">Randament <span class="sym">η</span></div><div class="v" id="oEta"></div><div class="f">R / (R + r)</div></div>
+    <div class="cell"><div class="k">Putere în sarcină <span class="sym">P</span></div><div class="v cop" id="oP"></div><div class="f">R·I²</div></div>
+    <div class="cell"><div class="k">Pierderi în sursă <span class="sym">P<sub>r</sub></span></div><div class="v drop" id="oPr"></div><div class="f">r·I²</div></div>
+    <div class="cell"><div class="k">Putere generată <span class="sym">P<sub>g</sub></span></div><div class="v" id="oPg"></div><div class="f">E·I = P + Pr</div></div>
+    <div class="cell"><div class="k">Curent de scurtcircuit</div><div class="v" id="oIsc"></div><div class="f">Isc = E / r</div></div>
+  </section>
+
+  <section class="card">
+    <p class="label">Cum se împart tensiunea și puterea</p>
+    <div class="bars">
+      <div class="bar"><div class="t"><span>t.e.m. E = <b style="color:var(--cur)">U</b> + <b style="color:var(--drop)">ΔU</b></span><span id="bTxt1"></span></div>
+        <div class="track"><i id="bU" style="background:var(--cur)"></i><i id="bdU" style="background:var(--drop)"></i></div></div>
+      <div class="bar"><div class="t"><span>Pg = <b style="color:var(--copper)">P</b> (utilă) + <b style="color:var(--drop)">Pr</b> (căldură în sursă)</span><span id="bTxt2"></span></div>
+        <div class="track"><i id="bP" style="background:var(--copper)"></i><i id="bPr" style="background:var(--drop)"></i></div></div>
+    </div>
+  </section>
+
+  <div class="plots">
+    <section class="card plot"><p class="label">Caracteristica externă <span class="sym">U(I)</span></p><svg id="pUI" viewBox="0 0 460 290" role="img" aria-label="Grafic U în funcție de I"></svg>
+      <p class="note">Linia albastră este caracteristica sursei, U = E − rI. Linia punctată este dreapta sarcinii, U = RI. Punctul de funcționare se află la intersecția lor.</p></section>
+    <section class="card plot"><p class="label">Puterea și randamentul în funcție de <span class="sym">R/r</span></p><svg id="pPR" viewBox="0 0 460 290" role="img" aria-label="Grafic P și randament în funcție de R/r"></svg>
+      <p class="note">Puterea în sarcină este maximă la R = r, unde randamentul este doar 50 %. Axa orizontală este logaritmică.</p></section>
+  </div>
+
+  <section class="explain">
+    <div class="card"><h3>Mers în gol</h3><p>Fără curent nu există cădere internă, deci voltmetrul arată chiar t.e.m.: <code>U₀ = E</code>. Bifați „Întrerupător deschis”.</p></div>
+    <div class="card"><h3>Funcționare în sarcină</h3><p>Cu cât R e mai mic, cu atât I crește și U scade. Din două măsurători se află rezistența internă: <code>r = (U₀ − U)/I</code>.</p></div>
+    <div class="card"><h3>Scurtcircuit</h3><p>La R = 0, tensiunea la borne e zero și toată puterea se transformă în căldură în sursă: <code>Isc = E/r</code>, <code>Pr = E²/r</code>.</p></div>
+  </section>
+  </div>
+  <div id="v-acumulator" class="view" hidden>
+  <header>
+    <div>
+      <h1>Acumulatorul <span>plumb-acid</span> de automobil</h1>
+      <p class="sub">Cum funcționează bateria de 12 V a unei mașini, ce înseamnă inscripțiile de pe etichetă și de ce pornește greu iarna. Modelul este cel din curs: o t.e.m. <b>E</b> în serie cu o rezistență internă <b>r</b>, doar că aici E și r depind de starea de încărcare, temperatură și vechime.</p>
+    </div>
+    <div class="eq">12 V · 60 Ah · 540 A (EN)</div>
+  </header>
+
+  <div class="grid">
+    <section class="card" aria-label="Secțiune prin acumulator">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <p class="label" style="margin:0">Secțiune prin acumulator · 6 celule în serie</p>
+        <div class="chips" id="bChips"></div>
+      </div>
+      <svg id="batt" viewBox="0 0 560 330" role="img" aria-label="Acumulator cu șase celule, fiecare cu plăci pozitive și negative în electrolit"></svg>
+      <p class="note">Plăcile maro sunt pozitive (PbO₂), cele gri sunt negative (Pb spongios). Culoarea electrolitului arată densitatea acidului: mai intensă la bateria încărcată, mai palidă la cea descărcată, unde acidul s-a transformat în apă.</p>
+    </section>
+
+    <section class="card ctrl" aria-label="Condiții de funcționare">
+      <p class="label" style="margin:0">Condiții</p>
+      <div class="row">
+        <label for="bSoc">Stare de încărcare (SoC) <small>tensiune în repaus</small></label>
+        <input type="range" id="bSoc" min="0" max="100" step="1">
+        <div class="num"><input id="nSoc" type="number" min="0" max="100" step="1"><span>%</span></div>
+      </div>
+      <div class="row">
+        <label for="bT">Temperatura <small>mediu și electrolit</small></label>
+        <input type="range" id="bT" min="-30" max="45" step="1">
+        <div class="num"><input id="nT" type="number" min="-30" max="45" step="1"><span>°C</span></div>
+      </div>
+      <div class="row">
+        <label for="bSoh">Starea de sănătate (SoH) <small>100 % = nouă</small></label>
+        <input type="range" id="bSoh" min="40" max="100" step="1">
+        <div class="num"><input id="nSoh" type="number" min="40" max="100" step="1"><span>%</span></div>
+      </div>
+      <div class="row">
+        <label for="bI">Curentul cerut de consumator <small>scară logaritmică</small></label>
+        <input type="range" id="bI" min="0" max="1000" step="1">
+        <div class="num"><input id="nI" type="number" min="0.01" max="1000" step="any"><span>A</span></div>
+      </div>
+      <div>
+        <p class="label">Consumator</p>
+        <div class="btns" id="bLoads"></div>
+      </div>
+      <div>
+        <p class="label">Scenarii</p>
+        <div class="btns" id="bScen"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="read" aria-label="Rezultate acumulator">
+    <div class="cell"><div class="k">T.e.m. în repaus <span class="sym">E</span></div><div class="v" id="aE"></div><div class="f">6 celule × <span id="aEc"></span></div></div>
+    <div class="cell"><div class="k">Rezistență internă <span class="sym">r</span></div><div class="v drop" id="aR"></div><div class="f">nouă, 25 °C, plină: 6,0 mΩ</div></div>
+    <div class="cell"><div class="k">Tensiune la borne <span class="sym">U</span></div><div class="v cur" id="aU"></div><div class="f">E − r·I</div></div>
+    <div class="cell"><div class="k">Cădere internă <span class="sym">ΔU</span></div><div class="v drop" id="adU"></div><div class="f">r·I</div></div>
+    <div class="cell"><div class="k">Densitate electrolit</div><div class="v" id="aRho"></div><div class="f">≈ E<sub>celulă</sub> − 0,84</div></div>
+    <div class="cell"><div class="k">Electrolitul îngheață la</div><div class="v" id="aFrz"></div><div class="f">depinde de densitate</div></div>
+    <div class="cell"><div class="k">Căldură în baterie <span class="sym">P<sub>r</sub></span></div><div class="v drop" id="aPr"></div><div class="f">r·I²</div></div>
+    <div class="cell"><div class="k">Autonomie estimată</div><div class="v cop" id="aT"></div><div class="f">Peukert, k = 1,2</div></div>
+  </section>
+
+  <section class="card verdict" id="aVerdict" aria-live="polite"></section>
+
+  <div class="plots">
+    <section class="card plot"><p class="label">Tensiunea la borne în funcție de curent</p><svg id="pBat" viewBox="0 0 460 290" role="img" aria-label="Caracteristica externă a acumulatorului"></svg>
+      <p class="note">Linia plină este bateria în condițiile alese, iar linia punctată gri este aceeași baterie nouă, plină, la 25 °C. Testul EN cere minimum 7,5 V după 10 s la curentul de 540 A și −18 °C. Pragul de 9,6 V se folosește uzual la testele de pornire.</p></section>
+    <section class="card"><p class="label">Tensiunea în repaus indică starea de încărcare</p>
+      <div class="tbl"><table>
+        <thead><tr><th>SoC</th><th>U în repaus</th><th>Densitate</th><th>Îngheață la</th></tr></thead>
+        <tbody id="socTable"></tbody>
+      </table></div>
+      <p class="note">Tensiunea se măsoară cu motorul oprit, după cel puțin câteva ore de repaus, ca să dispară efectul încărcării de la alternator. O baterie lăsată descărcată se sulfatează (cristalele de PbSO₄ se întăresc) și își pierde capacitatea.</p>
+    </section>
+  </div>
+
+  <section class="explain">
+    <div class="card"><h3>Construcție</h3><p>Șase celule legate în serie, fiecare de circa 2,1 V, dau 12,6–12,7 V. Într-o celulă alternează plăci pozitive din dioxid de plumb (PbO₂) și plăci negative din plumb spongios, separate prin folii poroase și scufundate în acid sulfuric diluat. Variantele moderne sunt EFB și AGM (electrolit absorbit în fibră de sticlă), pentru mașinile cu start-stop.</p></div>
+    <div class="card"><h3>Reacția chimică</h3><p>La descărcare ambele plăci se transformă în sulfat de plumb, iar acidul devine apă:<br><code>Pb + PbO₂ + 2 H₂SO₄ → 2 PbSO₄ + 2 H₂O</code><br>La încărcare reacția merge invers. De aceea densitatea electrolitului, măsurată cu densimetrul, scade de la ~1,28 g/cm³ (plin) la ~1,12 g/cm³ (descărcat).</p></div>
+    <div class="card"><h3>Ce scrie pe etichetă</h3><p><b>60 Ah</b> este capacitatea la descărcarea în 20 h (3 A până la 10,5 V). <b>540 A (EN)</b> este curentul de pornire la rece: la −18 °C bateria trebuie să-l dea 10 s cu U ≥ 7,5 V. Cu relația (1.17) din curs, <code>r ≤ (12,7 − 7,5)/540 ≈ 9,6 mΩ</code> la −18 °C.</p></div>
+    <div class="card"><h3>De ce pornește greu iarna</h3><p>La frig reacțiile chimice și difuzia acidului în plăci sunt mai lente, deci r crește. În același timp uleiul vâscos cere un cuplu mai mare la demaror, deci un curent mai mare. Căderea r·I crește din ambele motive, iar tensiunea poate coborî sub pragul la care electronica se resetează.</p></div>
+    <div class="card"><h3>Încărcarea</h3><p>Alternatorul menține 13,8–14,4 V la borne. Peste circa 2,4 V pe celulă (14,4 V) apa din electrolit începe să se descompună în hidrogen și oxigen. Amestecul este exploziv, de aceea bateria se încarcă în spații ventilate, departe de scântei și flacără.</p></div>
+    <div class="card"><h3>Siguranță</h3><p>La demontare se desface întâi borna <b>−</b> (masa), la montare se leagă ultima. Un scurtcircuit între borne cu o cheie metalică produce mii de amperi și poate topi unealta. Acidul provoacă arsuri: ochelari și mănuși la orice intervenție pe electrolit.</p></div>
+  </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const S={E:12,r:0.5,R:0.7,open:false};
+const presets=[
+  {n:"Exemplu curs (fig. 1.3)",E:12,r:0.5,R:0.7},
+  {n:"Acumulator auto la pornire",E:12.6,r:0.008,R:0.042},
+  {n:"Acumulator auto iarna (−18 °C)",E:12.6,r:0.020,R:0.042},
+  {n:"Problema P2",E:24,r:0.2,R:3.8},
+  {n:"Problema P3, adaptare",E:9,r:1.5,R:1.5},
+  {n:"Baterie AA + bec 10 Ω",E:1.5,r:0.15,R:10},
+];
+// ---------- formatting (Romanian decimals, SI prefixes)
+function num(v,d){return v.toLocaleString('ro-RO',{maximumSignificantDigits:d||3,minimumSignificantDigits:Math.min(d||3,2)})}
+function fmt(v,u){
+  if(!isFinite(v)) return '∞ '+u;
+  const a=Math.abs(v);
+  if(a===0) return '0 '+u;
+  const P=[[1e6,'M'],[1e3,'k'],[1,''],[1e-3,'m'],[1e-6,'µ']];
+  for(const [f,p] of P){ if(a>=f*0.9995) return num(v/f)+' '+p+u; }
+  return num(v/1e-6)+' µ'+u;
+}
+// ---------- log slider maps
+const rMin=-3,rMax=2, RMin=-3,RMax=4;
+const r2s=r=>Math.round((Math.log10(r)-rMin)/(rMax-rMin)*1000);
+const s2r=s=>Math.pow(10,rMin+(rMax-rMin)*s/1000);
+const R2s=R=>R<=0?0:Math.max(1,Math.round((Math.log10(R)-RMin)/(RMax-RMin)*1000));
+const s2R=s=>s<=0?0:Math.pow(10,RMin+(RMax-RMin)*s/1000);
+const round=v=>Number(v.toPrecision(4));
+
+function calc(){
+  const {E,r}=S; const R=S.open?Infinity:S.R;
+  const I=S.open?0:E/(R+r);
+  const U=S.open?E:E-r*I, dU=r*I;
+  const P=S.open?0:R*I*I, Pr=r*I*I, Pg=E*I;
+  const eta=S.open?1:R/(R+r);
+  return {E,r,R,I,U,dU,P,Pr,Pg,eta,Isc:E/r,Pmax:E*E/(4*r)};
+}
+function syncInputs(src){
+  if(src!=='nE')$('nE').value=round(S.E); if(src!=='sE')$('sE').value=Math.round(S.E*10);
+  if(src!=='nr')$('nr').value=round(S.r); if(src!=='sr')$('sr').value=r2s(S.r);
+  if(src!=='nR')$('nR').value=round(S.R); if(src!=='sR')$('sR').value=R2s(S.R);
+  $('open').checked=S.open;
+}
+// ---------- circuit visuals
+const dotsG=$('dots'); const loop=$('loop'); const L=loop.getTotalLength(); const ND=26; const dots=[];
+for(let i=0;i<ND;i++){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r','3.6');c.setAttribute('fill','var(--cur)');dotsG.appendChild(c);dots.push(c)}
+let phase=0, speed=0, last=performance.now();
+const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function placeDots(){for(let i=0;i<ND;i++){let d=((i/ND)*L+phase)%L;const p=loop.getPointAtLength(d);dots[i].setAttribute('cx',p.x);dots[i].setAttribute('cy',p.y)}}
+function tick(t){const dt=Math.min(0.1,(t-last)/1000);last=t;if(!reduce){phase=(phase+speed*dt)%L;placeDots()}requestAnimationFrame(tick)}
+function heat(frac){frac=Math.max(0,Math.min(1,frac));const pct=Math.round(frac*85);return `color-mix(in srgb, var(--drop) ${pct}%, var(--heat0))`}
+
+function chips(o){
+  const c=[];
+  if(S.open) c.push(['Mers în gol','var(--ok)']);
+  else if(S.R===0) c.push(['Scurtcircuit','var(--drop)']);
+  else{
+    c.push(['Funcționare în sarcină','var(--cur)']);
+    if(Math.abs(o.R/o.r-1)<0.03) c.push(['Adaptare R = r · Pmax','var(--copper)']);
+    if(o.R/o.r<0.25) c.push(['Aproape de scurtcircuit','var(--warn)']);
+  }
+  $('chips').innerHTML=c.map(([t,col])=>`<span class="chip" style="color:${col}">${t}</span>`).join('');
+}
+
+// ---------- plots
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;parent&&parent.appendChild(e);return e}
+function niceTicks(max,n){if(max<=0)return[0];const raw=max/n,m=Math.pow(10,Math.floor(Math.log10(raw)));const step=[1,2,2.5,5,10].map(k=>k*m).find(s=>s>=raw);const t=[];for(let v=0;v<=max*1.0001;v+=step)t.push(+v.toPrecision(6));return t}
+const box={l:52,r:16,t:14,b:40,w:460,h:290};
+function axes(svg,xt,yt,X,Y,xl,yl,xfmt,yfmt){
+  const g=el('g',{},svg);
+  yt.forEach(v=>{el('line',{x1:box.l,x2:box.w-box.r,y1:Y(v),y2:Y(v),stroke:'var(--grid)'},g);el('text',{x:box.l-6,y:Y(v)+4,'text-anchor':'end',class:'tick'},g,yfmt(v))});
+  xt.forEach(v=>{el('line',{y1:box.t,y2:box.h-box.b,x1:X(v),x2:X(v),stroke:'var(--grid)'},g);el('text',{x:X(v),y:box.h-box.b+16,'text-anchor':'middle',class:'tick'},g,xfmt(v))});
+  el('line',{x1:box.l,x2:box.w-box.r,y1:box.h-box.b,y2:box.h-box.b,stroke:'var(--muted)'},g);
+  el('line',{x1:box.l,x2:box.l,y1:box.t,y2:box.h-box.b,stroke:'var(--muted)'},g);
+  el('text',{x:(box.l+box.w-box.r)/2,y:box.h-6,'text-anchor':'middle',class:'ax'},g,xl);
+  el('text',{x:14,y:(box.t+box.h-box.b)/2,'text-anchor':'middle',class:'ax',transform:`rotate(-90 14 ${(box.t+box.h-box.b)/2})`},g,yl);
+}
+function scaleFmt(v){return v.toLocaleString('ro-RO',{maximumFractionDigits:3})}
+function unitScale(max){ if(max>=1000) return [1e3,'k']; if(max<1) return [1e-3,'m']; return [1,''] }
+
+function plotUI(o){
+  const svg=$('pUI'); svg.innerHTML='';
+  const [fi,pi]=unitScale(o.Isc); const [fu,pu]=unitScale(o.E||1);
+  const xmax=o.Isc/fi*1.06||1, ymax=(o.E/fu)*1.12||1;
+  const X=v=>box.l+(v/xmax)*(box.w-box.l-box.r), Y=v=>box.h-box.b-(v/ymax)*(box.h-box.t-box.b);
+  axes(svg,niceTicks(xmax,5),niceTicks(ymax,5),X,Y,`Curentul I [${pi}A]`,`Tensiunea U [${pu}V]`,scaleFmt,scaleFmt);
+  const Isc=o.Isc/fi, E=o.E/fu;
+  // drop area
+  el('path',{d:`M${X(0)} ${Y(E)} L${X(Isc)} ${Y(E)} L${X(Isc)} ${Y(0)} Z`,fill:'var(--drop)','fill-opacity':.12},svg);
+  el('line',{x1:X(0),y1:Y(E),x2:X(xmax),y2:Y(E),stroke:'var(--muted)','stroke-dasharray':'4 4'},svg);
+  // load line U=R I (in plot units: U/fu = R*I*fi/fu)
+  if(!S.open){const k=o.R*fi/fu; let x2=xmax, y2=k*xmax; if(y2>ymax){y2=ymax;x2=ymax/k}
+    el('line',{x1:X(0),y1:Y(0),x2:X(x2),y2:Y(y2),stroke:'var(--muted)','stroke-width':1.5,'stroke-dasharray':'2 4'},svg);
+    el('text',{x:X(x2)-4,y:Y(y2)+14,'text-anchor':'end',class:'tick'},svg,'U = R·I');}
+  el('line',{x1:X(0),y1:Y(E),x2:X(Isc),y2:Y(0),stroke:'var(--cur)','stroke-width':2.6},svg);
+  const px=X(o.I/fi), py=Y(o.U/fu);
+  el('line',{x1:px,y1:py,x2:px,y2:Y(0),stroke:'var(--cur)','stroke-opacity':.4},svg);
+  el('line',{x1:X(0),y1:py,x2:px,y2:py,stroke:'var(--cur)','stroke-opacity':.4},svg);
+  el('circle',{cx:px,cy:py,r:6,fill:'var(--panel)',stroke:'var(--cur)','stroke-width':2.6},svg);
+  const right=px>box.w*0.62;
+  el('text',{x:px+(right?-10:10),y:py-10,'text-anchor':right?'end':'start',class:'tick',style:'fill:var(--ink)'},svg,`${fmt(o.I,'A')} · ${fmt(o.U,'V')}`);
+}
+function plotPR(o){
+  const svg=$('pPR'); svg.innerHTML='';
+  const lx0=-2,lx1=2; const [fp,pp]=unitScale(o.Pmax||1); const ymax=(o.Pmax/fp)*1.15||1;
+  const X=v=>box.l+((Math.log10(v)-lx0)/(lx1-lx0))*(box.w-box.l-box.r), Y=v=>box.h-box.b-(v/ymax)*(box.h-box.t-box.b);
+  const Ye=v=>box.h-box.b-(v/105)*(box.h-box.t-box.b);
+  axes(svg,[0.01,0.1,1,10,100],niceTicks(ymax,5),X,Y,'Raportul R/r (logaritmic)',`Puterea P [${pp}W]`,v=>v.toLocaleString('ro-RO'),scaleFmt);
+  // eta axis labels on right
+  [0,50,100].forEach(v=>el('text',{x:box.w-box.r-2,y:Ye(v)-3,'text-anchor':'end',class:'tick',style:'fill:var(--drop)'},svg,v+' %'));
+  let dP='',dE='';
+  for(let i=0;i<=200;i++){const k=Math.pow(10,lx0+(lx1-lx0)*i/200);const P=o.E*o.E*k/(o.r*(k+1)*(k+1))/fp;const eta=k/(k+1)*100;
+    dP+=(i?'L':'M')+X(k).toFixed(1)+' '+Y(P).toFixed(1);dE+=(i?'L':'M')+X(k).toFixed(1)+' '+Ye(eta).toFixed(1)}
+  el('line',{x1:X(1),x2:X(1),y1:box.t,y2:box.h-box.b,stroke:'var(--copper)','stroke-dasharray':'4 4'},svg);
+  el('text',{x:X(1)+5,y:box.t+12,class:'tick',style:'fill:var(--copper)'},svg,'R = r');
+  el('path',{d:dE,fill:'none',stroke:'var(--drop)','stroke-width':2,'stroke-dasharray':'7 4'},svg);
+  el('path',{d:dP,fill:'none',stroke:'var(--copper)','stroke-width':2.6},svg);
+  // legend
+  el('line',{x1:box.l+10,x2:box.l+30,y1:box.t+10,y2:box.t+10,stroke:'var(--copper)','stroke-width':2.6},svg);
+  el('text',{x:box.l+35,y:box.t+14,class:'tick',style:'fill:var(--ink)'},svg,'P');
+  el('line',{x1:box.l+52,x2:box.l+72,y1:box.t+10,y2:box.t+10,stroke:'var(--drop)','stroke-width':2,'stroke-dasharray':'7 4'},svg);
+  el('text',{x:box.l+77,y:box.t+14,class:'tick',style:'fill:var(--ink)'},svg,'η');
+  if(!S.open && S.R>0){const k=Math.min(100,Math.max(0.01,o.R/o.r));const px=X(k);
+    el('circle',{cx:px,cy:Y(o.P/fp),r:6,fill:'var(--panel)',stroke:'var(--copper)','stroke-width':2.6},svg);
+    el('circle',{cx:px,cy:Ye(o.eta*100),r:4.5,fill:'var(--drop)'},svg);
+    const right=px>box.w*0.62;
+    el('text',{x:px+(right?-10:10),y:Y(o.P/fp)-10,'text-anchor':right?'end':'start',class:'tick',style:'fill:var(--ink)'},svg,`${fmt(o.P,'W')} · η ${num(o.eta*100)} %`);
+  }
+}
+
+function render(){
+  const o=calc();
+  $('oI').textContent=fmt(o.I,'A'); $('oU').textContent=fmt(o.U,'V'); $('odU').textContent=fmt(o.dU,'V');
+  $('oEta').textContent=S.R===0&&!S.open?'0 %':num(o.eta*100)+' %';
+  $('oP').textContent=fmt(o.P,'W'); $('oPr').textContent=fmt(o.Pr,'W'); $('oPg').textContent=fmt(o.Pg,'W'); $('oIsc').textContent=fmt(o.Isc,'A');
+  $('tE').textContent=fmt(o.E,'V'); $('tr').textContent=fmt(o.r,'Ω'); $('tR').textContent=S.open?'∞ (deschis)':fmt(S.R,'Ω');
+  $('tdU').textContent=fmt(o.dU,'V'); $('tU').textContent=fmt(o.U,'V'); $('tI').textContent=fmt(o.I,'A'); $('tP').textContent='P = '+fmt(o.P,'W');
+  const E=o.E||1; $('bU').style.width=(o.U/E*100)+'%'; $('bdU').style.width=(o.dU/E*100)+'%';
+  $('bTxt1').textContent=`${fmt(o.U,'V')} + ${fmt(o.dU,'V')} = ${fmt(o.E,'V')}`;
+  const Pg=o.Pg||1; $('bP').style.width=(o.Pg?o.P/Pg*100:0)+'%'; $('bPr').style.width=(o.Pg?o.Pr/Pg*100:0)+'%';
+  $('bTxt2').textContent=`${fmt(o.P,'W')} + ${fmt(o.Pr,'W')} = ${fmt(o.Pg,'W')}`;
+  const ref=o.E*o.E/o.r||1; // short-circuit power, maximum possible in r
+  $('rBody').style.fill=heat(Math.sqrt(o.Pr/ref)); $('RBody').style.fill=heat(Math.sqrt(o.P/(o.Pmax||1))*0.8);
+  $('swBlade').setAttribute('x2',S.open?350:356); $('swBlade').setAttribute('y2',S.open?46:70);
+  $('iArrow').style.opacity=o.I>0?1:.25;
+  speed = o.I>0 ? 30+170*Math.min(1,Math.log10(1+9*o.I/o.Isc)) : 0;
+  dotsG.style.opacity=o.I>0?1:0;
+  chips(o); plotUI(o); plotPR(o);
+  document.querySelectorAll('#presets button').forEach(b=>{const p=presets[+b.dataset.i];b.classList.toggle('on',!S.open&&p.E===S.E&&p.r===S.r&&p.R===S.R)});
+}
+function set(k,v,src){if(!isFinite(v))return; S[k]=v; if(k==='R')S.open=false; syncInputs(src); render()}
+$('sE').addEventListener('input',e=>set('E',e.target.value/10,'sE'));
+$('nE').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(v>=0)set('E',v,'nE')});
+$('sr').addEventListener('input',e=>set('r',round(s2r(+e.target.value)),'sr'));
+$('nr').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(v>0)set('r',v,'nr')});
+$('sR').addEventListener('input',e=>set('R',round(s2R(+e.target.value)),'sR'));
+$('nR').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(v>=0)set('R',v,'nR')});
+$('open').addEventListener('change',e=>{S.open=e.target.checked;render()});
+$('bMatch').addEventListener('click',()=>set('R',S.r));
+$('bShort').addEventListener('click',()=>set('R',0));
+$('presets').innerHTML=presets.map((p,i)=>`<button type="button" data-i="${i}">${p.n}</button>`).join('');
+$('presets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const p=presets[+b.dataset.i];S.E=p.E;S.r=p.r;S.R=p.R;S.open=false;syncInputs();render()});
+syncInputs(); render(); placeDots(); requestAnimationFrame(tick);
+})();
+
+// ================= Acumulator plumb-acid =================
+(function(){
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;parent&&parent.appendChild(e);return e}
+const nf=(v,d)=>v.toLocaleString('ro-RO',{minimumFractionDigits:d,maximumFractionDigits:d});
+function fmtA(I){return I<1?nf(I*1000,0)+' mA':I<10?nf(I,1)+' A':nf(I,0)+' A'}
+const B={soc:100,T:25,soh:100,I:150};
+const C20=60, H=20, K=1.2, R0=0.0060, CCA=540;
+const loads=[
+  {n:'Parcare (alarmă, ECU)',I:0.03},
+  {n:'Faruri + ventilație',I:20},
+  {n:'Pornire benzină 1,6 L',I:150},
+  {n:'Pornire diesel 2,0 L',I:300},
+  {n:'Test EN 540 A',I:540},
+];
+const scen=[
+  {n:'Vară, baterie nouă',soc:100,T:25,soh:100},
+  {n:'Iarnă, −18 °C',soc:100,T:-18,soh:100},
+  {n:'Iarnă, baterie veche pe jumătate descărcată',soc:50,T:-18,soh:60},
+  {n:'Faruri uitate aprinse peste noapte',soc:10,T:-10,soh:90},
+];
+const frzTab=[[1.10,-7],[1.15,-15],[1.20,-27],[1.25,-52],[1.28,-68]];
+function freeze(rho){if(rho<=frzTab[0][0])return frzTab[0][1];for(let i=1;i<frzTab.length;i++){const [a,fa]=frzTab[i-1],[b,fb]=frzTab[i];if(rho<=b)return fa+(fb-fa)*(rho-a)/(b-a)}return frzTab[frzTab.length-1][1]}
+const Erest=soc=>11.90+0.80*soc/100;
+function rint(soc,T,soh){const fT=Math.max(0.85,1+0.012*(25-T));const fS=1+1.2*Math.pow(1-soc/100,2);const fH=1+2.5*(1-soh/100);return R0*fT*fS*fH}
+function calc(){
+  const E=Erest(B.soc), r=rint(B.soc,B.T,B.soh), rho=E/6-0.84, frz=freeze(rho);
+  const dU=r*B.I, U=E-dU, Pr=r*B.I*B.I;
+  const Cav=C20*B.soh/100;
+  const tH=B.soc/100*H*Math.pow(Cav/(B.I*H),K);
+  return {E,r,rho,frz,dU,U,Pr,tH,frozen:B.T<=frz};
+}
+function fmtT(h){if(!isFinite(h))return '–';if(h>=48)return nf(h/24,0)+' zile';if(h>=1)return nf(h,1)+' h';if(h*60>=1)return nf(h*60,0)+' min';return nf(h*3600,0)+' s'}
+
+// ---------- battery drawing
+function drawBatt(o){
+  const svg=$('batt'); svg.innerHTML='';
+  const x0=20,y0=56,w=520,h=240,cw=w/6;
+  // case and lid
+  el('rect',{x:x0,y:y0,width:w,height:h,rx:8,fill:'var(--grid)',stroke:'var(--wire)','stroke-width':2.4},svg);
+  el('rect',{x:x0-6,y:y0-20,width:w+12,height:22,rx:5,fill:'var(--panel)',stroke:'var(--wire)','stroke-width':2.4},svg);
+  // terminals
+  [[x0+40,'+','var(--drop)'],[x0+w-40,'−','var(--cur)']].forEach(([x,s,c])=>{
+    el('rect',{x:x-14,y:y0-44,width:28,height:26,rx:4,fill:'var(--panel)',stroke:c,'stroke-width':2.4},svg);
+    el('text',{x:x,y:y0-25,'text-anchor':'middle','font-size':18,'font-weight':700,fill:c},svg,s);
+  });
+  const lvl=y0+30; // electrolyte top
+  const strength=Math.max(0,Math.min(1,(o.rho-1.10)/(1.28-1.10)));
+  const ecol=o.frozen?'var(--muted)':`color-mix(in srgb, var(--cur) ${Math.round(18+52*strength)}%, var(--panel))`;
+  for(let i=0;i<6;i++){
+    const cx=x0+i*cw;
+    if(i>0) el('line',{x1:cx,y1:y0,x2:cx,y2:y0+h,stroke:'var(--wire)','stroke-width':2},svg);
+    el('rect',{x:cx+5,y:lvl,width:cw-10,height:y0+h-lvl-5,fill:ecol,rx:3},svg);
+    if(o.frozen) for(let k=0;k<4;k++) el('path',{d:`M${cx+16+k*18} ${lvl+20} l6 10 l-6 10 l6 10`,fill:'none',stroke:'var(--panel)','stroke-width':1.6},svg);
+    // plates
+    const n=7, pw=5, gap=(cw-20)/n;
+    for(let k=0;k<n;k++){
+      const px=cx+10+k*gap+gap/2-pw/2, pos=k%2===0;
+      el('rect',{x:px,y:y0+18,width:pw,height:h-40,rx:1,fill:pos?'var(--copper)':'var(--muted)','fill-opacity':pos?0.85:0.9},svg);
+    }
+    el('text',{x:cx+cw/2,y:y0+h+20,'text-anchor':'middle','font-size':12,'font-family':'var(--f-mono)',fill:'var(--muted)'},svg,nf(o.E/6,3)+' V');
+  }
+  // series straps (top)
+  for(let i=0;i<5;i++){const xa=x0+i*cw+cw-16, xb=x0+(i+1)*cw+16;el('path',{d:`M${xa} ${y0+14} L${xa} ${y0+6} L${xb} ${y0+6} L${xb} ${y0+14}`,fill:'none',stroke:'var(--wire)','stroke-width':2.2},svg)}
+  el('text',{x:x0+w/2,y:y0-28,'text-anchor':'middle','font-size':14,'font-family':'var(--f-mono)','font-weight':600,fill:'var(--ink)'},svg,`E = ${nf(o.E,2)} V   ·   ρ = ${nf(o.rho,3)} g/cm³`);
+}
+
+// ---------- chart U(I)
+const box={l:52,r:16,t:14,b:40,w:460,h:290};
+function plot(o){
+  const svg=$('pBat'); svg.innerHTML='';
+  const xmax=700, ymax=14;
+  const X=v=>box.l+(v/xmax)*(box.w-box.l-box.r), Y=v=>box.h-box.b-(Math.max(0,v)/ymax)*(box.h-box.t-box.b);
+  [0,2,4,6,8,10,12,14].forEach(v=>{el('line',{x1:box.l,x2:box.w-box.r,y1:Y(v),y2:Y(v),stroke:'var(--grid)'},svg);el('text',{x:box.l-6,y:Y(v)+4,'text-anchor':'end',class:'tick'},svg,v)});
+  [0,100,200,300,400,500,600,700].forEach(v=>{el('line',{y1:box.t,y2:box.h-box.b,x1:X(v),x2:X(v),stroke:'var(--grid)'},svg);el('text',{x:X(v),y:box.h-box.b+16,'text-anchor':'middle',class:'tick'},svg,v)});
+  el('line',{x1:box.l,x2:box.w-box.r,y1:box.h-box.b,y2:box.h-box.b,stroke:'var(--muted)'},svg);
+  el('line',{x1:box.l,x2:box.l,y1:box.t,y2:box.h-box.b,stroke:'var(--muted)'},svg);
+  el('text',{x:(box.l+box.w-box.r)/2,y:box.h-6,'text-anchor':'middle',class:'ax'},svg,'Curentul I [A]');
+  el('text',{x:14,y:(box.t+box.h-box.b)/2,'text-anchor':'middle',class:'ax',transform:`rotate(-90 14 ${(box.t+box.h-box.b)/2})`},svg,'Tensiunea la borne U [V]');
+  [[9.6,'9,6 V pornire','var(--warn)'],[7.5,'7,5 V limită EN','var(--drop)']].forEach(([v,t,c])=>{el('line',{x1:box.l,x2:box.w-box.r,y1:Y(v),y2:Y(v),stroke:c,'stroke-dasharray':'5 4'},svg);el('text',{x:box.l+8,y:Y(v)-5,class:'tick',style:`fill:${c}`},svg,t)});
+  el('line',{x1:X(CCA),x2:X(CCA),y1:box.t,y2:box.h-box.b,stroke:'var(--muted)','stroke-dasharray':'2 4'},svg);
+  el('text',{x:X(CCA)+4,y:box.t+12,class:'tick'},svg,'540 A');
+  const Eref=Erest(100), rref=rint(100,25,100);
+  el('line',{x1:X(0),y1:Y(Eref),x2:X(xmax),y2:Y(Eref-rref*xmax),stroke:'var(--muted)','stroke-width':1.6,'stroke-dasharray':'2 3'},svg);
+  const xEnd=Math.min(xmax,o.E/o.r);
+  el('line',{x1:X(0),y1:Y(o.E),x2:X(xEnd),y2:Y(o.E-o.r*xEnd),stroke:'var(--cur)','stroke-width':2.6},svg);
+  if(B.I<=xmax && o.U>0){const px=X(B.I),py=Y(o.U);
+    el('circle',{cx:px,cy:py,r:6,fill:'var(--panel)',stroke:'var(--cur)','stroke-width':2.6},svg);
+    const right=px>box.w*0.6;
+    el('text',{x:px+(right?-10:10),y:py-10,'text-anchor':right?'end':'start',class:'tick',style:'fill:var(--ink)'},svg,`${fmtA(B.I)} · ${nf(o.U,2)} V`);}
+}
+
+function verdict(o){
+  let cls,t,d;
+  if(o.frozen){cls='bad';t='Electrolitul este înghețat';d=`La densitatea de ${nf(o.rho,3)} g/cm³ acidul îngheață sub ${nf(o.frz,0)} °C. Bateria nu poate debita curent și carcasa se poate fisura. O baterie descărcată îngheață mult mai ușor decât una plină, de aceea iarna trebuie ținută încărcată.`}
+  else if(o.U<=0){cls='bad';t='Bateria nu poate furniza acest curent';d=`Căderea internă r·I ar depăși t.e.m. Curentul maxim teoretic (scurtcircuit) este E/r = ${fmtA(o.E/o.r)}.`}
+  else if(B.I>=100){
+    if(o.U>=10){cls='ok';t='Pornește normal';d=`În timpul pornirii tensiunea rămâne ${nf(o.U,2)} V. Demarorul primește suficientă tensiune și electronica funcționează normal.`}
+    else if(o.U>=9.6){cls='warn';t='Pornește, dar la limită';d=`Tensiunea coboară la ${nf(o.U,2)} V, aproape de pragul de 9,6 V folosit la testele de pornire. Bateria merită verificată.`}
+    else if(o.U>=7.5){cls='warn';t='Pornire grea';d=`Tensiunea scade la ${nf(o.U,2)} V. Demarorul se rotește încet și unele module electronice se pot reseta. Căderea internă este ${nf(o.dU,2)} V, adică ${nf(o.dU/o.E*100,0)} % din t.e.m.`}
+    else {cls='bad';t='Nu pornește';d=`La ${fmtA(B.I)} tensiunea la borne ar fi ${nf(o.U,2)} V, sub limita de 7,5 V. Practic, curentul real va fi mai mic, iar demarorul nu va învârti motorul suficient de repede.`}
+  } else {
+    if(B.soc<50){cls='warn';t='Baterie descărcată';d=`Starea de încărcare este ${B.soc} %. Lăsată așa, bateria se sulfatează și își pierde din capacitate. Trebuie reîncărcată cât mai curând.`}
+    else {cls='ok';t='Funcționare normală';d=`La ${fmtA(B.I)} căderea internă este doar ${nf(o.dU*1000,0)} mV, iar tensiunea la borne rămâne practic egală cu t.e.m.`}
+  }
+  if(B.I<0.6 && !o.frozen) d+=' La curenți atât de mici autonomia reală este limitată și de autodescărcarea bateriei, de ordinul câtorva procente pe lună.';
+  $('aVerdict').className='card verdict '+cls;
+  $('aVerdict').innerHTML=`<p class="label" style="margin:0">Diagnostic</p><h3>${t}</h3><p>${d}</p>`;
+  const ch=[];
+  ch.push([`SoC ${B.soc} %`,B.soc>=75?'var(--ok)':B.soc>=50?'var(--warn)':'var(--drop)']);
+  ch.push([`${B.T} °C`,B.T<0?'var(--cur)':'var(--muted)']);
+  if(B.soh<80) ch.push(['Baterie uzată','var(--warn)']);
+  $('bChips').innerHTML=ch.map(([t,c])=>`<span class="chip" style="color:${c}">${t}</span>`).join('');
+}
+function table(){
+  const rows=[100,75,50,25,0];const near=rows.reduce((a,b)=>Math.abs(b-B.soc)<Math.abs(a-B.soc)?b:a);
+  $('socTable').innerHTML=rows.map(s=>{const E=Erest(s),rho=E/6-0.84;return `<tr class="${s===near?'hl':''}"><td>${s} %</td><td>${nf(E,2)} V</td><td>${nf(rho,2)} g/cm³</td><td>${nf(freeze(rho),0)} °C</td></tr>`}).join('');
+}
+const I2s=I=>Math.round((Math.log10(I)+2)/5*1000), s2I=s=>Math.pow(10,-2+5*s/1000);
+function sync(src){
+  [['bSoc','nSoc','soc'],['bT','nT','T'],['bSoh','nSoh','soh']].forEach(([a,b,k])=>{if(src!==a)$(a).value=B[k];if(src!==b)$(b).value=B[k]});
+  if(src!=='bI')$('bI').value=I2s(B.I); if(src!=='nI')$('nI').value=Number(B.I.toPrecision(3));
+}
+function render(){
+  const o=calc();
+  $('aE').textContent=nf(o.E,2)+' V'; $('aEc').textContent=nf(o.E/6,3)+' V';
+  $('aR').textContent=nf(o.r*1000,1)+' mΩ'; $('aU').textContent=o.U>0?nf(o.U,2)+' V':'—';
+  $('adU').textContent=o.dU>=1?nf(Math.min(o.dU,o.E),2)+' V':nf(o.dU*1000,0)+' mV';
+  $('aRho').textContent=nf(o.rho,3)+' g/cm³'; $('aFrz').textContent=nf(o.frz,0)+' °C';
+  $('aPr').textContent=o.U>0?(o.Pr>=1000?nf(o.Pr/1000,2)+' kW':o.Pr>=1?nf(o.Pr,0)+' W':nf(o.Pr*1000,0)+' mW'):'—';
+  $('aT').textContent=o.frozen||o.U<=0?'—':fmtT(o.tH);
+  drawBatt(o); plot(o); verdict(o); table();
+  document.querySelectorAll('#bLoads button').forEach(b=>b.classList.toggle('on',loads[+b.dataset.i].I===B.I));
+  document.querySelectorAll('#bScen button').forEach(b=>{const s=scen[+b.dataset.i];b.classList.toggle('on',s.soc===B.soc&&s.T===B.T&&s.soh===B.soh)});
+}
+function setv(k,v,src,lo,hi){if(!isFinite(v))return;B[k]=Math.min(hi,Math.max(lo,v));sync(src);render()}
+$('bSoc').addEventListener('input',e=>setv('soc',+e.target.value,'bSoc',0,100));
+$('nSoc').addEventListener('input',e=>setv('soc',Math.round(parseFloat(e.target.value)),'nSoc',0,100));
+$('bT').addEventListener('input',e=>setv('T',+e.target.value,'bT',-30,45));
+$('nT').addEventListener('input',e=>setv('T',Math.round(parseFloat(e.target.value)),'nT',-30,45));
+$('bSoh').addEventListener('input',e=>setv('soh',+e.target.value,'bSoh',40,100));
+$('nSoh').addEventListener('input',e=>setv('soh',Math.round(parseFloat(e.target.value)),'nSoh',40,100));
+$('bI').addEventListener('input',e=>setv('I',Number(s2I(+e.target.value).toPrecision(2)),'bI',0.01,1000));
+$('nI').addEventListener('input',e=>{const v=parseFloat(e.target.value);if(v>0)setv('I',v,'nI',0.01,1000)});
+$('bLoads').innerHTML=loads.map((l,i)=>`<button type="button" data-i="${i}">${l.n} · ${fmtA(l.I)}</button>`).join('');
+$('bScen').innerHTML=scen.map((s,i)=>`<button type="button" data-i="${i}">${s.n}</button>`).join('');
+$('bLoads').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;B.I=loads[+b.dataset.i].I;sync();render()});
+$('bScen').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;Object.assign(B,scen[+b.dataset.i]);delete B.n;sync();render()});
+sync();render();
+})();
+
+// ================= Navigare între pagini =================
+(function(){
+  const views={circuit:'v-circuit',acumulator:'v-acumulator'};
+  function show(name){
+    if(!views[name]) name='circuit';
+    for(const k in views) document.getElementById(views[k]).hidden=(k!==name);
+    document.querySelectorAll('.tabs a').forEach(a=>a.setAttribute('aria-current',a.dataset.v===name?'page':'false'));
+  }
+  window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+  document.querySelectorAll('.tabs a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();show(a.dataset.v);try{history.replaceState(null,'','#'+a.dataset.v)}catch(_){}window.scrollTo(0,0)}));
+  show(location.hash.slice(1));
+})();
+</script>
+
+</body></html>
