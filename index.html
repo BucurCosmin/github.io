@@ -3,11 +3,264 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Home</title>
+    <meta
+      name="description"
+      content="A welcoming place to discover and follow courses."
+    >
+    <title>Cosmin Bucur | Learning</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17233c;
+        --muted: #64748b;
+        --surface: #ffffff;
+        --line: #dce5f0;
+        --primary: #365ee8;
+        --primary-dark: #2448c3;
+        --soft-blue: #eef3ff;
+        --background: #f7f9fc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .taskbar {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.94);
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        min-height: 72px;
+        padding: 0 7vw;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .brand {
+        color: var(--ink);
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        color: var(--primary);
+      }
+
+      .nav-links {
+        align-items: center;
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .nav-links a {
+        color: var(--muted);
+        font-size: 0.94rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .nav-links a:hover,
+      .nav-links a:focus-visible {
+        color: var(--primary);
+      }
+
+      .nav-links .courses-link {
+        background: var(--primary);
+        border-radius: 0.6rem;
+        color: #ffffff;
+        padding: 0.68rem 1rem;
+      }
+
+      .nav-links .courses-link:hover,
+      .nav-links .courses-link:focus-visible {
+        background: var(--primary-dark);
+        color: #ffffff;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1160px;
+        padding: 5.5rem 7vw;
+      }
+
+      .hero {
+        align-items: center;
+        display: grid;
+        gap: 4rem;
+        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+        min-height: 480px;
+      }
+
+      .eyebrow {
+        color: var(--primary);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        margin: 0 0 1.2rem;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        font-size: clamp(2.7rem, 6vw, 5rem);
+        letter-spacing: -0.06em;
+        line-height: 0.98;
+        margin: 0;
+        max-width: 700px;
+      }
+
+      .hero p {
+        color: var(--muted);
+        font-size: 1.12rem;
+        line-height: 1.7;
+        margin: 1.6rem 0 2rem;
+        max-width: 590px;
+      }
+
+      .button {
+        background: var(--primary);
+        border-radius: 0.7rem;
+        color: #ffffff;
+        display: inline-block;
+        font-weight: 750;
+        padding: 0.9rem 1.25rem;
+        text-decoration: none;
+        transition: background 150ms ease, transform 150ms ease;
+      }
+
+      .button:hover,
+      .button:focus-visible {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+      }
+
+      .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 1.25rem;
+        box-shadow: 0 20px 50px rgba(31, 51, 91, 0.08);
+        padding: 2rem;
+      }
+
+      .feature-icon {
+        align-items: center;
+        background: var(--soft-blue);
+        border-radius: 0.85rem;
+        color: var(--primary);
+        display: flex;
+        font-size: 1.35rem;
+        font-weight: 800;
+        height: 3.25rem;
+        justify-content: center;
+        width: 3.25rem;
+      }
+
+      .feature-card h2 {
+        font-size: 1.45rem;
+        letter-spacing: -0.03em;
+        margin: 1.5rem 0 0.65rem;
+      }
+
+      .feature-card p {
+        color: var(--muted);
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .courses {
+        border-top: 1px solid var(--line);
+        margin-top: 5rem;
+        padding-top: 4rem;
+      }
+
+      .courses h2 {
+        font-size: clamp(2rem, 4vw, 3rem);
+        letter-spacing: -0.05em;
+        margin: 0;
+      }
+
+      .courses p {
+        color: var(--muted);
+        line-height: 1.6;
+        max-width: 580px;
+      }
+
+      @media (max-width: 700px) {
+        .taskbar {
+          min-height: 64px;
+          padding: 0 1.4rem;
+        }
+
+        .nav-links {
+          gap: 0.9rem;
+        }
+
+        .nav-links a:not(.courses-link) {
+          display: none;
+        }
+
+        main {
+          padding: 3.5rem 1.4rem;
+        }
+
+        .hero {
+          gap: 2.5rem;
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
+    <header class="taskbar">
+      <a class="brand" href="#top">Cosmin<span class="brand-mark">.</span></a>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a href="#top">Home</a>
+        <a class="courses-link" href="#courses">Courses</a>
+      </nav>
+    </header>
     <main>
-      <a href="courses.html">Courses</a>
+      <section class="hero" id="top">
+        <div>
+          <p class="eyebrow">Learn with purpose</p>
+          <h1>Make room for your next big skill.</h1>
+          <p>
+            Explore focused learning experiences built to help you grow,
+            create, and move forward with confidence.
+          </p>
+          <a class="button" href="#courses">Explore courses</a>
+        </div>
+        <aside class="feature-card" aria-label="Courses overview">
+          <div class="feature-icon" aria-hidden="true">01</div>
+          <h2>Courses, made clear.</h2>
+          <p>
+            A simple place to discover the material that matters and start
+            learning at your own pace.
+          </p>
+        </aside>
+      </section>
+
+      <section class="courses" id="courses">
+        <p class="eyebrow">Courses</p>
+        <h2>Your learning journey starts here.</h2>
+        <p>
+          New course content will be added here soon. Check back to see what
+          is next.
+        </p>
+      </section>
     </main>
   </body>
 </html>
