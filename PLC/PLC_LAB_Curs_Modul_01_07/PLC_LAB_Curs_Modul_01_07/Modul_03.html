@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLC LAB — Modul 03 · Encodere incrementale</title>
+<style>
+:root{--bg:#09101c;--panel:#111c2c;--panel2:#152338;--edge:#2a3b53;--txt:#eef4fb;--dim:#97adc3;--mint:#55e7c6;--gold:#ffd078;--red:#ff8797;--blue:#85b8ff;--violet:#be9bff;--off:#71849c}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 Inter,"Segoe UI",Arial,sans-serif} button,input,select{font:inherit}
+button{cursor:pointer} button:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+a{color:var(--mint)}
+.app{display:grid;grid-template-columns:255px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:#0d1624;border-right:1px solid var(--edge);padding:24px 16px;display:flex;flex-direction:column;gap:18px}
+.logo{display:flex;align-items:center;gap:12px;padding:0 7px}.mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--mint);color:#073328;font-weight:900;font-size:20px}.logo b{font-size:18px;letter-spacing:.15em}.logo small{display:block;color:var(--dim);font-size:10px;letter-spacing:.12em}
+.label{font-weight:850;font-size:10px;letter-spacing:.15em;color:var(--dim)}
+.progress-card{padding:15px;border:1px solid var(--edge);border-radius:13px;background:#111e30}.progress-top{display:flex;justify-content:space-between;align-items:end;margin:8px 0}.progress-top b{font-size:24px}.progress-top span{color:var(--dim);font-size:11px}.progress-track{height:7px;border-radius:9px;background:#29394b;overflow:hidden}.progress-track div{height:100%;background:linear-gradient(90deg,#4d93e0,var(--mint));width:0;transition:width .25s}
+.lessons{display:grid;gap:6px}.lesson-btn{display:flex;gap:10px;align-items:center;width:100%;padding:11px 9px;border:1px solid transparent;border-radius:11px;text-align:left;background:transparent;color:#acbfd3}.lesson-btn:hover{background:#1b2a3f}.lesson-btn.active{color:#ecfffa;background:#173439;border-color:#366d70}.lesson-btn .number{display:grid;place-items:center;flex:none;border:1px solid #33445c;color:#a2bad0;width:30px;height:30px;border-radius:8px;font-size:11px;font-weight:850}.lesson-btn.active .number{background:var(--mint);color:#063429;border-color:var(--mint)}.lesson-btn.done .number{border-color:#348c7e;color:var(--mint)}.lesson-btn strong{font-size:12px;display:block;line-height:1.25}.lesson-btn small{font-size:10px;color:#8ea4bb}
+.sidenav-foot{margin-top:auto;color:#7d91aa;padding:14px 8px;border-top:1px solid var(--edge);font-size:11px}.sidenav-foot b{color:var(--mint)}
+.content{padding:28px clamp(18px,3vw,48px) 60px;max-width:1700px;width:100%;margin:0 auto}.topline{display:flex;justify-content:space-between;gap:12px;align-items:center;color:var(--dim);font-size:12px;margin-bottom:22px}.indicator{border:1px solid var(--edge);border-radius:30px;padding:7px 12px;background:#17243a;white-space:nowrap}.spark{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint);margin-right:6px;vertical-align:middle}
+.hero{display:flex;justify-content:space-between;align-items:end;gap:18px}.eyebrow{color:var(--mint);font-size:11px;font-weight:900;letter-spacing:.15em}.hero h1{font-size:clamp(28px,3.8vw,47px);letter-spacing:-.04em;line-height:1.1;margin:9px 0}.hero p{color:#a6b9ce;font-size:13px;max-width:760px;margin:8px 0 0}.hero-ico{display:grid;place-items:center;flex:none;width:76px;height:76px;border:1px solid #3a665f;border-radius:22px;background:radial-gradient(circle at 25% 25%,#316961,#152439 78%)}
+.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;margin:24px 0}.stat{border-radius:12px;border:1px solid var(--edge);background:var(--panel);padding:13px 16px}.stat small{display:block;color:#8ca2b8;letter-spacing:.1em;font-size:10px;font-weight:800}.stat strong{display:block;font-size:15px;margin-top:5px;overflow-wrap:anywhere}.lit{color:var(--mint)} .off{color:#9fb2c5} .gold{color:var(--gold)} .blue{color:var(--blue)} .violet{color:var(--violet)}
+.dashboard{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,.82fr);gap:15px;align-items:start}.card{background:var(--panel);border:1px solid var(--edge);border-radius:16px;overflow:hidden;min-width:0}.cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 19px 14px}.cardhead b{display:block;font-size:14px}.cardhead small{display:block;color:#92a8bd;font-size:11px;margin-top:3px}.badge{border-radius:30px;padding:5px 9px;background:#173b39;border:1px solid #2d6560;color:var(--mint);font-size:10px;white-space:nowrap;font-weight:850}
+.visual-wrap{padding:0 12px 12px}.encoder-stage{display:grid;grid-template-columns:minmax(310px,460px) minmax(0,1fr);gap:12px;align-items:stretch}.encoder-box,.wave-box{background:#0a1524;border:1px solid #283953;border-radius:12px;position:relative;min-height:360px}.encoder-box{display:grid;place-items:center;padding:8px}.legend{display:flex;gap:17px;flex-wrap:wrap;padding:12px 19px;color:#a4b8cd;font-size:11px;border-top:1px solid var(--edge)}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7487a0;margin-right:5px;vertical-align:middle}.dot.mint{background:var(--mint);box-shadow:0 0 8px var(--mint)}.dot.gold{background:var(--gold)}.dot.blue{background:var(--blue)}.dot.violet{background:var(--violet)}
+.tip{font-size:11px;color:#9ab1c5;border-top:1px solid var(--edge);padding:11px 18px 16px}.tip strong{color:#d5edf7}
+.controls{padding:0 18px 18px}.controlsection{border-top:1px solid #27384e;padding-top:14px;margin-top:12px}.controlsection:first-child{border-top:none;margin-top:0;padding-top:4px}.controlsection h3{font-size:11px;font-weight:900;letter-spacing:.11em;color:#93aac0;margin:3px 0 10px}.buttons{display:grid;gap:7px}.buttons.cols2{grid-template-columns:repeat(2,minmax(0,1fr))}.buttons.cols3{grid-template-columns:repeat(3,minmax(0,1fr))}.buttons.cols4{grid-template-columns:repeat(4,minmax(0,1fr))}.btn{padding:11px 12px;background:#1b2e44;border:1px solid #3c526c;border-radius:9px;color:#e2ecf6;font-size:12px;font-weight:750;min-height:43px}.btn:hover{border-color:#4ca695}.btn.active{border-color:#5ee0c2;color:#a6ffe8;background:#1a403b}.btn.primary{background:#1d5548;border-color:#49c2a8;color:#e6fff7}.btn.danger{border-color:#9a5867;color:#ffd2dc;background:#3a2736}
+.slider-wrap{display:grid;gap:7px}.slider-wrap label{font-size:12px;color:#bdd1e4}.slider-wrap input{width:100%}.monitor{display:grid;gap:0}.watch{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #273950;padding:11px 0;gap:9px}.watch:first-child{border-top:0}.watch strong{font-size:12px}.watch small{display:block;color:#87a1b7;font-size:10px}.read{font:800 13px/1.5 Consolas,"Courier New",monospace;color:var(--mint);text-align:right}.read.off{color:#92a4b8}.read.gold{color:var(--gold)}.led{display:inline-block;border-radius:50%;height:12px;width:12px;background:#344357;border:1px solid #526680;margin-right:7px;vertical-align:middle}.led.on{background:var(--mint);border-color:var(--mint);box-shadow:0 0 11px #55e7c69e}.led.gold{background:var(--gold);border-color:var(--gold);box-shadow:0 0 10px #ffd07890}.led.blue{background:var(--blue);border-color:var(--blue);box-shadow:0 0 10px #85b8ff90}
+.info{border-radius:10px;border:1px solid #42636b;background:#152e3a;color:#bce5e7;padding:11px;font-size:12px;margin-top:12px;line-height:1.55}.info.alert{border-color:#895c52;background:#342832;color:#ffcfbc}.info.good{border-color:#34806f;background:#18352f;color:#b9f7df}
+.extra{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.78fr);gap:15px;margin-top:16px}.explanation,.quiz{padding:21px}.explanation h2,.quiz h2{font-size:16px;margin:0 0 9px}.explanation p{font-size:13px;color:#b0c3d6;line-height:1.7;margin:0 0 12px}.explanation ol{font-size:12px;line-height:1.7;color:#bfd2e4;padding-left:19px;margin:0}.explanation li{margin:5px 0}.quiz p{font-size:13px;color:#c2d5e6;margin:9px 0 11px}.choice{display:block;text-align:left;padding:10px 12px;width:100%;background:#15253a;border:1px solid #344c65;border-radius:9px;color:#bfd1e4;margin-bottom:7px;font-size:12px}.choice:hover{border-color:#53bcaa}.choice.correct{border-color:#53c3a5;color:#b7ffec;background:#1a3a34}.choice.wrong{border-color:#e0828d;color:#ffd5dc;background:#462c3a}.feedback{min-height:20px;color:var(--mint);font-size:12px;line-height:1.5;margin-top:8px}
+.pagination{display:flex;justify-content:space-between;gap:12px;margin-top:16px}.pagination button{border:1px solid #4a637b;border-radius:10px;background:#1a2a3d;color:#d6e6f5;padding:11px 18px;font-weight:850}.pagination button.next{background:var(--mint);border-color:var(--mint);color:#063328}.pagination button:disabled{opacity:.35;cursor:default}.credits{color:#7c91a7;font-size:11px;margin:20px 1px}
+svg text{font-family:Inter,"Segoe UI",Arial,sans-serif}.small{font-size:12px;fill:#96acc2}.norm{font-size:14px;fill:#dce7f3}.title{font-size:16px;font-weight:800;fill:#e9f3fb}.axis{stroke:#3d536c;stroke-width:1}.trace-a{stroke:#55e7c6;stroke-width:3;fill:none}.trace-b{stroke:#85b8ff;stroke-width:3;fill:none}.trace-z{stroke:#ffd078;stroke-width:3;fill:none}.sample{stroke:#283953;stroke-width:1}.trackbg{fill:#101c2e;stroke:#2a3b53;stroke-width:1}.marklbl{fill:#91a8bf;font-size:11px}.encoder-line{stroke:#35516c;stroke-width:2}.sig-box{fill:#101d2c;stroke:#304258;stroke-width:1.5}.sig-box.activeA{fill:#133d35;stroke:#55e7c6}.sig-box.activeB{fill:#183151;stroke:#85b8ff}.sig-box.activeZ{fill:#453520;stroke:#ffd078}.overlay-angle{position:absolute;left:10px;top:10px;padding:8px 10px;background:#0f1d2c;border:1px solid #294056;border-radius:9px;color:#aaccdf;font:700 12px/1.4 Consolas,monospace}
+#encoderSvg{width:100%;height:100%;display:block} #waveSvg{width:100%;height:100%;display:block}
+.diagram-expanded{position:fixed !important; inset:14px; z-index:50}.diagram-expanded .encoder-stage{grid-template-columns:minmax(360px,520px) minmax(0,1fr)} body.diagram-open{overflow:hidden}
+@media(max-width:1120px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard,.extra,.encoder-stage{grid-template-columns:1fr}.encoder-box,.wave-box{min-height:320px}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.side{position:static;height:auto}.summary{grid-template-columns:1fr}.content{padding-top:18px}.hero{flex-direction:column;align-items:start}.topline{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="mark">⇥</div><div><b>PLC LAB</b><small>MODULUL 03 · ENCODERE</small></div></div>
+    <div class="progress-card">
+      <div class="label">PROGRES CURS</div>
+      <div class="progress-top"><b id="progressPct">0%</b><span id="progressLabel">0 / 6 lecții</span></div>
+      <div class="progress-track"><div id="progressBar"></div></div>
+    </div>
+    <div>
+      <div class="label" style="margin-bottom:8px">LECȚII</div>
+      <div class="lessons" id="lessonNav"></div>
+    </div>
+    <div class="sidenav-foot"><b>Scop:</b> să vezi direct cum arată impulsurile A/B/Z, cum se determină sensul și cum ajunge encoderul în numărătorul PLC.</div>
+  </aside>
+  <main class="content">
+    <div class="topline"><span><span class="spark"></span>Simulator web interactiv · rulează local în browser</span><span class="indicator" id="lessonBadge">LECȚIA 01 / 06</span></div>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">ENCODERE · POZIȚIE · DIRECȚIE</div>
+        <h1 id="lessonTitle">Encodere incrementale</h1>
+        <p id="lessonSubtitle">Vizualizează canalele A și B în cuadratură, impulsul Z și efectul lor asupra numărării în PLC.</p>
+      </div>
+      <div class="hero-ico">
+        <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><circle cx="32" cy="32" r="18" fill="none" stroke="#55e7c6" stroke-width="4"></circle><path d="M32 10v10M32 44v10M10 32h10M44 32h10" stroke="#85b8ff" stroke-width="4" stroke-linecap="round"></path><circle cx="32" cy="32" r="4" fill="#ffd078"></circle></svg>
+      </div>
+    </section>
+    <section class="summary">
+      <div class="stat"><small>CANAL A</small><strong id="statA">0</strong></div>
+      <div class="stat"><small>CANAL B</small><strong id="statB">0</strong></div>
+      <div class="stat"><small>INDEX Z</small><strong id="statZ">0</strong></div>
+      <div class="stat"><small>DIRECȚIE</small><strong id="statDir">STOP</strong></div>
+      <div class="stat"><small>NUMĂRĂTOR</small><strong id="statCount">0</strong></div>
+    </section>
+    <section class="dashboard">
+      <article class="card" id="schemeCard">
+        <div class="cardhead">
+          <div><b>Encoder + analizor logic</b><small id="schemaCaption">Vizualizare mecanică și logică</small></div>
+          <div style="display:flex;gap:8px;align-items:center"><button class="btn" id="expandDiagram">⛶ Mărește schema</button><span class="badge" id="schemabadge">READY</span></div>
+        </div>
+        <div class="visual-wrap">
+          <div class="encoder-stage">
+            <div class="encoder-box">
+              <div class="overlay-angle" id="angleLabel">θ = 0°</div>
+              <svg id="encoderSvg" viewBox="0 0 420 380" role="img" aria-label="Vizualizare encoder"></svg>
+            </div>
+            <div class="wave-box">
+              <svg id="waveSvg" viewBox="0 0 720 380" role="img" aria-label="Analizor logic pentru A B Z"></svg>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><span class="dot mint"></span>Canal A</span>
+          <span><span class="dot blue"></span>Canal B</span>
+          <span><span class="dot gold"></span>Index Z</span>
+          <span><span class="dot"></span>0 logic</span>
+        </div>
+        <div class="tip" id="diagramTip"><strong>Interacțiune:</strong> rotește encoderul manual sau pornește animația ca să vezi forma de undă.</div>
+      </article>
+      <aside class="card">
+        <div class="cardhead"><div><b>Comenzi și monitorizare</b><small>Mișcare, viteză, mod de decodare și valori în timp real</small></div></div>
+        <div class="controls" id="controlMount"></div>
+      </aside>
+    </section>
+    <section class="extra">
+      <article class="card explanation"><div class="eyebrow">CONCEPT + EXPERIMENT</div><h2 id="explanationTitle">Ce observi</h2><div id="explanation"></div></article>
+      <article class="card quiz"><div class="eyebrow">VERIFICARE RAPIDĂ</div><h2>Întrebare</h2><p id="question"></p><div id="answers"></div><div class="feedback" id="quizFeedback"></div></article>
+    </section>
+    <div class="pagination"><button id="prev">← Lecția anterioară</button><button class="next" id="next">Lecția următoare →</button></div>
+    <div class="credits">PLC LAB · Modul educațional. Simularea este orientativă și nu înlocuiește manualele tehnice ale encoderelor și PLC-urilor reale.</div>
+  </main>
+</div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const lessons=[
+  {nav:'Pulsuri de bază',title:'1. Encoder incremental: impulsuri și poziție',sub:'Fiecare rotație produce un anumit număr de impulsuri; PLC-ul le poate număra.',tag:'Un singur impuls = un pas de poziție',intro:'Un encoder incremental produce impulsuri electrice pe măsură ce arborele se rotește. Dacă știm câte impulsuri apar pe o rotație, putem estima poziția și deplasarea.',steps:['Apasă „+ pas” și „− pas” pentru a vedea cum se schimbă semnalele.','Observă contorul PLC și unghiul mecanic al discului.','Resetează contorul și repetă experimentul.'],question:'Ce reprezintă numărul de impulsuri per rotație (PPR)?',answers:['Tensiunea maximă a encoderului','Numărul de impulsuri generate într-o rotație completă','Numărul de ieșiri digitale ale PLC-ului'],correct:1,explain:'Corect. PPR = pulses per revolution, adică rezoluția de bază a encoderului incremental.'},
+  {nav:'A și B în cuadratură',title:'2. Canalele A și B la 90° electric',sub:'Două semnale decalate permit determinarea sensului de rotație.',tag:'Cuadratură A/B',intro:'Canalele A și B nu comută simultan; ele sunt defazate. Ordinea fronturilor indică sensul de rotație: în mers direct A o ia înaintea lui B, iar în sens invers B conduce.',steps:['Pornește animația și schimbă direcția CW / CCW.','Compară ordinea fronturilor A și B pe analizorul logic.','Urmărește indicatorul „Direcție” în partea dreaptă.'],question:'Cum recunoaște PLC-ul sensul de rotație?',answers:['După amplitudinea impulsurilor','După ordinea fronturilor dintre A și B','După impulsul Z'],correct:1,explain:'Corect. Direcția se determină din relația de fază A/B.'},
+  {nav:'Impulsul Z',title:'3. Canalul Z (index)',sub:'Un impuls scurt pe rotație oferă o referință absolută de ciclu.',tag:'Impuls de index',intro:'Canalul Z se activează o singură dată pe rotație. Este util pentru homing, referință și sincronizarea unei poziții mecanice cunoscute.',steps:['Rotește encoderul până când apare impulsul Z.','Observă că A și B continuă să pulseze, dar Z apare doar o dată pe cerc.','Folosește „Mergi la index” pentru a simula căutarea referinței.'],question:'Care este rolul tipic al canalului Z?',answers:['Măsoară curentul motorului','Oferă un impuls de referință o dată pe rotație','Înlocuiește canalele A și B'],correct:1,explain:'Exact. Z este canalul de index / referință.'},
+  {nav:'Direcție și viteză',title:'4. Direcție și viteză de rotație',sub:'Frecvența impulsurilor crește cu viteza, iar ordinea A/B indică sensul.',tag:'Viteză și frecvență',intro:'Cu cât encoderul se rotește mai repede, cu atât impulsurile apar mai des. PLC-ul poate calcula viteza măsurând frecvența sau numărul de impulsuri într-un interval.',steps:['Mută glisorul de viteză și pornește animația.','Compară densitatea impulsurilor în fereastra de timp.','Schimbă sensul și observă cum se inversează relația de fază.'],question:'Ce se întâmplă cu frecvența impulsurilor când viteza crește?',answers:['Scade','Rămâne aceeași','Crește'],correct:2,explain:'Corect. Viteză mai mare = impulsuri mai dese.'},
+  {nav:'Decodare x1 x2 x4',title:'5. Numărare x1, x2 și x4',sub:'Aceleași două canale pot oferi rezoluție mai mare dacă se numără mai multe fronturi.',tag:'Rezoluție logică',intro:'Un modul rapid de PLC poate număra doar fronturile pozitive ale lui A (x1), fronturile lui A și B (x2) sau toate tranzițiile ambelor canale (x4). Astfel crește rezoluția de poziție.',steps:['Schimbă modul între x1, x2 și x4.','Rotește exact o rotație și compară valoarea contorului.','Observă cum crește rezoluția logică fără a schimba encoderul fizic.'],question:'Care mod oferă cea mai mare rezoluție logică?',answers:['x1','x2','x4'],correct:2,explain:'Da. x4 folosește toate fronturile A și B și oferă cea mai mare rezoluție.'},
+  {nav:'Homing și aplicații',title:'6. Homing, poziționare și aplicații în PLC',sub:'Encoderul este util pentru lungime, poziție, turație și revenire la zero.',tag:'Aplicații practice',intro:'Într-un sistem real, PLC-ul folosește encoderul pentru poziționare, măsurarea vitezei sau lungimii pe un transportor. Procedura de homing caută impulsul Z și setează o referință sigură.',steps:['Apasă „Homing la Z”.','Urmărește contorul până când apare indexul și poziția se resetează la referință.','Gândește-te cum ai folosi aceleași semnale pentru un transportor sau un ax.'],question:'De ce este utilă procedura de homing?',answers:['Pentru a obține o referință mecanică repetabilă','Pentru a mări tensiunea de alimentare','Pentru a elimina canalele A și B'],correct:0,explain:'Corect. Homing-ul fixează o poziție de referință cunoscută și repetabilă.'}
+];
+const state={lesson:0,done:loadProgress(),quadratureIndex:0,count:0,angleDeg:0,direction:'stop',playing:false,speed:4,mode:'x4',ppr:16,samples:[],sampleCap:64,homing:false,lastEdgeIndex:0};
+function loadProgress(){try{return JSON.parse(localStorage.getItem('plclab_mod3_progress_v1')||'[]')}catch(e){return []}}
+function saveProgress(){try{localStorage.setItem('plclab_mod3_progress_v1',JSON.stringify(state.done))}catch(e){}}
+function esc(s){return (''+s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function getSignals(idx=state.quadratureIndex){const q=((idx%4)+4)%4; const A=[0,1,1,0][q], B=[0,0,1,1][q]; const rotSteps=state.ppr*4; const normalized=((idx%rotSteps)+rotSteps)%rotSteps; const Z=normalized===0?1:0; return {A,B,Z};}
+function pushSample(mark=''){const s=getSignals(); state.samples.push({A:s.A,B:s.B,Z:s.Z,mark,dir:state.direction,count:state.count}); if(state.samples.length>state.sampleCap) state.samples.shift();}
+for(let i=0;i<40;i++) pushSample();
+function countIncrement(prev,next){
+  if(state.mode==='x1') return (prev.A===0 && next.A===1)?1:0;
+  if(state.mode==='x2') return ((prev.A!==next.A)||(prev.B!==next.B))?0.5:0;
+  return (prev.A!==next.A || prev.B!==next.B)?1:0;
+}
+function step(dir, n=1, opts={}){
+  for(let k=0;k<n;k++){
+    const prev=getSignals(state.quadratureIndex);
+    if(dir==='cw'){state.quadratureIndex++; state.direction='CW';}
+    else if(dir==='ccw'){state.quadratureIndex--; state.direction='CCW';}
+    const next=getSignals(state.quadratureIndex);
+    const inc=countIncrement(prev,next);
+    state.count += (dir==='cw'?inc:-inc);
+    const totalSteps=state.ppr*4;
+    const norm=((state.quadratureIndex%totalSteps)+totalSteps)%totalSteps;
+    state.angleDeg = norm/totalSteps*360;
+    if(next.Z) state.lastEdgeIndex = 0;
+    pushSample(opts.mark||'');
+    if(state.homing && next.Z){ state.count=0; state.homing=false; pushSample('HOME'); }
+  }
+  render();
+}
+function reset(){state.quadratureIndex=0; state.count=0; state.angleDeg=0; state.direction='STOP'; state.homing=false; state.samples=[]; for(let i=0;i<40;i++) pushSample(); render();}
+function getInfo(){ const s=getSignals(); const rpm=(state.playing?state.speed*12.5:0); const countsPerRev = state.mode==='x1'?state.ppr:state.mode==='x2'?state.ppr*2:state.ppr*4; let msg='Rotește encoderul și urmărește simultan discul, canalele A/B/Z și contorul PLC.'; if(state.lesson===1) msg='Compară ordinea fronturilor A și B: cel care conduce indică sensul.'; if(state.lesson===2) msg=s.Z?'A apărut impulsul de index Z — punctul de referință al rotației.':'Continuă rotația până când apare impulsul Z.'; if(state.lesson===3) msg='Crește viteza și observă că impulsurile devin mai dese în aceeași fereastră de timp.'; if(state.lesson===4) msg=`Modul ${state.mode} schimbă rezoluția logică: ${countsPerRev} counts/rev.`; if(state.lesson===5) msg=state.homing?'PLC caută indexul Z pentru a stabili referința...':'Apasă „Homing la Z” pentru a simula căutarea referinței.'; return {...s,rpm,countsPerRev,msg}; }
+function lessonSetup(){
+  if(state.lesson===0){state.mode='x1';state.playing=false;state.speed=4;}
+  if(state.lesson===1){state.mode='x4';state.playing=false;}
+  if(state.lesson===2){state.playing=false;}
+  if(state.lesson===3){state.playing=true;}
+  if(state.lesson===4){state.playing=false; state.mode='x1';}
+  if(state.lesson===5){state.playing=false; state.mode='x4';}
+}
+function drawEncoder(){
+  const svg=$('encoderSvg'); const s=getInfo(); const totalSlots=state.ppr; const angle=state.angleDeg; const sensorA=310, sensorB=280, sensorZ=340;
+  let wedges='';
+  for(let i=0;i<totalSlots;i++){
+    const a0=(i/totalSlots)*Math.PI*2 + angle*Math.PI/180; const a1=((i+0.5)/totalSlots)*Math.PI*2 + angle*Math.PI/180;
+    const x0=210+110*Math.cos(a0), y0=190+110*Math.sin(a0), x1=210+145*Math.cos(a1), y1=190+145*Math.sin(a1);
+    wedges += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="#29425d" stroke-width="6" stroke-linecap="round" opacity=".9"/>`;
+  }
+  const arrowAngle = (angle-90)*Math.PI/180; const ax=210+82*Math.cos(arrowAngle), ay=190+82*Math.sin(arrowAngle);
+  svg.innerHTML = `
+    <rect x="10" y="10" width="400" height="360" rx="16" fill="#0a1524"/>
+    <text x="24" y="35" class="title">Vizualizare mecanică</text>
+    <text x="24" y="54" class="small">Disc incremental · ${state.ppr} PPR · ${getInfo().countsPerRev} counts/rev în modul ${state.mode}</text>
+    <circle cx="210" cy="190" r="145" fill="#0f2234" stroke="#38526c" stroke-width="3"/>
+    <circle cx="210" cy="190" r="110" fill="#13263a" stroke="#32485f" stroke-width="2"/>
+    ${wedges}
+    <line x1="210" y1="190" x2="${ax.toFixed(1)}" y2="${ay.toFixed(1)}" stroke="#ffd078" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="210" cy="190" r="10" fill="#ffd078"/>
+    <rect x="318" y="122" width="56" height="22" rx="8" class="sig-box ${s.A?'activeA':''}"/>
+    <rect x="318" y="178" width="56" height="22" rx="8" class="sig-box ${s.B?'activeB':''}"/>
+    <rect x="318" y="234" width="56" height="22" rx="8" class="sig-box ${s.Z?'activeZ':''}"/>
+    <text x="337" y="137" class="title" style="font-size:14px">A=${s.A}</text>
+    <text x="337" y="193" class="title" style="font-size:14px">B=${s.B}</text>
+    <text x="337" y="249" class="title" style="font-size:14px">Z=${s.Z}</text>
+    <line x1="302" y1="133" x2="282" y2="133" class="encoder-line"/>
+    <line x1="302" y1="189" x2="282" y2="189" class="encoder-line"/>
+    <line x1="302" y1="245" x2="282" y2="245" class="encoder-line"/>
+    <line x1="282" y1="133" x2="251" y2="133" class="encoder-line"/>
+    <line x1="282" y1="189" x2="247" y2="189" class="encoder-line"/>
+    <line x1="282" y1="245" x2="257" y2="245" class="encoder-line"/>
+    <circle cx="246" cy="133" r="5" fill="#55e7c6"/>
+    <circle cx="242" cy="189" r="5" fill="#85b8ff"/>
+    <circle cx="252" cy="245" r="5" fill="#ffd078"/>
+    <text x="24" y="306" class="norm">PLC High Speed Counter</text>
+    <rect x="24" y="318" width="122" height="34" rx="9" fill="#101d2c" stroke="#2c4358"/>
+    <text x="35" y="339" class="norm">CV = ${String(Math.round(state.count*100)/100)}</text>
+    <text x="166" y="92" class="small">Disc</text>
+    <text x="278" y="115" class="small">Senzori optici / magnetici</text>
+  `;
+  $('angleLabel').textContent=`θ = ${state.angleDeg.toFixed(1)}°`;
+}
+function pathForSamples(key, highY, lowY){ const left=72, top=58, width=620, step=width/Math.max(1,state.samples.length-1); let d=''; state.samples.forEach((sm,i)=>{ const x=left+i*step; const y=sm[key]?highY:lowY; if(i===0){ d=`M ${x} ${y}`; } else { const py=state.samples[i-1][key]?highY:lowY; d += ` L ${x} ${py} L ${x} ${y}`; } }); return d; }
+function drawWave(){ const svg=$('waveSvg'); const left=72, width=620; const rows={A:[95,135],B:[190,230],Z:[285,325]}; const s=getInfo(); let grid=''; for(let i=0;i<=state.samples.length-1;i++){ const x=left+i*(width/Math.max(1,state.samples.length-1)); grid+=`<line x1="${x.toFixed(1)}" y1="44" x2="${x.toFixed(1)}" y2="336" class="sample"/>`; }
+  let marks=''; state.samples.forEach((sm,i)=>{ if(sm.mark){ const x=left+i*(width/Math.max(1,state.samples.length-1)); marks += `<line x1="${x.toFixed(1)}" y1="44" x2="${x.toFixed(1)}" y2="336" stroke="#ffd078" stroke-dasharray="4 4"/><text x="${(x+4).toFixed(1)}" y="52" class="marklbl">${esc(sm.mark)}</text>`; } });
+  svg.innerHTML=`
+    <rect x="10" y="10" width="700" height="360" rx="16" fill="#0a1524"/>
+    <text x="24" y="35" class="title">Analizor logic A / B / Z</text>
+    <text x="24" y="54" class="small">Fereastră recentă de timp · sens curent ${esc(state.direction)} · ${s.rpm?('~'+s.rpm.toFixed(0)+' rpm'):'manual'}</text>
+    <rect x="72" y="60" width="620" height="272" class="trackbg" rx="10"/>
+    ${grid}${marks}
+    <line x1="72" y1="115" x2="692" y2="115" class="axis"/><line x1="72" y1="210" x2="692" y2="210" class="axis"/><line x1="72" y1="305" x2="692" y2="305" class="axis"/>
+    <text x="26" y="98" class="norm">A</text><text x="40" y="82" class="small">1</text><text x="40" y="136" class="small">0</text>
+    <text x="26" y="193" class="norm">B</text><text x="40" y="177" class="small">1</text><text x="40" y="231" class="small">0</text>
+    <text x="26" y="288" class="norm">Z</text><text x="40" y="272" class="small">1</text><text x="40" y="326" class="small">0</text>
+    <path d="${pathForSamples('A',rows.A[0],rows.A[1])}" class="trace-a"/>
+    <path d="${pathForSamples('B',rows.B[0],rows.B[1])}" class="trace-b"/>
+    <path d="${pathForSamples('Z',rows.Z[0],rows.Z[1])}" class="trace-z"/>
+    <text x="568" y="350" class="small">t →</text>
+  `;
+}
+function watch(title, sub, on, val, cls=''){return `<div class="watch"><div><strong><span class="led ${on?'on':''} ${cls}"></span>${title}</strong><small>${sub}</small></div><div class="read ${on?'': 'off'} ${cls}">${val}</div></div>`}
+function controls(){ const s=getInfo(); let h='';
+  h += `<div class="controlsection"><h3>MIȘCARE ENCODER</h3><div class="buttons cols2">
+    <button class="btn" data-act="stepccw">− pas</button><button class="btn primary" data-act="stepcw">+ pas</button>
+    <button class="btn" data-act="turnccw">⟲ 1 rotație</button><button class="btn" data-act="turncw">⟳ 1 rotație</button>
+  </div><div class="buttons cols3" style="margin-top:10px"><button class="btn ${state.playing?'active':''}" data-act="toggleplay">${state.playing?'Pauză':'Start animație'}</button><button class="btn" data-act="dircw">Sens CW</button><button class="btn" data-act="dirccw">Sens CCW</button></div></div>`;
+  h += `<div class="controlsection"><h3>PARAMETRI</h3><div class="slider-wrap"><label>Viteză simulată: <b>${state.speed}</b> pași / cadru</label><input type="range" min="1" max="12" value="${state.speed}" data-slider="speed"></div><div class="buttons cols4" style="margin-top:10px">
+    <button class="btn ${state.mode==='x1'?'active':''}" data-act="mode:x1">x1</button><button class="btn ${state.mode==='x2'?'active':''}" data-act="mode:x2">x2</button><button class="btn ${state.mode==='x4'?'active':''}" data-act="mode:x4">x4</button><button class="btn" data-act="reset">Reset</button></div></div>`;
+  if(state.lesson>=2) h += `<div class="controlsection"><h3>FUNCȚII SPECIALE</h3><div class="buttons cols2"><button class="btn" data-act="gotoz">Mergi la index</button><button class="btn" data-act="home">Homing la Z</button></div></div>`;
+  h += `<div class="controlsection"><h3>MONITORIZARE ONLINE</h3><div class="monitor">`+
+    watch('Canal A','Intrare rapidă PLC',!!s.A,String(s.A))+
+    watch('Canal B','Intrare rapidă PLC',!!s.B,String(s.B),'blue')+
+    watch('Canal Z','Referință de rotație',!!s.Z,String(s.Z),'gold')+
+    watch('Direcție','Determinată din faza A/B',state.direction!=='STOP',state.direction||'STOP')+
+    watch('Viteză','estimare didactică',state.playing,`${s.rpm.toFixed(0)} rpm`) +
+    watch('Counter Value','Numărător rapid',Math.abs(state.count)>0,`${Math.round(state.count*100)/100}`)+
+    watch('Rezoluție logică','Counts per rev',true,`${s.countsPerRev} c/rev`)+
+    `</div><div class="info ${(state.homing?'alert':'good')}" role="status">${esc(s.msg)}</div></div>`;
+  $('controlMount').innerHTML=h;
+}
+function top(){ const s=getInfo(), lesson=lessons[state.lesson]; $('lessonBadge').textContent=`LECȚIA ${String(state.lesson+1).padStart(2,'0')} / 06`; $('lessonTitle').textContent=lesson.title; $('lessonSubtitle').textContent=lesson.sub; $('schemaCaption').textContent=lesson.tag; $('statA').textContent=s.A; $('statA').className=s.A?'lit':'off'; $('statB').textContent=s.B; $('statB').className=s.B?'blue':'off'; $('statZ').textContent=s.Z; $('statZ').className=s.Z?'gold':'off'; $('statDir').textContent=state.direction||'STOP'; $('statDir').className=state.direction==='CW'?'lit':state.direction==='CCW'?'blue':'off'; $('statCount').textContent=(Math.round(state.count*100)/100); $('statCount').className=Math.abs(state.count)>0?'violet':'off'; $('schemabadge').textContent=state.playing?'RUN':'MANUAL'; $('diagramTip').innerHTML=`<strong>Interacțiune:</strong> folosește „+ pas” sau „− pas” pentru avans manual. În modul automat, poți observa direct ordinea fronturilor A/B și impulsul Z.`; }
+function lessonText(){ const l=lessons[state.lesson]; $('explanationTitle').textContent=l.title; $('explanation').innerHTML=`<p>${esc(l.intro)}</p><ol>${l.steps.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>`; $('question').textContent=l.question; $('answers').innerHTML=l.answers.map((x,i)=>`<button type="button" class="choice ${state.feedback===i?(i===l.correct?'correct':'wrong'):''}" data-answer="${i}">${String.fromCharCode(65+i)}. ${esc(x)}</button>`).join(''); $('quizFeedback').textContent=state.feedback===null?'':state.feedback===l.correct?l.explain:'Nu încă. Reia observația și încearcă din nou.'; $('prev').disabled=state.lesson===0; $('next').textContent=state.lesson===lessons.length-1?'Reia modulul ↺':'Lecția următoare →'; $('lessonNav').innerHTML=lessons.map((ls,i)=>`<button type="button" class="lesson-btn ${state.lesson===i?'active':''} ${state.done.includes(i)?'done':''}" data-lesson="${i}"><span class="number">${state.done.includes(i)?'✓':String(i+1).padStart(2,'0')}</span><span><strong>${esc(ls.nav)}</strong><small>LECȚIA ${String(i+1).padStart(2,'0')}</small></span></button>`).join(''); const pct=Math.round(state.done.length/lessons.length*100); $('progressPct').textContent=pct+'%'; $('progressLabel').textContent=`${state.done.length} / 6 lecții`; $('progressBar').style.width=pct+'%'; }
+function render(){ top(); drawEncoder(); drawWave(); controls(); }
+function showLesson(i){ state.lesson=Math.max(0,Math.min(lessons.length-1,i)); state.feedback=null; lessonSetup(); lessonText(); render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function stepToIndex(){ const total=state.ppr*4; const norm=((state.quadratureIndex%total)+total)%total; const steps=(total-norm)%total; if(steps===0){pushSample('Z'); render(); return;} step('cw',steps,{mark:'Z'}); }
+function tick(){ if(state.playing){ const dir=state.direction==='CCW'?'ccw':'cw'; step(dir,state.speed); } requestAnimationFrame(tick); }
+function act(action){ if(action==='stepcw') return step('cw',1); if(action==='stepccw') return step('ccw',1); if(action==='turncw') return step('cw',state.ppr*4); if(action==='turnccw') return step('ccw',state.ppr*4); if(action==='toggleplay'){ state.playing=!state.playing; if(state.direction==='STOP') state.direction='CW'; return render(); } if(action==='dircw'){ state.direction='CW'; return render(); } if(action==='dirccw'){ state.direction='CCW'; return render(); } if(action==='reset') return reset(); if(action.startsWith('mode:')){ state.mode=action.split(':')[1]; return render(); } if(action==='gotoz') return stepToIndex(); if(action==='home'){ state.homing=true; if(!state.playing){ state.direction='CW'; state.playing=true; } return render(); } }
+ document.addEventListener('click',e=>{ const btn=e.target.closest('[data-lesson],[data-answer],[data-act]'); if(btn){ if(btn.hasAttribute('data-lesson')) return showLesson(Number(btn.dataset.lesson)); if(btn.hasAttribute('data-answer')){ state.feedback=Number(btn.dataset.answer); if(state.feedback===lessons[state.lesson].correct && !state.done.includes(state.lesson)){ state.done.push(state.lesson); saveProgress(); } lessonText(); return; } if(btn.hasAttribute('data-act')) return act(btn.dataset.act); } if(e.target.closest('#next')) return showLesson(state.lesson===lessons.length-1?0:state.lesson+1); if(e.target.closest('#prev')) return showLesson(state.lesson-1); if(e.target.closest('#expandDiagram')){ const open=!$('schemeCard').classList.contains('diagram-expanded'); $('schemeCard').classList.toggle('diagram-expanded',open); $('expandDiagram').textContent=open?'✕ Închide schema mărită':'⛶ Mărește schema'; document.body.classList.toggle('diagram-open',open); }});
+ document.addEventListener('input',e=>{ if(e.target.matches('[data-slider="speed"]')){ state.speed=Number(e.target.value); render(); } });
+ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('schemeCard').classList.contains('diagram-expanded')){ $('schemeCard').classList.remove('diagram-expanded'); $('expandDiagram').textContent='⛶ Mărește schema'; document.body.classList.remove('diagram-open'); } });
+ showLesson(0); tick();
+})();
+</script>
+</body>
+</html>

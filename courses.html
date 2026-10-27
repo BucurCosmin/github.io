@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="ro">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Explore available technical courses from Cosmin Bucur."
+      content="Explorează cursurile tehnice disponibile de la Cosmin Bucur."
     >
-    <title>Courses | Cosmin Bucur</title>
+    <title>Cursuri | Cosmin Bucur</title>
     <style>
       :root {
         color-scheme: light;
@@ -162,6 +162,18 @@
         font-weight: 800;
       }
 
+      .course-link {
+        color: inherit;
+        text-decoration-color: var(--primary);
+        text-decoration-thickness: 2px;
+        text-underline-offset: 0.2em;
+      }
+
+      .course-link:hover,
+      .course-link:focus-visible {
+        color: var(--primary);
+      }
+
       tbody tr:last-child td {
         border-bottom: 0;
       }
@@ -195,44 +207,48 @@
   <body>
     <header class="taskbar">
       <a class="brand" href="index.html">Cosmin<span class="brand-mark">.</span></a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="index.html">Home</a>
-        <a class="courses-link" href="courses.html" aria-current="page">Courses</a>
+      <nav class="nav-links" aria-label="Navigare principală">
+        <a href="index.html">Acasă</a>
+        <a class="courses-link" href="courses.html" aria-current="page">Cursuri</a>
       </nav>
     </header>
     <main>
-      <p class="eyebrow">Courses</p>
-      <h1>Build practical technical skills.</h1>
+      <p class="eyebrow">Cursuri</p>
+      <h1>Dezvoltă competențe tehnice practice.</h1>
       <p class="intro">
-        Explore courses designed to strengthen your understanding of industrial
-        systems, machinery, and automotive technology.
+        Explorează cursuri create pentru a-ți consolida înțelegerea sistemelor
+        industriale, a utilajelor și a tehnologiei auto.
       </p>
 
       <div class="table-card">
         <table>
-          <caption>Available courses</caption>
+          <caption>Cursuri disponibile</caption>
           <thead>
             <tr>
-              <th scope="col">Course</th>
-              <th scope="col">Focus</th>
-              <th scope="col">Level</th>
+              <th scope="col">Curs</th>
+              <th scope="col">Tematică</th>
+              <th scope="col">Nivel</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>PLC Introduction</td>
-              <td>Fundamentals of programmable logic controllers and automation.</td>
-              <td><span class="level">Beginner</span></td>
+              <td>
+                <a class="course-link" href="PLC/PLC_LAB_Curs_Modul_01_07/PLC_LAB_Curs_Modul_01_07/index.html">
+                  Introducere în PLC
+                </a>
+              </td>
+              <td>Noțiuni de bază despre automatizare și controlere logice programabile.</td>
+              <td><span class="level">Începător</span></td>
             </tr>
             <tr>
-              <td>Power Transmission</td>
-              <td>Core concepts of mechanical power transfer and drive systems.</td>
-              <td><span class="level">Intermediate</span></td>
+              <td>Transmisia puterii</td>
+              <td>Concepte esențiale despre transmiterea mecanică a puterii și sisteme de acționare.</td>
+              <td><span class="level">Intermediar</span></td>
             </tr>
             <tr>
-              <td>Automotive Systems</td>
-              <td>An overview of vehicle systems, components, and their operation.</td>
-              <td><span class="level">Intermediate</span></td>
+              <td>Sisteme auto</td>
+              <td>O prezentare a sistemelor vehiculului, a componentelor și a funcționării lor.</td>
+              <td><span class="level">Intermediar</span></td>
             </tr>
           </tbody>
         </table>
