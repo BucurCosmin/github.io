@@ -1,0 +1,643 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Joule-Lenz și Kirchhoff</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: o coloană de lectură (teorie, ~68ch) urmată de un „banc de laborator” lat: schemă pe hârtie milimetrică + panou de rezolvare. */
+:root{
+  --paper:#f5f7f8; --sheet:#ffffff; --ink:#14223a; --ink-2:#4b5a70; --rule:#d3dbe4;
+  --grid:rgba(31,79,168,.07); --grid-major:rgba(31,79,168,.14);
+  --accent:#1f4fa8; --accent-soft:rgba(31,79,168,.10);
+  --heat:#d9480f; --heat-soft:rgba(217,72,15,.12);
+  --ok:#2c7a4b; --warn:#a8650f; --bad:#b4232c;
+  --f-display:"Archivo",system-ui,sans-serif;
+  --f-body:"Source Serif 4",Georgia,serif;
+  --f-math:"STIX Two Text","Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f141b; --sheet:#151c26; --ink:#e3e9f1; --ink-2:#9aa8bb; --rule:#2a3546;
+  --grid:rgba(127,166,255,.06); --grid-major:rgba(127,166,255,.12);
+  --accent:#86aaff; --accent-soft:rgba(134,170,255,.14);
+  --heat:#ff7a3d; --heat-soft:rgba(255,122,61,.16);
+  --ok:#5cc98a; --warn:#e0a54a; --bad:#ff6b73; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f141b; --sheet:#151c26; --ink:#e3e9f1; --ink-2:#9aa8bb; --rule:#2a3546;
+  --grid:rgba(127,166,255,.06); --grid-major:rgba(127,166,255,.12);
+  --accent:#86aaff; --accent-soft:rgba(134,170,255,.14);
+  --heat:#ff7a3d; --heat-soft:rgba(255,122,61,.16);
+  --ok:#5cc98a; --warn:#e0a54a; --bad:#ff6b73; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto}
+.read{max-width:44rem;min-width:0}
+section>*,.figs>*,.bench>*,.calc>*{min-width:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.1rem,5vw,3.4rem);font-weight:800;font-stretch:78%;letter-spacing:-.01em}
+h2{font-size:1.75rem;font-weight:750;font-stretch:85%}
+h3{font-size:1.15rem;font-weight:700;font-stretch:90%}
+p{margin:0}
+.eyebrow{font-family:var(--f-display);font-size:.78rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+.m{font-family:var(--f-math);font-style:italic;white-space:nowrap}
+.m .u{font-style:normal}
+.v{font-family:var(--f-math);font-weight:600;font-style:normal}
+sub,sup{font-size:.7em;line-height:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+
+header.hero{padding-block:56px 40px;border-bottom:1px solid var(--rule);display:grid;gap:18px}
+.hero .lead{font-size:1.15rem;color:var(--ink-2);max-width:40rem}
+.toc{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:6px;font-family:var(--f-display);font-size:.95rem;font-weight:600}
+.toc a{text-decoration:none;color:var(--ink)}
+.toc a span{color:var(--accent);font-family:var(--f-mono);font-size:.8rem;margin-right:6px}
+.toc a:hover{color:var(--accent)}
+
+section{padding-block:48px 8px;display:grid;gap:22px}
+section>.read{display:grid;gap:16px}
+.secnum{font-family:var(--f-mono);color:var(--accent);font-size:.85rem;margin-bottom:6px;display:block}
+
+.eq{font-family:var(--f-math);font-size:1.35rem;padding:14px 0 14px 20px;border-left:2px solid var(--accent);display:grid;gap:6px;overflow-x:auto}
+.eq .tag{font-family:var(--f-mono);font-size:.75rem;color:var(--ink-2);font-style:normal}
+.eq .row{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.note{font-size:.95rem;color:var(--ink-2)}
+.def{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:14px}
+.def>div{border-top:2px solid var(--ink);padding-top:10px}
+.def b{font-family:var(--f-display);font-weight:700;display:block;margin-bottom:2px}
+ol.steps{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}
+ol.steps li{display:grid;grid-template-columns:2rem 1fr;gap:8px}
+ol.steps li::before{counter-increment:s;content:counter(s,lower-alpha) ")";font-family:var(--f-mono);color:var(--accent);font-weight:600}
+ul.apps{margin:0;padding-left:1.1rem}
+
+/* calculator Joule */
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:22px}
+@media (max-width:820px){.calc{grid-template-columns:1fr}}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;align-content:start}
+.fields label{display:grid;gap:4px;font-family:var(--f-display);font-size:.8rem;font-weight:600;color:var(--ink-2);letter-spacing:.02em}
+.fields .full{grid-column:1/-1}
+input[type=number],input[type=text],select{font:inherit;font-family:var(--f-mono);font-size:.95rem;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:7px 9px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.check{display:flex!important;grid-auto-flow:column;align-items:center;gap:8px!important}
+.check input{width:auto}
+.wire{width:100%;height:auto;display:block}
+.outs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:10px 18px;margin-top:14px}
+.out{display:grid;gap:0}
+.out .k{font-family:var(--f-math);font-style:italic;color:var(--ink-2);font-size:.95rem}
+.out .val{font-family:var(--f-mono);font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums}
+.out.big .val{color:var(--heat);font-size:1.3rem}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-display);font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:99px;border:1px solid currentColor}
+.chip.ok{color:var(--ok)} .chip.warn{color:var(--warn)} .chip.bad{color:var(--bad)}
+
+figure{margin:0;display:grid;gap:8px}
+figcaption{font-size:.85rem;color:var(--ink-2);font-family:var(--f-display)}
+.figs{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media (max-width:760px){.figs{grid-template-columns:1fr}}
+.figs svg{width:100%;height:auto;max-width:420px}
+svg text{font-family:var(--f-math)}
+.s-ink{stroke:var(--ink)} .f-ink{fill:var(--ink)} .f-paper{fill:var(--paper)} .f-acc{fill:var(--accent)} .s-acc{stroke:var(--accent)}
+
+/* laborator */
+#lab{padding-top:56px}
+.ex{display:grid;gap:14px;margin-top:18px}
+.exhead{display:grid;gap:4px}
+.bench{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:980px){.bench{grid-template-columns:1fr}}
+.board{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;overflow:hidden;display:grid}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--rule)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--rule);border-radius:0}
+.seg button:last-child{border-right:0}
+button{font-family:var(--f-display);font-size:.85rem;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button[aria-pressed="true"]{background:var(--accent);color:var(--sheet);border-color:var(--accent)}
+button.danger:hover{color:var(--bad);border-color:var(--bad)}
+.toolbar select{width:auto;font-family:var(--f-display);font-size:.85rem}
+.spacer{flex:1}
+.canvas{position:relative;background-color:var(--sheet);
+  background-image:linear-gradient(var(--grid-major) 1px,transparent 1px),linear-gradient(90deg,var(--grid-major) 1px,transparent 1px),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:50px 50px,50px 50px,10px 10px,10px 10px}
+#sch{width:100%;height:auto;display:block;touch-action:none;user-select:none}
+.hint{font-size:.85rem;color:var(--ink-2);padding:8px 12px;border-top:1px solid var(--rule);font-family:var(--f-display)}
+.selbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--rule);font-family:var(--f-display);font-size:.9rem}
+.selbar:empty{display:none}
+
+.tbl{overflow-x:auto;border-top:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th{font-family:var(--f-display);font-weight:600;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);text-align:left;padding:8px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:middle;white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.sel td{background:var(--accent-soft)}
+#btbl input{width:5.2rem;padding:4px 6px}
+#btbl select{width:auto;padding:4px 6px;font-size:.85rem}
+#btbl button{padding:4px 8px;font-size:.8rem}
+.addrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;font-family:var(--f-display);font-size:.85rem}
+.addrow select{width:auto}
+
+.sol{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:20px;display:grid;gap:20px;min-width:0}
+.sol h3{display:flex;gap:10px;align-items:baseline}
+.sol h3 .n{font-family:var(--f-mono);color:var(--accent);font-size:.85rem}
+.sol .blk{display:grid;gap:8px;min-width:0}
+.eqs{display:grid;gap:3px;font-family:var(--f-math);font-size:1.08rem;overflow-x:auto}
+.eqs .r{display:grid;grid-template-columns:4.6rem 1fr;gap:10px;padding:3px 6px;border-radius:4px;cursor:default;align-items:baseline}
+.eqs .r:hover,.eqs .r.on{background:var(--accent-soft)}
+.eqs .lab{font-family:var(--f-mono);font-size:.75rem;color:var(--ink-2);font-style:normal}
+.eqs .numv{color:var(--ink-2);font-size:.95rem}
+.topo{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--f-math);font-size:1.15rem}
+.topo b{font-family:var(--f-mono);font-weight:600}
+.msg{font-family:var(--f-display);font-size:.9rem;padding:10px 12px;border-radius:5px;border:1px solid currentColor}
+.msg.bad{color:var(--bad)} .msg.warn{color:var(--warn)} .msg.ok{color:var(--ok)}
+details summary{cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:.9rem;color:var(--accent)}
+.mat{overflow-x:auto;margin-top:8px}
+.mat table{font-family:var(--f-mono);font-size:.8rem}
+.mat td,.mat th{padding:3px 6px;text-align:right}
+.res td.neg{color:var(--heat)}
+.balance{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-family:var(--f-math);font-size:1.05rem}
+
+/* schemă */
+.w{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round}
+.w.hl{stroke:var(--accent);stroke-width:4}
+.hit{fill:none;stroke:transparent;stroke-width:16;cursor:pointer}
+.flow{fill:none;stroke:var(--heat);stroke-width:2.5;stroke-dasharray:2 12;stroke-linecap:round;animation:flow linear infinite}
+@keyframes flow{to{stroke-dashoffset:-28}}
+@media (prefers-reduced-motion: reduce){.flow{animation:none}}
+.res-b{stroke:var(--ink);stroke-width:2}
+.src{fill:var(--sheet);stroke:var(--ink);stroke-width:2}
+.nd{fill:var(--ink);cursor:grab}
+.nd-ring{fill:transparent;stroke:transparent;stroke-width:2;cursor:grab}
+.nd-ring.sel{stroke:var(--accent)}
+.nd-ring.pend{stroke:var(--heat)}
+.lbl{font-size:13px;fill:var(--ink);font-style:italic}
+.lbl.val{font-family:var(--f-mono);font-style:normal;font-size:11px;fill:var(--ink-2)}
+.lbl.cur{fill:var(--heat)}
+.ndl{font-family:var(--f-display);font-weight:700;font-size:15px;fill:var(--ink)}
+.loopm{fill:none;stroke:var(--accent);stroke-width:1.5}
+.loopt{font-size:13px;fill:var(--accent);font-style:normal;font-weight:600}
+.sel-br .w{stroke:var(--accent)}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);font-size:.85rem;color:var(--ink-2);font-family:var(--f-display)}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <span class="eyebrow">Electrotehnică · Curs 4</span>
+  <h1>Joule-Lenz și teoremele lui Kirchhoff</h1>
+  <p class="lead">Cum se transformă energia câmpului electromagnetic în căldură într-un conductor și cum se află curenții dintr-o rețea de curent continuu. La final, două rețele rezolvate complet, pas cu pas.</p>
+  <nav class="toc" aria-label="Cuprins">
+    <a href="#joule"><span>1</span>Legea Joule-Lenz</a>
+    <a href="#topologie"><span>2</span>Topologia rețelelor</a>
+    <a href="#kirchhoff"><span>3</span>Teoremele lui Kirchhoff</a>
+    <a href="#metoda"><span>4</span>Metoda de rezolvare</a>
+    <a href="#lab"><span>5</span>Exemple rezolvate</a>
+  </nav>
+</header>
+
+<!-- 1 JOULE -->
+<section id="joule">
+  <div class="read">
+    <div><span class="secnum">1</span><h2>Legea transformării energiei în conducție (Joule-Lenz)</h2></div>
+    <p>Trecerea curentului electric prin conductoare este întotdeauna însoțită de transformări de energie. În conductoarele <em>omogene</em> transformarea are un singur sens: energia electromagnetică devine căldură. Acesta este <em>efectul Joule-Lenz</em>, sau efectul termic al curentului.</p>
+    <p>În conductoarele <em>neomogene</em> (cu surse) apar și alte transformări, în ambele sensuri: din energie electromagnetică în energie chimică, luminoasă sau mecanică, ori invers.</p>
+    <h3>Forma locală</h3>
+    <div class="eq"><div class="row"><span><i>p</i> = <span class="v">E</span> · <span class="v">J</span></span><span class="tag">[W/m³]</span></div></div>
+    <p><span class="v">E</span> este intensitatea câmpului electric, iar <span class="v">J</span> densitatea de curent. <i class="m">p</i> este puterea cedată de câmp unității de volum a conductorului.</p>
+    <h3>Forma integrală</h3>
+    <p>Integrăm pe volumul unui conductor filiform neramificat, de secțiune <span class="m">S</span> constantă și lungime <span class="m">l</span>. Pe secțiune <span class="v">J</span> este constant, iar <span class="v">E</span>, <span class="v">J</span> și d<span class="v">l</span> sunt coliniari. Cu d<i class="m">V</i> = <i class="m">S</i> d<i class="m">l</i> și <i class="m">J S</i> = <i class="m">I</i>:</p>
+    <div class="eq">
+      <div class="row"><span><i>P</i> = ∫<sub><i>V</i></sub> <span class="v">E</span>·<span class="v">J</span> d<i>V</i> = <i>I</i> ∫<sub><i>l</i></sub> <span class="v">E</span>·d<span class="v">l</span> = <i>U</i><sub><i>b</i></sub> <i>I</i></span></div>
+    </div>
+    <p><em>Puterea totală cedată de câmp unei porțiuni de conductor este produsul dintre tensiunea la borne și curentul care îl parcurge.</em> Folosind legea conducției în formă integrală, <span class="m">U<sub>b</sub> + e = R I</span>, obținem:</p>
+    <div class="eq">
+      <div class="row"><span><i>P</i> = <i>U</i><sub><i>b</i></sub><i>I</i> = <i>RI</i><sup>2</sup> − <i>eI</i> = <i>P</i><sub><i>R</i></sub> − <i>P</i><sub><i>e</i></sub></span></div>
+    </div>
+    <p><span class="m">P<sub>R</sub> = RI<sup>2</sup></span> este totdeauna pozitivă: puterea disipată ca căldură. <span class="m">P<sub>e</sub> = eI</span> este puterea generată de sursă; e pozitivă când <span class="m">e</span> și <span class="m">I</span> au același sens. Pentru un conductor fără surse rămâne <span class="m">P = RI<sup>2</sup> = U<sub>b</sub><sup>2</sup>/R</span>.</p>
+  </div>
+
+  <div class="calc" aria-label="Calculator efect Joule">
+    <div class="fields">
+      <label class="full">Material (la 20 °C)
+        <select id="j-mat">
+          <option value="1.72e-8">Cupru · ρ = 1,72·10⁻⁸ Ω·m</option>
+          <option value="2.82e-8">Aluminiu · ρ = 2,82·10⁻⁸ Ω·m</option>
+          <option value="5.6e-8">Wolfram · ρ = 5,6·10⁻⁸ Ω·m</option>
+          <option value="1.4e-7">Oțel · ρ ≈ 1,4·10⁻⁷ Ω·m</option>
+          <option value="1.1e-6">Nicrom · ρ = 1,1·10⁻⁶ Ω·m</option>
+        </select>
+      </label>
+      <label>Lungime l [m]<input id="j-l" type="number" value="100" min="0" step="any"></label>
+      <label>Secțiune S [mm²]<input id="j-s" type="number" value="2.5" min="0.01" step="any"></label>
+      <label>Curent I [A]<input id="j-i" type="number" value="16" step="any"></label>
+      <label>Timp t [h]<input id="j-t" type="number" value="1" min="0" step="any"></label>
+      <label class="full check"><input id="j-ne" type="checkbox"> Conductor neomogen (conține o sursă)</label>
+      <label id="j-ewrap" hidden>t.e.m. e [V], în sensul lui I<input id="j-e" type="number" value="12" step="any"></label>
+    </div>
+    <div>
+      <svg class="wire" id="j-wire" viewBox="0 0 420 132" role="img" aria-label="Conductor încălzit de curent"></svg>
+      <div class="outs" id="j-out"></div>
+      <p class="note" id="j-note" style="margin-top:12px"></p>
+    </div>
+  </div>
+
+  <div class="read">
+    <h3>Aplicații</h3>
+    <ul class="apps">
+      <li>încălzirea, topirea, călirea și sudura electrică;</li>
+      <li>dispozitive de protecție: siguranțe fuzibile, relee termice;</li>
+      <li>iluminatul incandescent.</li>
+    </ul>
+    <p>Tot efectul termic stabilește, în principal, dimensionarea secțiunii conductoarelor. În calculator, mărește curentul sau micșorează secțiunea și urmărește densitatea de curent <span class="m">J = I/S</span>.</p>
+  </div>
+</section>
+
+<!-- 2 TOPOLOGIE -->
+<section id="topologie">
+  <div class="read">
+    <div><span class="secnum">2</span><h2>Topologia circuitelor de curent continuu</h2></div>
+    <p>Un <em>circuit</em> (rețea electrică) este un ansamblu de surse și receptoare legate prin conductoare. Topologic, rețeaua se descrie prin trei elemente:</p>
+  </div>
+  <div class="def read" style="max-width:56rem">
+    <div><b>Latura</b>Porțiune neramificată, cu surse și/sau receptoare în serie. Curentul este același în orice punct al ei.</div>
+    <div><b>Nodul</b>Punct în care sunt conectate cel puțin trei laturi.</div>
+    <div><b>Ochiul</b>Succesiune de laturi care formează un contur închis.</div>
+  </div>
+  <div class="read">
+    <p>Se pot alege întotdeauna <em>ochiuri fundamentale (independente)</em>: împreună cuprind toate laturile, iar niciunul nu poate fi dedus din celelalte. Numărul lor este:</p>
+    <div class="eq"><div class="row"><span><i>O</i> = <i>L</i> − <i>N</i> + 1</span><span class="tag">L laturi · N noduri</span></div></div>
+    <p class="note">Circuitele sunt considerate filiforme și liniare: rezistențele nu depind de curenți, iar conductoarele de legătură au rezistență nulă.</p>
+  </div>
+</section>
+
+<!-- 3 KIRCHHOFF -->
+<section id="kirchhoff">
+  <div class="read"><div><span class="secnum">3</span><h2>Teoremele lui Kirchhoff</h2></div></div>
+  <div class="figs">
+    <div class="read" style="display:grid;gap:14px">
+      <h3>Prima teoremă (noduri)</h3>
+      <p>Rezultă din legea conservării sarcinii în regim staționar, aplicată unei suprafețe închise în jurul nodului.</p>
+      <div class="eq"><div class="row"><span>∑<sub><i>k</i>∈(<i>n</i>)</sub> <i>I</i><sub><i>k</i></sub> = 0</span></div></div>
+      <p><em>Suma algebrică a curenților din laturile incidente într-un nod este nulă.</em> Convenția din curs: curenții care intră în nod cu +, cei care ies cu −.</p>
+      <figure>
+        <svg viewBox="0 0 300 170" role="img" aria-label="Nod cu patru laturi">
+          <g class="s-ink" stroke-width="2" fill="none">
+            <line x1="20" y1="85" x2="150" y2="85"/><line x1="150" y1="10" x2="150" y2="85"/>
+            <line x1="150" y1="85" x2="280" y2="85"/><line x1="150" y1="85" x2="150" y2="160"/>
+          </g>
+          <g class="f-acc">
+            <path d="M80 85 l-10 -5 v10z" transform="translate(10,0)"/>
+            <path d="M150 50 l-5 -10 h10z" transform="rotate(180 150 45)"/>
+            <path d="M220 85 l-10 -5 v10z" transform="translate(5,0)"/>
+            <path d="M150 128 l-5 -10 h10z" transform="rotate(180 150 123) rotate(180 150 123)"/>
+          </g>
+          <circle cx="150" cy="85" r="5" class="f-ink"/>
+          <text x="66" y="74" class="f-ink" font-style="italic" font-size="15">I<tspan font-size="10" dy="3">1</tspan></text>
+          <text x="160" y="42" class="f-ink" font-style="italic" font-size="15">I<tspan font-size="10" dy="3">2</tspan></text>
+          <text x="210" y="74" class="f-ink" font-style="italic" font-size="15">I<tspan font-size="10" dy="3">3</tspan></text>
+          <text x="160" y="134" class="f-ink" font-style="italic" font-size="15">I<tspan font-size="10" dy="3">4</tspan></text>
+          <text x="128" y="104" class="f-ink" font-size="14" font-weight="600">n</text>
+        </svg>
+        <figcaption>I₁ și I₂ intră, I₃ și I₄ ies: <span class="m">I<sub>1</sub> + I<sub>2</sub> − I<sub>3</sub> − I<sub>4</sub> = 0</span></figcaption>
+      </figure>
+      <p class="note">Consecință: de-a lungul unei laturi curentul este același, derivațiile au loc doar în noduri. Ampermetrul se poate monta oriunde pe latură.</p>
+    </div>
+    <div class="read" style="display:grid;gap:14px">
+      <h3>A doua teoremă (ochiuri)</h3>
+      <p>Rezultă din legea conducției integrată pe conturul închis al unui ochi independent, într-un sens de parcurgere ales.</p>
+      <div class="eq"><div class="row"><span>∑<sub><i>k</i>∈(<i>o</i>)</sub> <i>e</i><sub><i>k</i></sub> = ∑<sub><i>k</i>∈(<i>o</i>)</sub> <i>R</i><sub><i>k</i></sub><i>I</i><sub><i>k</i></sub></span></div></div>
+      <p><em>Suma algebrică a t.e.m. din laturile unui ochi este egală cu suma algebrică a căderilor de tensiune.</em> Termenii orientați ca sensul de parcurgere intră cu +, ceilalți cu −.</p>
+      <figure>
+        <svg viewBox="0 0 300 180" role="img" aria-label="Ochi cu două surse și trei rezistoare">
+          <rect x="40" y="25" width="220" height="125" class="s-ink" stroke-width="2" fill="none"/>
+          <rect x="125" y="19" width="40" height="12" class="s-ink f-paper" stroke-width="2"/>
+          <rect x="125" y="144" width="40" height="12" class="s-ink f-paper" stroke-width="2"/>
+          <rect x="34" y="95" width="12" height="34" class="s-ink f-paper" stroke-width="2"/>
+          <circle cx="40" cy="58" r="11" class="s-ink f-paper" stroke-width="2"/>
+          <path d="M40 66 V51 M35 55 l5 -7 5 7" class="s-ink" stroke-width="1.6" fill="none"/>
+          <circle cx="260" cy="88" r="11" class="s-ink f-paper" stroke-width="2"/>
+          <path d="M260 96 V81 M255 85 l5 -7 5 7" class="s-ink" stroke-width="1.6" fill="none"/>
+          <path d="M190 25 l-9 -5 v10z" class="f-acc" transform="translate(9 0)"/>
+          <path d="M100 150 l9 -5 v10z" class="f-acc"/>
+          <path d="M40 142 l-5 -9 h10z" class="f-acc"/>
+          <path d="M115 72 a36 30 0 1 1 18 32" class="s-acc" fill="none" stroke-width="1.6"/>
+          <path d="M133 104 l-1 -10 9 6z" class="f-acc"/>
+          <text x="140" y="86" font-size="14" class="f-acc" font-weight="600">o</text>
+          <text x="137" y="14" font-size="14" font-style="italic" class="f-ink">R<tspan font-size="9" dy="3">1</tspan></text>
+          <text x="195" y="16" font-size="14" font-style="italic" class="f-ink">I<tspan font-size="9" dy="3">1</tspan></text>
+          <text x="137" y="174" font-size="14" font-style="italic" class="f-ink">R<tspan font-size="9" dy="3">2</tspan></text>
+          <text x="93" y="172" font-size="14" font-style="italic" class="f-ink">I<tspan font-size="9" dy="3">2</tspan></text>
+          <text x="8" y="117" font-size="14" font-style="italic" class="f-ink">R<tspan font-size="9" dy="3">3</tspan></text>
+          <text x="50" y="146" font-size="14" font-style="italic" class="f-ink">I<tspan font-size="9" dy="3">3</tspan></text>
+          <text x="10" y="62" font-size="14" font-style="italic" class="f-ink">e<tspan font-size="9" dy="3">1</tspan></text>
+          <text x="276" y="92" font-size="14" font-style="italic" class="f-ink">e<tspan font-size="9" dy="3">2</tspan></text>
+        </svg>
+        <figcaption>Parcurgere în sens orar: <span class="m">e<sub>1</sub> − e<sub>2</sub> = R<sub>1</sub>I<sub>1</sub> + R<sub>2</sub>I<sub>2</sub> − R<sub>3</sub>I<sub>3</sub></span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 4 METODA -->
+<section id="metoda">
+  <div class="read">
+    <div><span class="secnum">4</span><h2>Calculul curenților cu teoremele lui Kirchhoff</h2></div>
+    <p>Problema principală a teoriei circuitelor de c.c. este determinarea curenților prin laturi, când se cunosc sursele și receptoarele. Curenții dimensionează conductoarele și aparatele de protecție și comandă. Numărul de ecuații independente este egal cu numărul de curenți necunoscuți:</p>
+    <ol class="steps">
+      <li><span>analiza topologică: numărul de noduri <span class="m">N</span>, de laturi <span class="m">L</span> și de ochiuri independente <span class="m">O = L − N + 1</span>;</span></li>
+      <li><span>se atribuie arbitrar un sens fiecărui curent (dacă la final un curent iese negativ, sensul real este opus celui ales);</span></li>
+      <li><span>se aleg arbitrar sensuri de parcurgere pentru ochiurile independente;</span></li>
+      <li><span>se scrie prima teoremă pentru <span class="m">N − 1</span> noduri;</span></li>
+      <li><span>se scrie a doua teoremă pentru cele <span class="m">O</span> ochiuri independente;</span></li>
+      <li><span>se rezolvă sistemul de <span class="m">(N − 1) + O = L</span> ecuații.</span></li>
+    </ol>
+    <h3>Exemplul din curs (fig. 4.20)</h3>
+    <p>Rețeaua are <span class="m">N = 4</span> noduri (A, B, C, D), <span class="m">L = 6</span> laturi și <span class="m">O = 3</span> ochiuri independente. Pentru nodurile A, B, C și ochiurile I, II, III rezultă:</p>
+    <div class="eq" style="font-size:1.15rem">
+      <div class="row"><span class="tag">A</span><span>−<i>I</i><sub>1</sub> − <i>I</i><sub>2</sub> − <i>I</i><sub>6</sub> = 0</span></div>
+      <div class="row"><span class="tag">B</span><span><i>I</i><sub>2</sub> + <i>I</i><sub>3</sub> − <i>I</i><sub>5</sub> = 0</span></div>
+      <div class="row"><span class="tag">C</span><span><i>I</i><sub>5</sub> + <i>I</i><sub>6</sub> − <i>I</i><sub>4</sub> = 0</span></div>
+      <div class="row"><span class="tag">I</span><span><i>e</i><sub>1</sub> − <i>e</i><sub>2</sub> = <i>I</i><sub>1</sub><i>R</i><sub>1</sub> + <i>I</i><sub>3</sub><i>R</i><sub>3</sub> − <i>I</i><sub>2</sub><i>R</i><sub>2</sub></span></div>
+      <div class="row"><span class="tag">II</span><span><i>e</i><sub>4</sub> = <i>I</i><sub>4</sub><i>R</i><sub>4</sub> + <i>I</i><sub>3</sub><i>R</i><sub>3</sub> + <i>I</i><sub>5</sub><i>R</i><sub>5</sub></span></div>
+      <div class="row"><span class="tag">III</span><span><i>e</i><sub>2</sub> − <i>e</i><sub>6</sub> = <i>I</i><sub>2</sub><i>R</i><sub>2</sub> + <i>I</i><sub>5</sub><i>R</i><sub>5</sub> − <i>I</i><sub>6</sub><i>R</i><sub>6</sub></span></div>
+    </div>
+    <p>Exemplul 1 din secțiunea următoare rezolvă exact această rețea, cu valori numerice alese de noi. Pentru rețele mari se folosesc metode numerice; aici sistemul se rezolvă prin eliminare Gauss.</p>
+  </div>
+</section>
+
+<!-- 5 EXEMPLE -->
+<section id="lab">
+  <div class="read">
+    <div><span class="secnum">5</span><h2>Exemple rezolvate</h2></div>
+    <p>Două rețele rezolvate complet cu metoda de mai sus. Pe schemă, săgețile roșii sunt sensurile alese pentru curenți, iar săgețile circulare albastre sunt sensurile de parcurgere ale ochiurilor. Culoarea rezistoarelor arată puterea disipată prin efect Joule. Treci cu mouse-ul peste o ecuație ca să vezi nodul sau ochiul ei pe schemă.</p>
+  </div>
+
+  <div class="ex" id="ex1">
+    <div class="exhead"><span class="eyebrow">Exemplul 1</span><h3>Rețeaua din curs (fig. 4.20)</h3></div>
+    <div class="bench">
+      <div class="board">
+        <div class="canvas"><svg class="sch" viewBox="0 0 600 400" role="img" aria-label="Schema exemplului 1"></svg></div>
+        <div class="tbl"><table class="data"></table></div>
+      </div>
+      <div class="sol" aria-label="Rezolvarea exemplului 1"></div>
+    </div>
+  </div>
+
+  <div class="ex" id="ex2">
+    <div class="exhead"><span class="eyebrow">Exemplul 2</span><h3>Rețea cu trei noduri și cinci laturi</h3></div>
+    <div class="bench">
+      <div class="board">
+        <div class="canvas"><svg class="sch" viewBox="0 0 600 400" role="img" aria-label="Schema exemplului 2"></svg></div>
+        <div class="tbl"><table class="data"></table></div>
+      </div>
+      <div class="sol" aria-label="Rezolvarea exemplului 2"></div>
+    </div>
+  </div>
+</section>
+
+<footer>Curs 4 · Electrotehnică. Valorile numerice din exemple sunt alese pentru ilustrare; schema exemplului 1 și ecuațiile ei urmează fig. 4.20 din curs.</footer>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const SVGNS='http://www.w3.org/2000/svg';
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const nf=(x,d=3)=>{ if(!isFinite(x)) return '—'; if(Math.abs(x)<1e-9) return '0';
+  const a=Math.abs(x); let o={maximumFractionDigits:d};
+  if(a<0.01) o={maximumSignificantDigits:3};
+  return x.toLocaleString('ro-RO',o).replace('-', '−'); };
+const num=v=>{const x=parseFloat(String(v).replace(',','.')); return isFinite(x)?x:0;};
+const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV'];
+
+/* ============ 1. Calculator Joule ============ */
+function joule(){
+  const rho=num($('#j-mat').value), l=num($('#j-l').value), Smm=Math.max(num($('#j-s').value),1e-6),
+        I=num($('#j-i').value), th=num($('#j-t').value), ne=$('#j-ne').checked, e=ne?num($('#j-e').value):0;
+  $('#j-ewrap').hidden=!ne;
+  const S=Smm*1e-6, R=rho*l/S, J=I/Smm, p=rho*(I/S)**2, PR=R*I*I, Pe=e*I, P=PR-Pe, Ub=R*I-e, W=PR*th;
+  const out=[
+    ['R = ρ l / S', nf(R,4)+' Ω'],
+    ['J = I / S', nf(J,2)+' A/mm²'],
+    ['p = ρ J²', nf(p/1e3,2)+' kW/m³'],
+    ['U<sub>b</sub> = R I − e', nf(Ub,3)+' V'],
+    ['P<sub>R</sub> = R I²', nf(PR,2)+' W', true],
+    ['W = P<sub>R</sub> t', nf(W,2)+' Wh · '+nf(W*3600/1000,1)+' kJ'],
+  ];
+  if(ne){ out.push(['P<sub>e</sub> = e I', nf(Pe,2)+' W']); out.push(['P = P<sub>R</sub> − P<sub>e</sub>', nf(P,2)+' W']); }
+  $('#j-out').innerHTML=out.map(([k,v,b])=>`<div class="out${b?' big':''}"><span class="k">${k}</span><span class="val">${v}</span></div>`).join('');
+  const aJ=Math.abs(J);
+  let chip, txt;
+  if(aJ<=6){chip='<span class="chip ok">regim normal</span>'; txt='Densitate de curent obișnuită pentru conductoare de cupru în instalații.';}
+  else if(aJ<=15){chip='<span class="chip warn">încălzire</span>'; txt='Conductorul se încălzește semnificativ; secțiunea ar trebui mărită.';}
+  else {chip='<span class="chip bad">supraîncălzire</span>'; txt='Zona în care lucrează siguranțele fuzibile și firele rezistive.';}
+  let ntxt=`${chip} ${txt} <span class="note">(praguri orientative)</span>`;
+  if(ne){ ntxt+= P<0 ? `<br>P &lt; 0: latura cedează putere rețelei, sursa produce mai mult decât se disipă în R.` : `<br>P &gt; 0: câmpul cedează putere laturii.`; }
+  $('#j-note').innerHTML=ntxt;
+  // fir
+  const h=Math.min(1,aJ/20), th2=6+Math.min(26,Math.sqrt(Smm)*6);
+  const glow=Math.round(h*100);
+  const col=`color-mix(in oklab, var(--heat) ${glow}%, var(--rule))`;
+  const y=50, x0=30, x1=390;
+  let waves='';
+  if(h>0.25){ for(let i=0;i<5;i++){ const x=x0+40+i*70; waves+=`<path d="M${x} ${y-th2/2-8} q6 -8 0 -16 q-6 -8 0 -16" fill="none" stroke="var(--heat)" stroke-opacity="${(h*0.8).toFixed(2)}" stroke-width="1.6"/>`; } }
+  $('#j-wire').innerHTML=`
+    <rect x="${x0}" y="${y-th2/2}" width="${x1-x0}" height="${th2}" rx="${th2/2}" fill="${col}"/>
+    <rect x="${x0}" y="${y-th2/2}" width="${x1-x0}" height="${th2}" rx="${th2/2}" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    ${waves}
+    <path d="M${x0+10} ${y+th2/2+16} H${x1-10}" stroke="var(--accent)" stroke-width="1.5"/>
+    <path d="M${I>=0?x1-10:x0+10} ${y+th2/2+16} l${I>=0?-9:9} -5 v10z" fill="var(--accent)"/>
+    <text x="${(x0+x1)/2}" y="${y+th2/2+34}" text-anchor="middle" font-size="14" font-style="italic" fill="var(--accent)">I = ${nf(I,2)} A</text>
+    <text x="${x0}" y="126" font-size="13" font-style="italic" fill="var(--ink-2)">l = ${nf(l,2)} m · S = ${nf(Smm,2)} mm²</text>`;
+}
+['#j-mat','#j-l','#j-s','#j-i','#j-t','#j-ne','#j-e'].forEach(s=>$(s).addEventListener('input',joule));
+joule();
+
+/* ============ 5. Exemple rezolvate (statice) ============ */
+const EXAMPLES={
+  ex1:{
+    nodes:[{id:'A',x:80,y:200},{id:'B',x:300,y:200},{id:'C',x:520,y:200},{id:'D',x:300,y:80}],
+    branches:[
+      {a:'A',b:'D',R:2,e:12,eDir:1,route:{t:'v'}},
+      {a:'A',b:'B',R:4,e:6,eDir:1,route:{t:'s'}},
+      {a:'D',b:'B',R:6,e:0,eDir:1,route:{t:'s'}},
+      {a:'C',b:'D',R:3,e:9,eDir:1,route:{t:'v'}},
+      {a:'B',b:'C',R:5,e:0,eDir:1,route:{t:'s'}},
+      {a:'A',b:'C',R:8,e:4.5,eDir:1,route:{t:'d',d:120}},
+    ],
+    loops:[[[0,1],[2,1],[1,-1]],[[2,1],[4,1],[3,1]],[[1,1],[4,1],[5,-1]]],
+    omit:'D'
+  },
+  ex2:{
+    nodes:[{id:'A',x:80,y:220},{id:'B',x:300,y:220},{id:'C',x:520,y:220}],
+    branches:[
+      {a:'A',b:'B',R:4,e:20,eDir:1,route:{t:'d',d:-130}},
+      {a:'A',b:'B',R:10,e:0,eDir:1,route:{t:'s'}},
+      {a:'B',b:'C',R:6,e:8,eDir:1,route:{t:'s'}},
+      {a:'B',b:'C',R:12,e:0,eDir:1,route:{t:'d',d:-130}},
+      {a:'A',b:'C',R:5,e:10,eDir:-1,route:{t:'d',d:110}},
+    ],
+    loops:[[[0,1],[1,-1]],[[3,1],[2,-1]],[[1,1],[2,1],[4,-1]]],
+    omit:'C'
+  }
+};
+let S, sch;
+const nodeById=id=>S.nodes.find(n=>n.id===id);
+const brIdx=id=>S.branches.findIndex(b=>b.id===id);
+
+/* --- geometrie --- */
+function pts(b){
+  const P=nodeById(b.a), Q=nodeById(b.b), r=b.route||{t:'s'};
+  let a;
+  if(r.t==='v') a=[P,{x:P.x,y:Q.y},Q];
+  else if(r.t==='h') a=[P,{x:Q.x,y:P.y},Q];
+  else if(r.t==='d'){ const dx=Q.x-P.x, dy=Q.y-P.y, L=Math.hypot(dx,dy)||1, nx=-dy/L*r.d, ny=dx/L*r.d;
+    a=[P,{x:P.x+nx,y:P.y+ny},{x:Q.x+nx,y:Q.y+ny},Q]; }
+  else a=[P,Q];
+  return a.map(p=>({x:p.x,y:p.y})).filter((p,i,arr)=>i===0||Math.hypot(p.x-arr[i-1].x,p.y-arr[i-1].y)>0.5);
+}
+function segs(p){ const s=[]; for(let i=0;i<p.length-1;i++){const dx=p[i+1].x-p[i].x, dy=p[i+1].y-p[i].y, L=Math.hypot(dx,dy); s.push({p:p[i],q:p[i+1],L,ux:dx/L,uy:dy/L});} return s; }
+const at=(s,t)=>({x:s.p.x+(s.q.x-s.p.x)*t,y:s.p.y+(s.q.y-s.p.y)*t,ux:s.ux,uy:s.uy});
+function placement(b){
+  const sg=segs(pts(b)); if(!sg.length) return null;
+  const hasE=Math.abs(b.e)>1e-12;
+  let src=null,res,arr;
+  const longest=sg.reduce((m,s)=>s.L>m.L?s:m,sg[0]);
+  if(sg.length===2 && hasE){ src=at(sg[0],.5); res=at(sg[1],.55); arr=at(sg[1],.2); }
+  else if(hasE){ src=at(longest,.28); res=at(longest,.7); arr=at(longest,.49); }
+  else { res=at(longest,.55); arr=at(longest,.22); }
+  return {src,res,arr,sg};
+}
+function centroid(){ const n=S.nodes.length||1; return {x:S.nodes.reduce((a,b)=>a+b.x,0)/n,y:S.nodes.reduce((a,b)=>a+b.y,0)/n}; }
+function sideNormal(p){
+  const c=centroid(); let nx=-p.uy, ny=p.ux; if((p.x-c.x)*nx+(p.y-c.y)*ny<0){nx=-nx;ny=-ny;}
+  if(Math.abs((p.x-c.x)*nx+(p.y-c.y)*ny)<1){ nx=Math.abs(p.uy)>0.5?-1:0; ny=Math.abs(p.uy)>0.5?0:-1; }
+  return {nx,ny};
+}
+const sub=(n,k)=>`${n}<tspan font-size="0.72em" dy="3">${k}</tspan><tspan dy="-3"></tspan>`;
+
+/* --- rezolvare --- */
+function gauss(A,bv){
+  const n=bv.length, M=A.map((r,i)=>[...r,bv[i]]);
+  for(let c=0;c<n;c++){ let p=c; for(let r=c+1;r<n;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r;
+    if(Math.abs(M[p][c])<1e-10) return null; [M[c],M[p]]=[M[p],M[c]];
+    for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]/M[c][c]; if(f) for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; } }
+  return M.map((r,i)=>r[n]/r[i]);
+}
+function solve(){
+  const N=S.nodes.length, L=S.branches.length, loops=S.loops;
+  const kcl=S.nodes.filter(n=>n.id!==S.omit), omitted=nodeById(S.omit);
+  const A=[], bv=[], rows=[];
+  kcl.forEach(n=>{ A.push(S.branches.map(b=>(b.b===n.id?1:0)-(b.a===n.id?1:0))); bv.push(0); rows.push({k:'n',id:n.id}); });
+  loops.forEach((lp,i)=>{ const r=new Array(L).fill(0); let rhs=0;
+    lp.forEach(({bid,s})=>{const j=brIdx(bid), b=S.branches[j]; r[j]+=s*b.R; rhs+=s*b.eDir*b.e;});
+    A.push(r); bv.push(rhs); rows.push({k:'o',i}); });
+  return {N,L,loops,kcl,omitted,A,b:bv,rows,I:gauss(A,bv)};
+}
+
+/* --- ecuații --- */
+const iS=k=>`<i>I</i><sub>${k}</sub>`, rS=k=>`<i>R</i><sub>${k}</sub>`, eS=k=>`<i>e</i><sub>${k}</sub>`;
+function join(terms){ if(!terms.length) return '0';
+  return terms.map((x,i)=>i===0?(x.s<0?'−':'')+x.t:(x.s<0?' − ':' + ')+x.t).join(''); }
+function kclTerms(nid){ const t=[]; S.branches.forEach((b,j)=>{ if(b.b===nid) t.push({s:1,t:iS(j+1)}); else if(b.a===nid) t.push({s:-1,t:iS(j+1)}); }); return t; }
+function kvl(lp){
+  const le=[],ri=[],len=[],rin=[];
+  lp.forEach(({bid,s})=>{ const j=brIdx(bid), b=S.branches[j], k=j+1;
+    if(Math.abs(b.e)>1e-12){ const se=s*b.eDir; le.push({s:se,t:eS(k)}); len.push({s:se,t:nf(b.e)}); }
+    ri.push({s,t:iS(k)+rS(k)}); rin.push({s,t:`${nf(b.R)}·${iS(k)}`}); });
+  return {sym:`${join(le)} = ${join(ri)}`, num:`${join(len)} = ${join(rin)}`};
+}
+
+/* --- desen --- */
+function renderSVG(res){
+  const I=res.I, maxPR=Math.max(1e-12,...S.branches.map((b,j)=>b.R*I[j]*I[j]));
+  let g='';
+  const hlB=new Set(), hlN=S.hl&&S.hl.k==='n'?S.hl.id:null;
+  if(S.hl&&S.hl.k==='o') res.loops[S.hl.i].forEach(x=>hlB.add(x.bid));
+  if(hlN) S.branches.forEach(b=>{if(b.a===hlN||b.b===hlN) hlB.add(b.id);});
+  S.branches.forEach((b,j)=>{
+    const p=pts(b), d='M'+p.map(q=>`${q.x} ${q.y}`).join(' L'), pl=placement(b), k=j+1;
+    g+=`<path class="w${hlB.has(b.id)?' hl':''}" d="${d}"/>`;
+    const a=pl.arr, an=Math.atan2(a.uy,a.ux)*180/Math.PI, na=sideNormal(a);
+    g+=`<path d="M6 0 L-5 -5 L-5 5Z" fill="var(--heat)" transform="translate(${a.x} ${a.y}) rotate(${an})"/>`;
+    const lx=a.x-na.nx*12, ly=a.y-na.ny*14+(na.ny>0.5?-2:na.ny<-0.5?12:4), lanc=Math.abs(na.nx)>0.5?(na.nx>0?'end':'start'):'middle';
+    g+=`<text class="lbl cur" x="${lx}" y="${ly}" text-anchor="${lanc}">${sub('I',k)}</text>`;
+    const r=pl.res, rn=Math.atan2(r.uy,r.ux)*180/Math.PI, nr=sideNormal(r);
+    const pct=Math.round(100*Math.sqrt(b.R*I[j]*I[j]/maxPR));
+    g+=`<rect class="res-b" x="-17" y="-6" width="34" height="12" style="fill:color-mix(in oklab, var(--heat) ${pct}%, var(--sheet))" transform="translate(${r.x} ${r.y}) rotate(${rn})"/>`;
+    const rx=r.x+nr.nx*20, ry=r.y+nr.ny*20, anc=Math.abs(nr.nx)>0.5?(nr.nx>0?'start':'end'):'middle';
+    g+=`<text class="lbl" x="${rx}" y="${ry+(nr.ny>0.5?10:-2)}" text-anchor="${anc}">${sub('R',k)}</text>`;
+    g+=`<text class="lbl val" x="${rx}" y="${ry+(nr.ny<-0.5?-15:nr.ny>0.5?23:11)}" text-anchor="${anc}">${nf(b.R)} Ω</text>`;
+    if(pl.src){ const s=pl.src, sn=Math.atan2(s.uy,s.ux)*180/Math.PI+(b.eDir<0?180:0), ns=sideNormal(s);
+      g+=`<g transform="translate(${s.x} ${s.y}) rotate(${sn})"><circle class="src" r="11"/><path d="M-7 0 H6 M2 -4 L7 0 L2 4" fill="none" stroke="var(--ink)" stroke-width="1.6"/></g>`;
+      const sx=s.x+ns.nx*22, sy=s.y+ns.ny*22, anc2=Math.abs(ns.nx)>0.5?(ns.nx>0?'start':'end'):'middle';
+      g+=`<text class="lbl" x="${sx}" y="${sy+(ns.ny>0.5?10:-2)}" text-anchor="${anc2}">${sub('e',k)}</text>`;
+      g+=`<text class="lbl val" x="${sx}" y="${sy+(ns.ny<-0.5?-15:ns.ny>0.5?23:11)}" text-anchor="${anc2}">${nf(b.e)} V</text>`; }
+  });
+  res.loops.forEach((lp,i)=>{
+    let poly=[]; lp.forEach(({bid,s})=>{ let p=pts(S.branches[brIdx(bid)]); if(s<0) p=p.slice().reverse(); poly=poly.concat(p.slice(0,-1)); });
+    let A=0,cx=0,cy=0; for(let t=0;t<poly.length;t++){const p=poly[t],q=poly[(t+1)%poly.length],c=p.x*q.y-q.x*p.y; A+=c; cx+=(p.x+q.x)*c; cy+=(p.y+q.y)*c;}
+    cx/=3*A; cy/=3*A;
+    const off=S.loopOff&&S.loopOff[i]; if(off){cx+=off[0];cy+=off[1];}
+    const cw=A>0, R=15, a0=-60*Math.PI/180, a1=a0+(cw?1:-1)*290*Math.PI/180;
+    const x0=cx+R*Math.cos(a0), y0=cy+R*Math.sin(a0), x1=cx+R*Math.cos(a1), y1=cy+R*Math.sin(a1);
+    const tx=(cw?-1:1)*Math.sin(a1), ty=(cw?1:-1)*Math.cos(a1);
+    const on=S.hl&&S.hl.k==='o'&&S.hl.i===i;
+    g+=`<g opacity="${on?1:.8}"><path class="loopm" d="M${x0} ${y0} A${R} ${R} 0 1 ${cw?1:0} ${x1} ${y1}" ${on?'stroke-width="2.5"':''}/>`;
+    g+=`<path d="M${x1+tx*6} ${y1+ty*6} L${x1-ty*4} ${y1+tx*4} L${x1+ty*4} ${y1-tx*4}Z" fill="var(--accent)"/>`;
+    g+=`<text class="loopt" x="${cx}" y="${cy+4.5}" text-anchor="middle">${ROMAN[i]}</text></g>`;
+  });
+  S.nodes.forEach(n=>{
+    const c=centroid(); let dx=n.x-c.x, dy=n.y-c.y; const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
+    if(Math.abs(dx)<.3&&Math.abs(dy)<.3){dx=0;dy=1;}
+    g+=`<circle class="nd" cx="${n.x}" cy="${n.y}" r="${hlN===n.id?7:5}"/>`;
+    g+=`<text class="ndl" x="${n.x+dx*20+(Math.abs(dx)<.3?12:0)}" y="${n.y+dy*20+5}" text-anchor="middle">${n.id}</text>`;
+  });
+  sch.innerHTML=g;
+}
+
+function renderData(table){
+  let h=`<tr><th>Latura</th><th>Noduri (sens ales I)</th><th class="num">R [Ω]</th><th class="num">e [V]</th><th>e orientată spre</th></tr>`;
+  S.branches.forEach((b,j)=>{ h+=`<tr><td><span class="m">L<sub>${j+1}</sub></span></td><td class="mono">${b.a} → ${b.b}</td><td class="num">${nf(b.R)}</td><td class="num">${b.e?nf(b.e):'—'}</td><td>${b.e?(b.eDir>0?b.b:b.a):'—'}</td></tr>`; });
+  table.innerHTML=h;
+}
+
+function renderSol(res,el){
+  let h='';
+  h+=`<div class="blk"><h3><span class="n">a</span>Analiza topologică</h3>
+    <div class="topo"><span><i>N</i> = <b>${res.N}</b></span><span><i>L</i> = <b>${res.L}</b></span><span><i>O</i> = <i>L</i> − <i>N</i> + 1 = <b>${res.L-res.N+1}</b></span></div></div>`;
+  h+=`<div class="blk"><h3><span class="n">b, c</span>Sensuri alese</h3>
+    <p class="note">Curenții au sensurile din tabelul de date (săgețile roșii). Ochiurile ${res.loops.map((_,i)=>ROMAN[i]).join(', ')} se parcurg în sensul săgeților albastre.</p></div>`;
+  h+=`<div class="blk"><h3><span class="n">d</span>Prima teoremă, pentru ${res.N-1} noduri</h3><div class="eqs">`;
+  res.kcl.forEach(n=>h+=`<div class="r" data-hn="${n.id}"><span class="lab">nod ${n.id}</span><span>${join(kclTerms(n.id))} = 0</span></div>`);
+  h+=`</div><p class="note">Nodul ${res.omitted.id} se omite: ecuația lui rezultă din celelalte.</p></div>`;
+  h+=`<div class="blk"><h3><span class="n">e</span>A doua teoremă, pentru ${res.loops.length} ochiuri</h3><div class="eqs">`;
+  res.loops.forEach((lp,i)=>{ const q=kvl(lp); h+=`<div class="r" data-hl="${i}"><span class="lab">ochi ${ROMAN[i]}</span><span>${q.sym}<br><span class="numv">${q.num}</span></span></div>`; });
+  h+=`</div></div>`;
+  h+=`<details><summary>Sistemul în formă matriceală (${res.L} ecuații)</summary><div class="mat"><table><tr><th></th>${S.branches.map((b,j)=>`<th>I${j+1}</th>`).join('')}<th>=</th></tr>`;
+  res.A.forEach((r,i)=>{ const rw=res.rows[i]; h+=`<tr><th>${rw.k==='n'?'nod '+rw.id:'ochi '+ROMAN[rw.i]}</th>${r.map(v=>`<td>${nf(v)}</td>`).join('')}<td>${nf(res.b[i])}</td></tr>`; });
+  h+=`</table></div></details>`;
+  const I=res.I; let sPe=0,sPR=0;
+  h+=`<div class="blk"><h3><span class="n">f</span>Curenții din laturi</h3><div class="tbl res" style="border:0"><table>
+    <tr><th>Latura</th><th class="num">I [A]</th><th>sens real</th><th class="num">U<sub>b</sub> [V]</th><th class="num">P<sub>R</sub> [W]</th><th class="num">P<sub>e</sub> [W]</th></tr>`;
+  S.branches.forEach((b,j)=>{ const i=I[j], PR=b.R*i*i, Pe=b.eDir*b.e*i, Ub=b.R*i-b.eDir*b.e; sPe+=Pe; sPR+=PR;
+    h+=`<tr><td><span class="m">${iS(j+1)}</span></td><td class="num${i<0?' neg':''}">${nf(i,4)}</td><td>${i<0?`opus: ${b.b}→${b.a}`:`ales: ${b.a}→${b.b}`}</td><td class="num">${nf(Ub,3)}</td><td class="num">${nf(PR,3)}</td><td class="num">${b.e?nf(Pe,3):'—'}</td></tr>`; });
+  h+=`</table></div>`;
+  h+=`<div class="balance"><span>∑ <i>e<sub>k</sub>I<sub>k</sub></i> = <b class="mono">${nf(sPe,3)} W</b></span><span>∑ <i>R<sub>k</sub>I<sub>k</sub></i><sup>2</sup> = <b class="mono">${nf(sPR,3)} W</b></span><span class="chip ok">bilanț verificat</span></div>
+  <p class="note">Puterea generată de surse este egală cu puterea disipată prin efect Joule-Lenz în rezistoare. Un curent negativ arată că sensul real este opus celui ales; o putere <span class="m">P<sub>e</sub></span> negativă arată o sursă care primește energie.</p></div>`;
+  el.innerHTML=h;
+}
+
+Object.entries(EXAMPLES).forEach(([key,p])=>{
+  const root=document.getElementById(key);
+  p.branches.forEach((b,i)=>b.id=i+1);
+  const ex={nodes:p.nodes,branches:p.branches,omit:p.omit,hl:null,loops:p.loops.map(L=>L.map(([i,s])=>({bid:i+1,s}))),loopOff:p.loopOff};
+  const svg=root.querySelector('.sch'), sol=root.querySelector('.sol');
+  S=ex; sch=svg; const res=solve();
+  renderSVG(res); renderSol(res,sol); renderData(root.querySelector('.data'));
+  const setHL=h=>{ if(JSON.stringify(h)===JSON.stringify(ex.hl)) return; ex.hl=h; S=ex; sch=svg; renderSVG(res); };
+  sol.addEventListener('mouseover',e=>{ const r=e.target.closest('.r'); setHL(r?(r.dataset.hl!=null?{k:'o',i:+r.dataset.hl}:{k:'n',id:r.dataset.hn}):null); });
+  sol.addEventListener('mouseleave',()=>setHL(null));
+});
+})();
+</script>
+
+</body></html>
