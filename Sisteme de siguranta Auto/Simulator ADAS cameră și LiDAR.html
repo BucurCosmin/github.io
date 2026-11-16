@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator ADAS cameră și LiDAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: banc de laborator. Ecranele senzorilor sunt mereu întunecate (ca un osciloscop); restul paginii urmează tema. */
+:root{
+  --bg:#edf0f4; --panel:#ffffff; --ink:#18212f; --muted:#586577; --line:#d3dae4; --accent:#0a6fb5;
+  --screen:#0d1420; --screen-ink:#dbe4f0;
+  --cam:#4cc2ff; --lid:#ff9a4a; --fus:#c58cff; --ref:#9aa6b8;
+  --ok:#1f9d57; --warn:#c98a00; --crit:#d43a3a;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#090e16; --panel:#121a27; --ink:#e6ebf2; --muted:#93a0b4; --line:#263246; --accent:#4cc2ff; --ok:#3ecf80; --warn:#f0b429; --crit:#ff5c5c; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#090e16; --panel:#121a27; --ink:#e6ebf2; --muted:#93a0b4; --line:#263246; --accent:#4cc2ff; --ok:#3ecf80; --warn:#f0b429; --crit:#ff5c5c; color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);padding:16px}
+.wrap{max-width:1380px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font:700 26px/1.1 var(--f-display);margin:0;letter-spacing:.2px;text-wrap:balance}
+h2{font:600 17px/1.2 var(--f-display);margin:0 0 8px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+h3{font:600 17px/1.2 var(--f-display);margin:0 0 6px;text-wrap:balance}
+header{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+header p{margin:2px 0 0;color:var(--muted);max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:500 14px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] button[aria-pressed="true"]{color:#06121c}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button[aria-pressed="true"]{color:#06121c}}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.screen{background:var(--screen);border-radius:8px;overflow:hidden;position:relative;border:1px solid #1d2838}
+.screen canvas{display:block;width:100%;height:auto}
+.tag{position:absolute;left:10px;top:8px;font:500 11px var(--f-mono);color:var(--screen-ink);opacity:.85;pointer-events:none;text-shadow:0 1px 2px #000}
+.top{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:14px}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px}
+@media (max-width:980px){.top,.lower{grid-template-columns:1fr}}
+.pill{display:inline-flex;align-items:center;gap:8px;font:700 18px var(--f-display);letter-spacing:.8px;padding:6px 14px;border-radius:6px;border:2px solid var(--ok);color:var(--ok)}
+.pill::before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor}
+.pill.s1{border-color:var(--accent);color:var(--accent)}
+.pill.s2{border-color:var(--warn);color:var(--warn);border-style:dashed}
+.pill.s3{border-color:var(--crit);color:var(--crit)}
+.pill.s4{background:var(--crit);border-color:var(--crit);color:#fff}
+.big{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.big div{border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.big b{display:block;font:600 22px var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.big span{font-size:12px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--line);font-size:13.5px}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500}
+td{font-family:var(--f-mono)}
+td:first-child{font-family:var(--f-body)}
+.chip{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.ego{display:flex;gap:12px;align-items:center;margin-top:10px}
+.ego canvas{width:54px;height:54px;flex:none}
+.ego dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:0;font-size:13.5px}
+.ego dt{color:var(--muted)} .ego dd{margin:0;font-family:var(--f-mono)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted);margin-top:6px}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+fieldset{border:1px solid var(--line);border-radius:6px;margin:0;padding:8px 10px 10px;min-width:0}
+legend{font:600 14px var(--f-display);text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:0 4px}
+label.row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13.5px;margin-top:6px;align-items:center}
+label.row input[type=range],label.row select{grid-column:1/-1;width:100%}
+label.row output{font:500 13px var(--f-mono)}
+label.ck{display:flex;gap:8px;align-items:center;font-size:13.5px;margin-top:6px;cursor:pointer}
+select{font:14px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:4px 6px}
+input[type=range]{accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.charts{display:flex;flex-direction:column;gap:12px}
+.theory{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.theory p{margin:6px 0;max-width:65ch}
+.eq{font:500 14px var(--f-mono);background:var(--bg);border-left:3px solid var(--accent);padding:6px 10px;border-radius:0 4px 4px 0;margin:6px 0;overflow-x:auto;white-space:nowrap}
+.live{font:13px var(--f-mono);color:var(--muted)}
+.live b{color:var(--ink);font-weight:600}
+.note{color:var(--muted);font-size:13.5px;max-width:80ch;margin:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:980px){.two{grid-template-columns:1fr}}
+.tw{overflow-x:auto}
+.tw table{min-width:760px}
+.tw td{font-family:var(--f-body);text-align:left;vertical-align:top}
+.tw th{text-align:left}
+.tw td.n{font-family:var(--f-mono);white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 0;font-size:14px}
+.kv dt{color:var(--muted);font-weight:500} .kv dd{margin:0;max-width:60ch}
+a{color:var(--accent)}
+ol{margin:6px 0;padding-left:20px} li{margin:3px 0;max-width:65ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <a href="index.html" style="display:inline-block;margin-bottom:6px;font-weight:600;text-decoration:none">← Sisteme de siguranță ale autovehiculelor</a>
+    <h1>Simulator ADAS: detecție video, LiDAR și fuziune de senzori</h1>
+    <p>Lanțul complet de percepție al unui autovehicul: cameră, LiDAR, urmărire cu filtru Kalman și decizia de frânare. Toți parametrii se pot modifica în timpul rulării. <a href="#lidar">Secțiunea despre LiDAR: tipuri și funcționare</a></p>
+  </div>
+  <div id="st" class="pill">DRUM LIBER</div>
+</header>
+
+<div class="bar" id="scn" role="group" aria-label="Scenarii">
+  <button data-s="follow">Urmărire ACC</button>
+  <button data-s="brake">Frânare bruscă în față</button>
+  <button data-s="ped">Pieton traversează</button>
+  <button data-s="hidden">Pieton mascat de o dubă</button>
+  <button data-s="signs">Semne și limitare de viteză</button>
+  <span style="flex:1"></span>
+  <button id="bPause">Pauză</button>
+  <button id="bStep">Pas 0,1 s</button>
+  <button id="bReset">Repornește</button>
+</div>
+
+<div class="top">
+  <div class="screen"><canvas id="cam" width="960" height="540"></canvas><div class="tag" id="camTag"></div></div>
+  <div class="panel">
+    <h2>Ținta din față (după fuziune)</h2>
+    <div class="big">
+      <div><b id="rD">–</b><span>distanță [m]</span></div>
+      <div><b id="rV">–</b><span>v relativă [km/h]</span></div>
+      <div><b id="rT">–</b><span>TTC [s]</span></div>
+      <div><b id="rH">–</b><span>THW [s]</span></div>
+    </div>
+    <table>
+      <thead><tr><th>Sursa măsurării</th><th>d [m]</th><th>eroare [m]</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip" style="background:var(--ref)"></span>Referință (simulare)</td><td id="eTrue">–</td><td></td></tr>
+        <tr><td><span class="chip" style="background:var(--lid)"></span>LiDAR, cel mai apropiat punct</td><td id="eLid">–</td><td id="eLidE">–</td></tr>
+        <tr><td><span class="chip" style="background:var(--cam)"></span>Cameră, plan sol</td><td id="eGp">–</td><td id="eGpE">–</td></tr>
+        <tr><td><span class="chip" style="background:var(--cam)"></span>Cameră, înălțime cunoscută</td><td id="eHh">–</td><td id="eHhE">–</td></tr>
+        <tr><td><span class="chip" style="background:var(--fus)"></span>Fuziune (filtru Kalman)</td><td id="eFus">–</td><td id="eFusE">–</td></tr>
+      </tbody>
+    </table>
+    <div class="ego">
+      <canvas id="signIcon" width="108" height="108" aria-label="Ultimul semn recunoscut"></canvas>
+      <dl>
+        <dt>Viteză proprie</dt><dd id="rVe">–</dd>
+        <dt>Accelerație</dt><dd id="rAe">–</dd>
+        <dt>Limită recunoscută</dt><dd id="rLim">–</dd>
+        <dt>Ultimul semn</dt><dd id="rSign">–</dd>
+        <dt>Tip țintă</dt><dd id="rCls">–</dd>
+        <dt>Decelerație necesară</dt><dd id="rAreq">–</dd>
+      </dl>
+    </div>
+    <p class="live" id="stats" style="margin:10px 0 0"></p>
+  </div>
+</div>
+
+<div>
+  <div class="screen"><canvas id="bev" width="1060" height="270"></canvas><div class="tag">VEDERE DE SUS · nor de puncte LiDAR, clustere, piste fuzionate</div></div>
+  <div class="legend">
+    <span><span class="chip" style="background:var(--lid)"></span>puncte și clustere LiDAR</span>
+    <span><span class="chip" style="background:var(--cam)"></span>estimare cameră (bara = ±1σ pe distanță)</span>
+    <span><span class="chip" style="background:var(--fus)"></span>pistă fuzionată, cu vector de viteză</span>
+    <span><span class="chip" style="background:var(--ref)"></span>poziție reală (referință)</span>
+  </div>
+</div>
+
+<div class="lower">
+  <div class="charts">
+    <div>
+      <div class="screen"><canvas id="ch1" width="560" height="210"></canvas><div class="tag">DISTANȚA PÂNĂ LA ȚINTĂ [m]</div></div>
+    </div>
+    <div>
+      <div class="screen"><canvas id="ch2" width="560" height="190"></canvas><div class="tag">TIMP PÂNĂ LA COLIZIUNE, TTC [s]</div></div>
+      <div class="legend"><span>Praguri orientative: avertizare 2,6 s · frânare parțială 1,6 s · frânare completă 1,0 s</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ctl">
+      <fieldset><legend>Senzori</legend>
+        <label class="ck"><input type="checkbox" id="c_camOn" checked>Cameră activă</label>
+        <label class="ck"><input type="checkbox" id="c_lidOn" checked>LiDAR activ</label>
+        <label class="ck"><input type="checkbox" id="c_showPts" checked>Puncte LiDAR proiectate în imagine</label>
+        <label class="ck"><input type="checkbox" id="c_showTruth" checked>Arată pozițiile reale</label>
+      </fieldset>
+      <fieldset><legend>LiDAR</legend>
+        <label class="row">Straturi verticale<select id="c_layers"><option>4</option><option>8</option><option selected>16</option><option>32</option></select></label>
+        <label class="row">Rezoluție orizontală<select id="c_hres"><option value="0.1">0,1°</option><option value="0.25" selected>0,25°</option><option value="0.5">0,5°</option><option value="1">1°</option></select></label>
+        <label class="row">Rază la reflectivitate 10%<output id="o_r10"></output><input type="range" id="c_r10" min="30" max="200" step="5" value="120"></label>
+        <label class="row">Zgomot de distanță σ<output id="o_sigma"></output><input type="range" id="c_sigma" min="1" max="25" step="1" value="3"></label>
+      </fieldset>
+      <fieldset><legend>Cameră</legend>
+        <label class="row">Câmp vizual orizontal<output id="o_hfov"></output><input type="range" id="c_hfov" min="28" max="110" step="2" value="52"></label>
+        <label class="row">Rezoluție senzor<select id="c_resW"><option value="1280">1280×720 (1 MP)</option><option value="1920" selected>1920×1080 (2 MP)</option><option value="3840">3840×2160 (8 MP)</option></select></label>
+        <label class="row">Prag de încredere detector<output id="o_thr"></output><input type="range" id="c_thr" min="0.2" max="0.9" step="0.05" value="0.5"></label>
+      </fieldset>
+      <fieldset><legend>Mediu</legend>
+        <label class="row">Vreme<select id="c_weather"><option value="clear">Senin</option><option value="rain">Ploaie (vizibilitate 900 m)</option><option value="fog">Ceață (vizibilitate 200 m)</option><option value="fog2">Ceață deasă (80 m)</option></select></label>
+        <label class="row">Lumină<select id="c_night"><option value="0">Zi</option><option value="1">Noapte</option></select></label>
+        <label class="row">Aderență<select id="c_mu"><option value="0.9">Asfalt uscat, μ = 0,9</option><option value="0.5">Asfalt ud, μ = 0,5</option><option value="0.2">Polei, μ = 0,2</option></select></label>
+      </fieldset>
+      <fieldset><legend>Vehicul</legend>
+        <label class="row">Viteză setată<output id="o_vset"></output><input type="range" id="c_vset" min="20" max="130" step="5" value="70"></label>
+        <label class="row">Timp de urmărire ACC<output id="o_tgap"></output><input type="range" id="c_tgap" min="1" max="3" step="0.1" value="1.8"></label>
+        <label class="ck"><input type="checkbox" id="c_acc" checked>ACC (pilot adaptiv)</label>
+        <label class="ck"><input type="checkbox" id="c_aeb" checked>AEB (frânare automată)</label>
+        <label class="ck"><input type="checkbox" id="c_isa" checked>ISA (respectă limita citită)</label>
+      </fieldset>
+      <fieldset><legend>Simulare</legend>
+        <label class="row">Viteza simulării<select id="c_rate"><option value="1">1× (timp real)</option><option value="0.25">0,25× (încetinit)</option><option value="0.1">0,1×</option></select></label>
+        <div class="bar" style="margin-top:10px">
+          <button id="bPed">Adaugă pieton</button>
+          <button id="bBrake">Frânează vehiculul din față</button>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>Cum funcționează fiecare etapă</h2>
+  <div class="theory">
+    <div class="panel"><h3>1. Camera: modelul pinhole</h3>
+      <p>Un punct (X înainte, Y stânga, Z sus) ajunge în pixelul (u, v). Distanța focală în pixeli rezultă din rezoluție și din câmpul vizual.</p>
+      <div class="eq">u = c<sub>x</sub> − f·Y/X &nbsp;&nbsp; v = c<sub>y</sub> − f·(Z − h<sub>cam</sub>)/X</div>
+      <div class="eq">f = (W/2) / tan(HFOV/2)</div>
+      <p class="live" id="t1"></p></div>
+    <div class="panel"><h3>2. Detectorul video</h3>
+      <p>Rețeaua (tip YOLO) întoarce cadre de încadrare, clasă și scor de încredere. Scorul scade când obiectul ocupă puțini pixeli, când contrastul scade (ceață, noapte) sau când obiectul este parțial acoperit. Un semn se detectează de departe, dar tipul lui se citește abia de la circa 18 px.</p>
+      <p class="live" id="t2"></p></div>
+    <div class="panel"><h3>3. Distanța dintr-o singură imagine</h3>
+      <p>Camera nu măsoară distanța, o deduce. Fie din baza cadrului, presupunând drum plan, fie din înălțimea presupusă a obiectului.</p>
+      <div class="eq">d = f·h<sub>cam</sub> / (v<sub>bază</sub> − c<sub>y</sub>) &nbsp;&nbsp; d = f·H / h<sub>px</sub></div>
+      <div class="eq">δd ≈ d² / (f·h<sub>cam</sub>) · δv</div>
+      <p class="live" id="t3"></p></div>
+    <div class="panel"><h3>4. LiDAR: timp de zbor</h3>
+      <p>Fiecare rază măsoară timpul dus-întors al impulsului laser. Puterea primită scade cu pătratul distanței și cu atenuarea atmosferei, deci țintele închise la culoare se pierd primele.</p>
+      <div class="eq">d = c·Δt / 2 &nbsp;&nbsp; P<sub>r</sub> ∝ ρ·e<sup>−2αd</sup> / d² &nbsp;&nbsp; α = 3,912 / V</div>
+      <p class="live" id="t4"></p></div>
+    <div class="panel"><h3>5. Segmentare și fuziune</h3>
+      <p>Punctele sub 0,2 m sunt eliminate ca sol, restul se grupează pe o grilă de 0,5 m. Fiecare cluster se asociază cu o pistă dacă intră în poarta de validare. Filtrul Kalman cu model de viteză constantă combină măsurările după precizia fiecăreia; accelerația proprie este compensată.</p>
+      <div class="eq">x = [d, v<sub>rel</sub>]<sup>T</sup> &nbsp;&nbsp; K = P·H<sup>T</sup>(H·P·H<sup>T</sup> + R)<sup>−1</sup></div>
+      <p>LiDAR-ul dă distanța precisă, camera dă clasa. De aceea predicția traversării se aplică numai pistelor clasificate ca pieton.</p></div>
+    <div class="panel"><h3>6. Decizia</h3>
+      <div class="eq">TTC = d / (−v<sub>rel</sub>) &nbsp;&nbsp; THW = d / v &nbsp;&nbsp; a<sub>nec</sub> = v<sub>rel</sub>² / (2d)</div>
+      <div class="eq">a<sub>max</sub> = μ·g &nbsp;&nbsp; d<sub>oprire</sub> = v·t<sub>r</sub> + v² / (2μg)</div>
+      <p class="live" id="t6"></p></div>
+    <div class="panel"><h3>De încercat</h3>
+      <ol>
+        <li>Oprește LiDAR-ul în „Urmărire ACC” și compară zgomotul distanței din cameră la 30 m și la 80 m.</li>
+        <li>Pune ceață deasă în „Pieton traversează”. Care senzor pierde primul ținta?</li>
+        <li>Treci pe polei la „Frânare bruscă”. TTC rămâne același, dar a<sub>max</sub> nu mai ajunge.</li>
+        <li>Mărește câmpul vizual la 100°: de la ce distanță mai este citit semnul?</li>
+        <li>La „Pieton mascat”, redu LiDAR-ul la 4 straturi și 1°.</li>
+      </ol></div>
+  </div>
+</section>
+
+<section id="lidar">
+  <h2>LiDAR: principiu, tipuri constructive și exemple</h2>
+  <div class="two">
+    <div class="panel">
+      <h3>Măsurarea distanței prin timp de zbor (ToF)</h3>
+      <p style="margin:4px 0 8px;max-width:65ch">Laserul trimite un impuls de câțiva nanosecunde. Detectorul pornește un cronometru și îl oprește când ecoul depășește pragul de zgomot. Mută ținta și schimbă-i reflectivitatea; raza senzorului și vremea sunt cele din simulator.</p>
+      <div class="screen"><canvas id="tof" width="560" height="200"></canvas></div>
+      <div class="ctl" style="margin-top:8px">
+        <label class="row">Distanța până la țintă<output id="o_tofD"></output><input type="range" id="tofD" min="5" max="250" step="1" value="60"></label>
+        <label class="row">Reflectivitatea țintei ρ<output id="o_tofR"></output><input type="range" id="tofR" min="3" max="90" step="1" value="20"></label>
+      </div>
+      <p class="live" id="tofOut" style="margin:8px 0 0"></p>
+    </div>
+    <div class="panel">
+      <h3>Două metode de măsurare</h3>
+      <dl class="kv">
+        <dt>ToF în impulsuri</dt><dd>Se măsoară direct întârzierea ecoului. Este metoda folosită de aproape toate senzorii de serie. Pentru 3 cm precizie, cronometrul trebuie să rezolve 0,2 ns.</dd>
+        <dt>FMCW</dt><dd>Laserul emite continuu, cu frecvența baleiată liniar. Ecoul se amestecă optic cu unda emisă, iar frecvența de bătaie dă distanța. Efectul Doppler dă direct viteza radială a fiecărui punct, fără derivare între cadre.</dd>
+      </dl>
+      <div class="eq">ToF: d = c·Δt / 2</div>
+      <div class="eq">FMCW: f<sub>b</sub> = 2·B·d / (c·T) &nbsp;&nbsp; f<sub>D</sub> = 2·v / λ</div>
+      <p class="live">Exemplu FMCW: B = 1 GHz, T = 10 µs, d = 100 m dau f<sub>b</sub> = <b>66,7 MHz</b>. La λ = 1550 nm și v = 30 m/s, f<sub>D</sub> = <b>38,7 MHz</b>.</p>
+      <h3 style="margin-top:14px">Lungimea de undă și detectorul</h3>
+      <dl class="kv">
+        <dt>905 nm</dt><dd>Diode laser ieftine și detectori din siliciu (APD, SPAD). Puterea este limitată de siguranța ochiului, fiindcă lumina ajunge pe retină.</dd>
+        <dt>1550 nm</dt><dd>Lumina este absorbită în ochi înainte de retină, deci se poate emite mult mai multă putere și crește raza. Cere laser cu fibră și detectori InGaAs, mai scumpi.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="two" style="margin-top:14px">
+    <div class="panel">
+      <h3>Cum baleiază fiecare tip câmpul vizual</h3>
+      <div class="bar" id="scanBtns" role="group" aria-label="Tip de LiDAR" style="margin:6px 0 8px">
+        <button data-k="spin">Rotativ 360°</button>
+        <button data-k="mirror">Oglindă rotativă</button>
+        <button data-k="mems">MEMS</button>
+        <button data-k="risley">Prisme (nerepetitiv)</button>
+        <button data-k="flash">Flash</button>
+      </div>
+      <div class="screen"><canvas id="scan" width="560" height="230"></canvas><div class="tag" id="scanTag"></div></div>
+      <p class="live" style="margin:6px 0 0">Animația este încetinită: un cadru real durează 100 ms. Punctul luminos este fasciculul în acest moment.</p>
+    </div>
+    <div class="panel">
+      <h3 id="scanName"></h3>
+      <dl class="kv">
+        <dt>Cum funcționează</dt><dd id="scanHow"></dd>
+        <dt>Avantaje</dt><dd id="scanPro"></dd>
+        <dt>Limite</dt><dd id="scanCon"></dd>
+        <dt>Exemplu</dt><dd id="scanEx"></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <h3>Comparație între tipuri</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Tip</th><th>Baleiaj</th><th>Piese mobile</th><th>Câmp tipic</th><th>Punct forte</th><th>Punct slab</th></tr></thead>
+      <tbody>
+        <tr><td>Rotativ mecanic</td><td>tot ansamblul optic se rotește</td><td>motor, rulmenți, transfer rotativ</td><td class="n">360° × 25–40°</td><td>vedere completă în jur</td><td>volum, cost, durată de viață</td></tr>
+        <tr><td>Oglindă sau poligon rotativ</td><td>oglinda deviază fascicule fixe</td><td>o oglindă</td><td class="n">120–145° × 3–25°</td><td>robust, calificat pentru serie</td><td>doar câmp frontal</td></tr>
+        <tr><td>MEMS</td><td>micro-oglindă oscilantă pe 2 axe</td><td>o oglindă de câțiva mm</td><td class="n">≈120° × 25°</td><td>compact, zonă de interes reglabilă</td><td>apertură mică, vibrații</td></tr>
+        <tr><td>Prisme Risley</td><td>două prisme rotative, rozetă</td><td>două prisme</td><td class="n">≈120° × 25°</td><td>puține lasere, acoperire care crește în timp</td><td>goluri într-un singur cadru</td></tr>
+        <tr><td>Flash</td><td>fără baleiaj, matrice de detectori</td><td>niciuna</td><td class="n">≈120° × 30°</td><td>fără distorsiuni de mișcare</td><td>rază scurtă</td></tr>
+        <tr><td>OPA (rețea optică fazată)</td><td>fasciculul este dirijat electronic, prin fază</td><td>niciuna</td><td class="n">în dezvoltare</td><td>totul pe un cip</td><td>putere mică, lobi laterali</td></tr>
+      </tbody></table></div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <h3>Senzori reali</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Senzor</th><th>Tip</th><th>λ</th><th>Câmp vizual</th><th>Rezoluție</th><th>Rază declarată</th><th>Unde a fost folosit</th></tr></thead>
+      <tbody>
+        <tr><td>Valeo Scala 1</td><td>oglindă rotativă, ToF</td><td class="n">905 nm</td><td class="n">145° × 3,2°</td><td>4 straturi, 0,25° orizontal, 25 Hz</td><td>80 m la remisie 6,3%</td><td>Audi A8 (2017), primul LiDAR pe un vehicul de serie</td></tr>
+        <tr><td>Valeo Scala 2</td><td>oglindă rotativă, ToF</td><td class="n">905 nm</td><td class="n">133° × 10,5°</td><td>receptor cu 16 canale</td><td>200 m</td><td>generația a doua, în producție din 2021</td></tr>
+        <tr><td>Hesai AT128</td><td>oglindă rotativă, 128 de canale</td><td class="n">905 nm</td><td class="n">120° × 25,4°</td><td>1200 × 128 puncte, 0,1° × 0,2°</td><td>210 m la 10%</td><td>vehicule de serie din China</td></tr>
+        <tr><td>Luminar Iris</td><td>oglinzi de baleiaj, ToF</td><td class="n">1550 nm</td><td class="n">120° × 30°</td><td>64 de linii pe cadru, 10 Hz</td><td>peste 200 m la 10%; pieton la 250 m</td><td>plafonul Volvo EX90; Volvo a renunțat ulterior la el</td></tr>
+        <tr><td>Livox HAP</td><td>prisme Risley, nerepetitiv</td><td class="n">905 nm</td><td class="n">120° × 25°</td><td>6 lasere, densitate echivalentă 144 de linii</td><td>150 m la 80%</td><td>Xpeng P5 (2021), două bucăți în bara față</td></tr>
+        <tr><td>RoboSense M1</td><td>MEMS pe două axe</td><td class="n">905 nm</td><td class="n">120° × 25°</td><td>raster cu zonă centrală mai densă</td><td>≈150 m la 10%</td><td>vehicule de serie din China</td></tr>
+        <tr><td>Continental HFL110</td><td>flash</td><td class="n">1064 nm</td><td class="n">120° × 30°</td><td>128 × 32 pixeli, 25 Hz</td><td>50 m</td><td>raza scurtă, în jurul vehiculului</td></tr>
+        <tr><td>Aeva Aeries II</td><td>FMCW</td><td class="n">1550 nm</td><td class="n">120° × 30°</td><td>viteză măsurată pe fiecare punct</td><td>până la 500 m (maxim declarat)</td><td>camioane autonome, industrial</td></tr>
+        <tr><td>Velodyne HDL-64E</td><td>rotativ mecanic</td><td class="n">905 nm</td><td class="n">360° × 26,9°</td><td>64 de lasere</td><td>≈120 m</td><td>prototipuri de vehicule autonome</td></tr>
+      </tbody></table></div>
+    <p class="note" style="margin-top:8px">Valorile sunt cele din fișele și comunicatele producătorilor. Condițiile de măsurare diferă (reflectivitatea țintei, probabilitatea de detecție), deci razele nu se compară direct. Rândurile RoboSense M1 și Velodyne HDL-64E sunt completate din memorie și trebuie verificate în fișa tehnică înainte de a fi citate.</p>
+    <div class="bar" style="margin-top:10px"><span style="color:var(--muted);font-size:13.5px">Încearcă în simulator:</span>
+      <button id="pScala">Scala 1: 4 straturi, 0,25°, 100 m</button>
+      <button id="pAT">Tip AT128: 32 straturi, 0,1°, 200 m</button>
+    </div>
+    <p class="live" style="margin:6px 0 0">Simulatorul are deschiderea verticală fixă de 10° și cel mult 32 de straturi, deci presetările sunt aproximări. Pentru Scala 1, raza de 80 m la 6,3% corespunde la 80·√(10/6,3) ≈ 100 m la 10%.</p>
+  </div>
+
+  <div class="theory" style="margin-top:14px">
+    <div class="panel"><h3>Ce limitează un LiDAR</h3>
+      <ol>
+        <li>Ploaia, ceața și ninsoarea atenuează fasciculul și produc ecouri false din picături. Ecourile multiple pe aceeași rază ajută la separarea lor.</li>
+        <li>Soarele ridică zgomotul de fond al detectorului și micșorează raza utilă ziua.</li>
+        <li>Țintele negre sau lucioase (vopsea închisă, geamuri) întorc puțină lumină; plăcuțele și semnele retroreflectorizante saturează detectorul.</li>
+        <li>Murdăria de pe geamul senzorului. De aceea senzorii de serie au spălare și încălzire.</li>
+        <li>Interferența cu alte LiDAR-uri, redusă prin codarea impulsurilor sau prin FMCW.</li>
+      </ol></div>
+    <div class="panel"><h3>Ce spune rezoluția unghiulară</h3>
+      <p>Distanța dintre două puncte vecine crește liniar cu distanța: s = d·Δθ. Un pieton lat de 0,5 m primește la 100 m doar câteva puncte, iar numărul lor decide dacă algoritmul îl mai separă de fundal.</p>
+      <div class="eq">s = d·Δθ &nbsp;&nbsp; N<sub>puncte</sub> ≈ (l / (d·Δθ<sub>H</sub>)) · (h / (d·Δθ<sub>V</sub>))</div>
+      <p class="live" id="tRes"></p></div>
+  </div>
+</section>
+<p class="note">Limitele modelului: scena, imaginea și norul de puncte sunt sintetice. Detectorul video este un model statistic al comportării unei rețele neuronale, nu o rețea antrenată. Pragurile TTC și parametrii regulatoarelor sunt valori orientative pentru curs, nu valori dintr-un standard sau dintr-un vehicul de serie.</p>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const G=9.81, RAD=Math.PI/180, DT=1/60;
+const CAM={x:-1.9,z:1.3}, LID={z:0.7,hfov:120,vfov:10}, EGO={L:4.6,W:1.85};
+const WX={clear:{a:0,drop:0.01},rain:{a:3.912/900,drop:0.08},fog:{a:3.912/200,drop:0.02},fog2:{a:3.912/80,drop:0.03}};
+const CLS={car:'vehicul',ped:'pieton',sign:'semn',obj:'obiect'};
+const SIGN={30:'Limită 30 km/h',50:'Limită 50 km/h',70:'Limită 70 km/h',90:'Limită 90 km/h',stop:'Stop',yield:'Cedează trecerea',ped:'Trecere de pietoni',warn:'Alte pericole'};
+const HASSUME={car:1.5,ped:1.7,sign:0.7}, H0={car:14,ped:22,sign:10};
+const COL={cam:'#4cc2ff',lid:'#ff9a4a',fus:'#c58cff',ref:'#9aa6b8',ped:'#ffd84a',sign:'#7dffa8'};
+const P={camOn:true,lidOn:true,showPts:true,showTruth:true,layers:16,hres:0.25,r10:120,sigma:3,hfov:52,resW:1920,thr:0.5,weather:'clear',night:0,mu:0.9,vset:70,tgap:1.8,acc:true,aeb:true,isa:true,rate:1};
+const clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const rnd=()=>{let u=0;while(!u)u=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.2832*Math.random())};
+let S, paused=false, scnName='follow';
+
+/* ---------- lumea ---------- */
+function mkCar(x,y,v,o){return Object.assign({type:'car',cls:'car',x,y,vx:v,vy:0,L:4.5,W:1.8,z0:0.2,z1:1.45,refl:0.5,color:'#b9c2cf',dark:'#7d8795'},o||{})}
+function mkPed(x,y,o){return Object.assign({type:'ped',cls:'ped',x,y,vx:0,vy:0,r:0.28,z0:0,z1:1.55+Math.random()*0.35,refl:0.2,phase:0,color:['#c0473a','#2f6fb0','#3d8f5a','#444b57'][Math.random()*4|0]},o||{})}
+function addSign(x,sub){S.objs.push({type:'sign',cls:'sign',sub,x,y:-4.4,vx:0,vy:0,L:0.08,W:0.7,z0:1.85,z1:2.55,refl:3},{type:'pole',x,y:-4.4,vx:0,vy:0,r:0.04,z0:0,z1:1.85,refl:0.4})}
+function addTree(x,y){S.objs.push({type:'tree',x,y,vx:0,vy:0,r:0.22,z0:0,z1:5,refl:0.3})}
+function spawnRoadside(){
+  while(S.nextSignX<S.xe+240){addSign(S.nextSignX,S.signSeq[S.signIdx++%S.signSeq.length]);S.nextSignX+=S.signGap}
+  while(S.nextTreeX<S.xe+240){addTree(S.nextTreeX,-7-Math.random());addTree(S.nextTreeX+7,8.5+Math.random());S.nextTreeX+=16+Math.random()*14}
+  if(S.t>S.nextOnc){S.objs.push(mkCar(S.xe+230,3.5,-(12+Math.random()*6),{color:'#8d3b3b',dark:'#5e2626'}));S.nextOnc=S.t+7+Math.random()*7}
+}
+const SCN={
+  follow(){P.vset=70;P.acc=true;S.v=70/3.6;S.signSeq=['70','ped','90','yield','70'];S.signGap=130;
+    const lead=mkCar(45,0,60/3.6);S.objs.push(lead);S.lead=lead;S.script=()=>{if(!lead.brake)lead.vx=(60+10*Math.sin(0.22*S.t))/3.6}},
+  brake(){P.vset=70;P.acc=true;S.v=70/3.6;S.signSeq=['70','warn','90'];S.signGap=150;
+    const lead=mkCar(40,0,70/3.6);S.objs.push(lead);S.lead=lead;S.script=()=>{if(S.t>4)lead.brake=8}},
+  ped(){P.vset=40;P.acc=false;S.v=40/3.6;S.signSeq=['50','ped','30','ped'];S.signGap=120;S.nextSignX=20;
+    S.objs.push(mkPed(75,-4.6,{walk:1.5,wait:4.6/1.5}))},
+  hidden(){P.vset=40;P.acc=false;S.v=40/3.6;S.signSeq=['50','warn','30'];S.signGap=160;S.nextSignX=30;
+    S.objs.push(mkCar(66.2,-2.92,0,{L:5,W:1.85,z1:2.2,color:'#e8e8e4',dark:'#a9a9a4'}));
+    S.objs.push(mkPed(70,-4.2,{walk:1.6,wait:4.2/1.6}))},
+  signs(){P.vset=90;P.acc=true;P.isa=true;S.v=70/3.6;S.signSeq=['70','50','ped','30','yield','50','stop','90'];S.signGap=75}
+};
+function reset(name){
+  if(name)scnName=name;
+  S={t:0,step:0,xe:0,v:0,a:0,acmd:0,objs:[],tracks:[],tid:0,clusters:[],dets:[],limit:null,lastSign:null,aeb:0,ttc:Infinity,areq:0,target:null,collided:null,hist:[],
+     signSeq:['50'],signIdx:0,signGap:120,nextSignX:60,nextTreeX:10,nextOnc:3,script:null,lead:null,
+     pts:{n:0,x:new Float32Array(40000),y:new Float32Array(40000),z:new Float32Array(40000),r:new Float32Array(40000)}};
+  SCN[scnName]();spawnRoadside();syncUI();
+  document.querySelectorAll('#scn button[data-s]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===scnName));
+}
+
+/* ---------- LiDAR: ray casting ---------- */
+function lidarScan(){
+  const pt=S.pts,wx=WX[P.weather],R10=P.r10,sig=P.sigma/100,L=P.layers;let n=0;
+  const prims=S.objs.filter(o=>{const xr=o.x-S.xe;return xr>-3&&xr<260});
+  const tanL=[],cosL=[],sinL=[];
+  for(let l=0;l<L;l++){const ph=(-LID.vfov/2+LID.vfov*l/(L-1))*RAD;tanL.push(Math.tan(ph));cosL.push(Math.cos(ph));sinL.push(Math.sin(ph))}
+  const nAz=Math.round(LID.hfov/P.hres)+1,hits=[];
+  for(let i=0;i<nAz;i++){
+    const th=(-LID.hfov/2+i*P.hres)*RAD,c=Math.cos(th),s=Math.sin(th);hits.length=0;
+    for(const o of prims){
+      const px=o.x-S.xe,py=o.y;let t=-1;
+      if(o.r){const b=px*c+py*s,d2=px*px+py*py-b*b;if(b>0&&d2<=o.r*o.r)t=b-Math.sqrt(o.r*o.r-d2)}
+      else{let t0=-1e9,t1=1e9,ok=true;
+        const x0=px-o.L/2,x1=px+o.L/2,y0=py-o.W/2,y1=py+o.W/2;
+        if(Math.abs(c)<1e-9){if(x0>0||x1<0)ok=false}else{let a=x0/c,b=x1/c;if(a>b){const q=a;a=b;b=q}t0=Math.max(t0,a);t1=Math.min(t1,b)}
+        if(Math.abs(s)<1e-9){if(y0>0||y1<0)ok=false}else{let a=y0/s,b=y1/s;if(a>b){const q=a;a=b;b=q}t0=Math.max(t0,a);t1=Math.min(t1,b)}
+        if(ok&&t1>=t0&&t0>0)t=t0}
+      if(t>0.3)hits.push([t,o]);
+    }
+    if(hits.length>1)hits.sort((a,b)=>a[0]-b[0]);
+    for(let l=0;l<L;l++){
+      const tp=tanL[l],tg=tp<0?-LID.z/tp:Infinity;let t=Infinity,refl=0;
+      for(const h of hits){if(h[0]>=tg)break;const z=LID.z+h[0]*tp;if(z>=h[1].z0&&z<=h[1].z1){t=h[0];refl=h[1].refl;break}}
+      if(t===Infinity){if(tg===Infinity)continue;t=tg;refl=-0.3*sinL[l]}
+      let r=t/cosL[l];
+      if((refl/0.1)*(R10/r)*(R10/r)*Math.exp(-2*wx.a*r)<1)continue;
+      if(Math.random()<wx.drop)continue;
+      r+=rnd()*sig;
+      pt.x[n]=r*cosL[l]*c;pt.y[n]=r*cosL[l]*s;pt.z[n]=LID.z+r*sinL[l];pt.r[n]=r;n++;
+    }
+  }
+  pt.n=n;
+}
+function cluster(){
+  const pt=S.pts,cells=new Map(),CS=0.5;
+  for(let i=0;i<pt.n;i++){if(pt.z[i]<0.2)continue;const k=(Math.floor(pt.x[i]/CS)+50)*1000+Math.floor(pt.y[i]/CS)+500;let a=cells.get(k);if(!a)cells.set(k,a=[]);a.push(i)}
+  const seen=new Set(),out=[];
+  for(const k0 of cells.keys()){
+    if(seen.has(k0))continue;seen.add(k0);const st=[k0],c={n:0,x0:1e9,x1:-1e9,y0:1e9,y1:-1e9,z1:0};
+    while(st.length){const k=st.pop();
+      for(const i of cells.get(k)){c.n++;const x=pt.x[i],y=pt.y[i];if(x<c.x0)c.x0=x;if(x>c.x1)c.x1=x;if(y<c.y0)c.y0=y;if(y>c.y1)c.y1=y;if(pt.z[i]>c.z1)c.z1=pt.z[i]}
+      for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const k2=k+dx*1000+dy;if(cells.has(k2)&&!seen.has(k2)){seen.add(k2);st.push(k2)}}}
+    if(c.n>=2)out.push(c);
+  }
+  S.clusters=out;
+}
+
+/* ---------- camera ---------- */
+function intr(){const W=P.resW,H=W*9/16;return{W,H,f:(W/2)/Math.tan(P.hfov*RAD/2),cx:W/2,cy:H/2}}
+function objBox(o,K){
+  const xr=o.x-S.xe,hx=o.r||o.L/2,hy=o.r||o.W/2,zb=o.type==='sign'?o.z0:0;
+  const xn=xr-hx-CAM.x;if(xn<1)return null;
+  let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;
+  for(const sx of[-1,1])for(const sy of[-1,1])for(const z of[zb,o.z1]){
+    const X=xr+sx*hx-CAM.x,u=K.cx-K.f*(o.y+sy*hy)/X,v=K.cy-K.f*(z-CAM.z)/X;
+    if(u<u0)u0=u;if(u>u1)u1=u;if(v<v0)v0=v;if(v>v1)v1=v}
+  return{u0,v0,u1,v1,X:xn};
+}
+function cameraFrame(){
+  const K=intr(),wx=WX[P.weather],dets=[],near=[];
+  const list=S.objs.filter(o=>o.cls).map(o=>({o,b:objBox(o,K)})).filter(e=>e.b).sort((a,b)=>a.b.X-b.b.X);
+  for(const {o,b} of list){
+    const w=b.u1-b.u0,h=b.v1-b.v0,area=w*h;
+    const cw=Math.min(b.u1,K.W)-Math.max(b.u0,0),ch=Math.min(b.v1,K.H)-Math.max(b.v0,0);
+    let vis=cw>0&&ch>0?cw*ch/area:0,occ=0;
+    for(const q of near){const iw=Math.min(b.u1,q.u1)-Math.max(b.u0,q.u0),ih=Math.min(b.v1,q.v1)-Math.max(b.v0,q.v0);if(iw>0&&ih>0)occ=Math.max(occ,iw*ih/area)}
+    if(o.type==='car')near.push(b);
+    vis*=1-Math.min(1,occ);if(vis<0.25)continue;
+    const r=Math.hypot(b.X,o.y);
+    const contrast=Math.sqrt(Math.max(0,1-wx.a*r/3.912));
+    const night=P.night?(o.cls==='ped'?Math.exp(-Math.max(0,r-25)/30):o.cls==='car'?0.92:0.95):1;
+    const conf=0.98*(1-Math.exp(-h/H0[o.cls]))*contrast*night*Math.pow(vis,1.5)-(P.weather==='rain'?0.05:0)+rnd()*0.03;
+    if(conf<P.thr)continue;
+    const sp=1+0.02*h,u0=b.u0+rnd()*sp,u1=b.u1+rnd()*sp,v0=b.v0+rnd()*sp,v1=b.v1+rnd()*sp,hp=Math.max(2,v1-v0);
+    const d={cls:o.cls,sub:null,conf:Math.min(0.99,conf),u0,v0,u1,v1,gp:null,hh:K.f*HASSUME[o.cls]/hp+CAM.x};
+    if(o.cls!=='sign'&&v1>K.cy+1)d.gp=K.f*CAM.z/(v1-K.cy)+CAM.x;
+    if(o.cls==='sign'){if(hp>=18){d.sub=o.sub;d.sconf=d.conf*(1-Math.exp(-(hp-10)/10))}d.xm=d.hh;d.sx=(d.hh-CAM.x)/hp*sp*1.4+0.04*d.hh}
+    else if(d.gp!==null){d.xm=d.gp;const dc=d.gp-CAM.x;d.sx=dc*dc/(K.f*CAM.z)*sp}
+    else{d.xm=d.hh;d.sx=0.1*d.hh}
+    d.sx=Math.max(0.3,d.sx);
+    const dc=d.xm-CAM.x;d.ym=-((u0+u1)/2-K.cx)*dc/K.f;d.sy=sp*dc/K.f+0.15;
+    dets.push(d);
+  }
+  S.dets=dets;
+}
+
+/* ---------- urmărire: filtru Kalman [poziție, viteză] ---------- */
+function kfPredict(s,dt,q){s.p+=s.v*dt;const q2=q*q;s.P00+=dt*(2*s.P01+dt*s.P11)+q2*dt**4/4;s.P01+=dt*s.P11+q2*dt**3/2;s.P11+=q2*dt*dt}
+function kfUpdate(s,z,R){const Sx=s.P00+R,K0=s.P00/Sx,K1=s.P01/Sx,y=z-s.p;s.p+=K0*y;s.v+=K1*y;const a=s.P00,b=s.P01;s.P00=(1-K0)*a;s.P01=(1-K0)*b;s.P11-=K1*b}
+function newTrack(x,y,cls,R){return{id:++S.tid,cls,sub:null,votes:{},lx:{p:x,v:cls==='car'?0:-S.v,P00:R,P01:0,P11:400},ly:{p:y,v:0,P00:1,P01:0,P11:9},hits:1,upd:S.t,conf:0,lid:null,lidT:-9,gp:null,hh:null,camT:-9,camSx:0,applied:false}}
+function cameraUpdate(){
+  const used=new Set();
+  for(const d of S.dets.slice().sort((a,b)=>b.conf-a.conf)){
+    const R=d.sx*d.sx;let best=null,bc=1e9;
+    for(const t of S.tracks){
+      if(used.has(t)||(t.cls!=='obj'&&t.cls!==d.cls))continue;
+      const gx=3*Math.sqrt(t.lx.P00+R)+1.5,gy=1.5+0.05*d.xm,dx=Math.abs(d.xm-t.lx.p),dy=Math.abs(d.ym-t.ly.p);
+      if(dx>gx||dy>gy)continue;const c=dx/gx+dy/gy;if(c<bc){bc=c;best=t}}
+    if(!best){best=newTrack(d.xm,d.ym,d.cls,R);S.tracks.push(best)}
+    else{kfUpdate(best.lx,d.xm,R);kfUpdate(best.ly,d.ym,d.sy*d.sy);best.hits++}
+    used.add(best);best.cls=d.cls;best.upd=S.t;best.conf=d.conf;best.gp=d.gp;best.hh=d.hh;best.camT=S.t;best.camM=d.xm;best.camSx=d.sx;best.camY=d.ym;
+    if(d.sub){best.votes[d.sub]=(best.votes[d.sub]||0)+d.sconf;let m=0;for(const k in best.votes)if(best.votes[k]>m){m=best.votes[k];best.sub=k}
+      if(m>1.5&&!best.applied&&best.hits>=3){best.applied=true;if(!S.lastSign||S.lastSign.sub!==best.sub||S.t-S.lastSign.t>2.5)S.lastSign={sub:best.sub,d:best.lx.p,t:S.t};if(+best.sub)S.limit=+best.sub}}
+  }
+}
+function lidarUpdate(){
+  const used=new Set(),sig=P.sigma/100+0.05,R=sig*sig;
+  for(const c of S.clusters.slice().sort((a,b)=>a.x0-b.x0)){
+    const ym=(c.y0+c.y1)/2;let best=null,bc=1e9;
+    for(const t of S.tracks){
+      if(used.has(t))continue;
+      const gx=3*Math.sqrt(t.lx.P00+R)+1,gy=1+(c.y1-c.y0)/2,dx=Math.abs(c.x0-t.lx.p),dy=Math.abs(ym-t.ly.p);
+      if(dx>gx||dy>gy)continue;const k=dx/gx+dy/gy;if(k<bc){bc=k;best=t}}
+    if(!best){if(c.n<3)continue;best=newTrack(c.x0,ym,'obj',R);S.tracks.push(best)}
+    else{kfUpdate(best.lx,c.x0,R);kfUpdate(best.ly,ym,0.0225);best.hits++}
+    used.add(best);best.upd=S.t;best.lid=c.x0;best.lidT=S.t;
+  }
+}
+function manageTracks(){
+  S.tracks=S.tracks.filter(t=>S.t-t.upd<0.6&&t.lx.p>0.2&&t.lx.p<300);
+  const dead=new Set();
+  for(let i=0;i<S.tracks.length;i++)for(let j=i+1;j<S.tracks.length;j++){
+    const a=S.tracks[i],b=S.tracks[j];if(dead.has(a)||dead.has(b))continue;
+    if(Math.abs(a.lx.p-b.lx.p)<2&&Math.abs(a.ly.p-b.ly.p)<1&&(a.cls==='obj'||b.cls==='obj'||a.cls===b.cls)){
+      const [k,d]=a.hits>=b.hits?[a,b]:[b,a];if(k.cls==='obj'&&d.cls!=='obj'){k.cls=d.cls;k.sub=d.sub;k.votes=d.votes}dead.add(d)}}
+  if(dead.size)S.tracks=S.tracks.filter(t=>!dead.has(t));
+}
+
+/* ---------- decizie și dinamica vehiculului ---------- */
+function decide(){
+  let best=null;
+  for(const t of S.tracks){
+    if(t.hits<3||t.cls==='sign')continue;const x=t.lx.p,cl=-t.lx.v;
+    let inPath=Math.abs(t.ly.p)<1.4;
+    if(!inPath&&t.cls==='ped'&&cl>0.5&&Math.abs(t.ly.v)>0.4){const ta=x/cl;inPath=ta<4&&Math.abs(t.ly.p+t.ly.v*ta)<1.2}
+    if(inPath&&(!best||x<best.lx.p))best=t}
+  S.target=best;
+  let lvl=0,ttc=Infinity,areq=0;
+  if(best){const cl=-best.lx.v,d=best.lx.p;
+    if(cl>0.5){ttc=d/cl;areq=cl*cl/(2*Math.max(d-1,0.1));lvl=ttc<1.0?3:ttc<1.6?2:ttc<2.6?1:0;if(S.aeb>=2)lvl=Math.max(lvl,S.aeb)}}
+  if(!P.aeb)lvl=Math.min(lvl,1);
+  S.aeb=lvl;S.ttc=ttc;S.areq=areq;
+  let vt=P.vset/3.6;if(P.isa&&S.limit)vt=Math.min(vt,S.limit/3.6);
+  let a=clamp(0.6*(vt-S.v),-2,1.8);
+  if(P.acc&&best){const dd=4+P.tgap*S.v;a=Math.min(a,clamp(0.18*(best.lx.p-dd)+0.8*best.lx.v,-3.5,1.8))}
+  if(lvl===2)a=Math.min(a,-4);if(lvl===3)a=-12;
+  if(P.aeb&&best&&S.v<0.5&&best.lx.p<5)a=Math.min(a,-1);
+  S.acmd=a;
+}
+function egoDyn(dt){
+  const amax=P.mu*G,ac=clamp(S.acmd,-amax,Math.min(2,amax));
+  S.a+=(ac-S.a)*Math.min(1,dt/0.2);S.v+=S.a*dt;if(S.v<=0){S.v=0;if(S.a<0)S.a=0}
+}
+function truthFor(tg){
+  let best=null,bc=1e9;
+  for(const o of S.objs){
+    if(o.type!=='car'&&o.type!=='ped')continue;const h=o.r||o.L/2,d=o.x-S.xe-h;if(d<=0)continue;
+    let c;if(tg){c=Math.abs(d-tg.lx.p)+Math.abs(o.y-tg.ly.p);if(c>4)continue}
+    else{if(Math.abs(o.y)-(o.r||o.W/2)>EGO.W/2+0.3)continue;c=d}
+    if(c<bc){bc=c;best={d,cl:S.v-o.vx,o}}}
+  return best;
+}
+function collisionCheck(){
+  if(S.v<0.3)return;
+  for(const o of S.objs){
+    if(o.type!=='car'&&o.type!=='ped')continue;const hx=o.r||o.L/2,hy=o.r||o.W/2,xr=o.x-S.xe;
+    if(xr-hx<=0&&xr+hx>=-EGO.L&&Math.abs(o.y)-hy<EGO.W/2){S.collided={v:(S.v-o.vx)*3.6,what:CLS[o.cls]};return}}
+}
+function pushHist(){
+  const tg=S.target,tr=truthFor(tg);
+  S.hist.push({t:S.t,dT:tr?tr.d:null,ttcT:tr&&tr.cl>0.5?tr.d/tr.cl:null,
+    dL:tg&&S.t-tg.lidT<0.06?tg.lid:null,dC:tg&&S.t-tg.camT<0.03?tg.camM:null,dF:tg?tg.lx.p:null,ttc:isFinite(S.ttc)?S.ttc:null});
+  while(S.hist.length&&S.hist[0].t<S.t-13)S.hist.shift();
+}
+function step(dt){
+  S.t+=dt;S.step++;if(S.script)S.script();
+  for(const o of S.objs){
+    if(o.wait&&o.x-S.xe<=S.v*o.wait+0.3){o.vy=o.walk;o.wait=0}
+    if(o.brake){o.vx=Math.max(0,o.vx-o.brake*dt);o.braking=o.vx>0}
+    o.x+=o.vx*dt;o.y+=o.vy*dt;if(o.type==='ped')o.phase+=Math.hypot(o.vx,o.vy)*dt*4}
+  S.xe+=S.v*dt;
+  S.objs=S.objs.filter(o=>o.x-S.xe>-12&&!(o.type==='ped'&&o.y>9));
+  spawnRoadside();
+  for(const t of S.tracks){kfPredict(t.lx,dt,3);t.lx.v-=S.a*dt;kfPredict(t.ly,dt,1.5)}
+  if(S.step%6===0){if(P.lidOn){lidarScan();cluster();lidarUpdate()}else{S.pts.n=0;S.clusters=[]}}
+  if(S.step%3===0){if(P.camOn){cameraFrame();cameraUpdate()}else S.dets=[];manageTracks()}
+  decide();egoDyn(dt);collisionCheck();
+  if(S.step%3===0)pushHist();
+}
+
+/* ---------- desen ---------- */
+function fit(cv){const lw=+cv.getAttribute('data-w')||(cv.setAttribute('data-w',cv.width),cv.setAttribute('data-h',cv.height),cv.width),lh=+cv.getAttribute('data-h');
+  const s=clamp((cv.clientWidth||lw)*(window.devicePixelRatio||1)/lw,0.5,2);if(cv.width!==Math.round(lw*s)){cv.width=Math.round(lw*s);cv.height=Math.round(lh*s)}
+  const c=cv.getContext('2d');c.setTransform(s,0,0,s,0,0);return c}
+function poly(c,p,fill){c.beginPath();c.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);c.closePath();c.fillStyle=fill;c.fill()}
+function drawSign(c,sub,x,y,s){
+  const r=s/2;c.save();c.translate(x,y);c.lineJoin='round';
+  if(+sub){c.beginPath();c.arc(0,0,r,0,7);c.fillStyle='#d21f26';c.fill();c.beginPath();c.arc(0,0,r*0.74,0,7);c.fillStyle='#fff';c.fill();
+    if(s>9){c.fillStyle='#111';c.font=`700 ${r*0.95}px "Barlow Semi Condensed",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(sub,0,r*0.06)}}
+  else if(sub==='stop'){c.beginPath();for(let i=0;i<8;i++){const a=(i+0.5)*Math.PI/4;c.lineTo(r*Math.cos(a),r*Math.sin(a))}c.closePath();c.fillStyle='#c81e25';c.fill();
+    if(s>12){c.fillStyle='#fff';c.font=`700 ${r*0.62}px "Barlow Semi Condensed",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText('STOP',0,r*0.05)}}
+  else if(sub==='yield'){poly(c,[[-r,-r*0.85],[r,-r*0.85],[0,r*0.9]],'#d21f26');poly(c,[[-r*0.6,-r*0.6],[r*0.6,-r*0.6],[0,r*0.46]],'#fff')}
+  else if(sub==='ped'){c.fillStyle='#1c5fb8';c.fillRect(-r,-r,s,s);poly(c,[[0,-r*0.72],[r*0.75,r*0.62],[-r*0.75,r*0.62]],'#fff');
+    c.fillStyle='#111';c.beginPath();c.arc(0,-r*0.2,r*0.12,0,7);c.fill();c.fillRect(-r*0.07,-r*0.08,r*0.14,r*0.55)}
+  else{poly(c,[[0,-r],[r,r*0.8],[-r,r*0.8]],'#d21f26');poly(c,[[0,-r*0.55],[r*0.62,r*0.55],[-r*0.62,r*0.55]],'#fff');
+    c.fillStyle='#111';c.fillRect(-r*0.07,-r*0.25,r*0.14,r*0.45);c.fillRect(-r*0.07,r*0.3,r*0.14,r*0.14)}
+  c.restore();
+}
+function drawCamera(){
+  const cv=$('cam'),c=fit(cv),W=960,H=540,K=intr(),k=W/K.W,wx=WX[P.weather],f=K.f*k,cy=H/2,cx=W/2,N=P.night;
+  const pj=(x,y,z)=>{const X=x-CAM.x;return X<0.4?null:[cx-f*y/X,cy-f*(z-CAM.z)/X,X]};
+  c.clearRect(0,0,W,H);
+  if(!P.camOn){c.fillStyle='#05080d';c.fillRect(0,0,W,H)}
+  else{
+    const fogC=N?'42,48,58':'200,206,214';
+    let g=c.createLinearGradient(0,0,0,cy);g.addColorStop(0,N?'#04070d':'#7fb0dc');g.addColorStop(1,N?'#111a28':'#d5e5f2');c.fillStyle=g;c.fillRect(0,0,W,cy);
+    c.fillStyle=N?'#0c130f':'#6f8f55';c.fillRect(0,cy,W,H-cy);
+    const band=(y0,y1,col)=>{const a=pj(CAM.x+1,y0,0),b=pj(CAM.x+1,y1,0),d=pj(600,y1,0),e=pj(600,y0,0);poly(c,[a,b,d,e],col)};
+    band(7.25,5.25,N?'#22262c':'#a9a59c');band(5.25,-1.75,N?'#14171c':'#4a4f57');band(-1.75,-3.95,N?'#191c22':'#5a5f68');band(-3.95,-6,N?'#22262c':'#a9a59c');
+    band(5.2,5.05,N?'#6d7076':'#e8e8e8');band(-1.6,-1.75,N?'#6d7076':'#e8e8e8');
+    const x0=Math.floor((S.xe+CAM.x+1)/12)*12;
+    for(let i=0;i<30;i++){const xa=Math.max(CAM.x+1,x0+i*12-S.xe),xb=x0+i*12+4-S.xe;if(xb<=xa)continue;
+      poly(c,[pj(xa,1.83,0),pj(xa,1.67,0),pj(xb,1.67,0),pj(xb,1.83,0)],N?'#6d7076':'#e8e8e8')}
+    if(wx.a>0){ // ceață: contrastul scade cu e^(-αd) pe fiecare rând de pixeli
+      c.fillStyle=`rgba(${fogC},${1-Math.exp(-wx.a*600)})`;c.fillRect(0,0,W,cy);
+      g=c.createLinearGradient(0,cy,0,H);for(let i=0;i<=8;i++){const v=i/8,row=Math.max(1,v*(H-cy)),d=f*CAM.z/row;g.addColorStop(v,`rgba(${fogC},${1-Math.exp(-wx.a*d)})`)}
+      c.fillStyle=g;c.fillRect(0,cy,W,H-cy)}
+    const list=S.objs.map(o=>[o,o.x-S.xe]).filter(e=>e[1]-CAM.x>1.2&&e[1]<400).sort((a,b)=>b[1]-a[1]);
+    for(const [o,xr] of list){
+      const r=Math.hypot(xr-CAM.x,o.y);
+      c.globalAlpha=Math.exp(-wx.a*r)*(N?(o.type==='ped'?clamp(Math.exp(-(r-20)/35),0.06,1):o.type==='tree'?0.3:0.85):1);
+      if(o.type==='car'){
+        const xn=xr-o.L/2,xf=xr+o.L/2,yl=o.y+o.W/2,yr=o.y-o.W/2,side=yr>0?yr:yl<0?yl:null;
+        if(side!==null){const a=pj(xn,side,0.25),b=pj(xf,side,0.25),d=pj(xf,side,o.z1),e=pj(xn,side,o.z1);if(a&&b)poly(c,[a,b,d,e],o.dark)}
+        const tl=pj(xn,yl,o.z1),br=pj(xn,yr,0.25),gr=pj(xn,yl,0);if(!tl||!br)continue;
+        const w=br[0]-tl[0],h=br[1]-tl[1];
+        c.fillStyle='#0c0f14';c.fillRect(tl[0]+w*0.03,br[1]-1,w*0.17,gr[1]-br[1]+1);c.fillRect(tl[0]+w*0.8,br[1]-1,w*0.17,gr[1]-br[1]+1);
+        c.fillStyle=o.color;c.fillRect(tl[0],tl[1],w,h);
+        c.fillStyle='#1b2533';c.fillRect(tl[0]+w*0.1,tl[1]+h*0.08,w*0.8,h*0.34);
+        if(N)c.globalAlpha=Math.exp(-wx.a*r);
+        c.fillStyle=o.vx<-1?'#fff6c8':o.braking?'#ff2222':'#a31a1a';c.fillRect(tl[0]+w*0.04,tl[1]+h*0.52,w*0.2,h*0.13);c.fillRect(tl[0]+w*0.76,tl[1]+h*0.52,w*0.2,h*0.13);
+      }else if(o.type==='ped'){
+        const b=pj(xr,o.y,0),t=pj(xr,o.y,o.z1);if(!b)continue;const h=b[1]-t[1],x=b[0],sw=Math.sin(o.phase)*0.13*h;
+        c.strokeStyle='#23272e';c.lineWidth=Math.max(1,h*0.07);c.lineCap='round';
+        c.beginPath();c.moveTo(x,t[1]+h*0.55);c.lineTo(x+sw,b[1]);c.moveTo(x,t[1]+h*0.55);c.lineTo(x-sw,b[1]);c.stroke();
+        c.fillStyle=o.color;c.fillRect(x-h*0.11,t[1]+h*0.15,h*0.22,h*0.42);
+        c.fillStyle='#e0b996';c.beginPath();c.arc(x,t[1]+h*0.075,h*0.075,0,7);c.fill();
+      }else if(o.type==='pole'){
+        const a=pj(xr,o.y,0),b=pj(xr,o.y,o.z1);c.strokeStyle='#8b929c';c.lineWidth=Math.max(1,0.07*f/a[2]);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();
+      }else if(o.type==='sign'){
+        if(N)c.globalAlpha=Math.exp(-wx.a*r)*0.95;const p=pj(xr,o.y,2.2);drawSign(c,o.sub,p[0],p[1],Math.max(2,0.7*f/p[2]));
+      }else{
+        const a=pj(xr,o.y,0),t=pj(xr,o.y,2.6),cp=pj(xr,o.y,4.3),w=0.44*f/a[2];
+        c.fillStyle='#4b3a2a';c.fillRect(a[0]-w/2,t[1],w,a[1]-t[1]);c.fillStyle=N?'#12241a':'#3f6b3a';c.beginPath();c.arc(cp[0],cp[1],1.9*f/a[2],0,7);c.fill();
+      }
+    }
+    c.globalAlpha=1;
+    if(P.weather==='rain'){c.strokeStyle='rgba(210,225,240,.35)';c.lineWidth=1;c.beginPath();for(let i=0;i<70;i++){const x=Math.random()*W,y=Math.random()*H;c.moveTo(x,y);c.lineTo(x-3,y+16)}c.stroke()}
+  }
+  if(P.showPts&&P.lidOn){ // calibrare extrinsecă: punctele LiDAR trecute în reperul camerei
+    const pt=S.pts;let last=-1;
+    for(let i=0;i<pt.n;i++){const X=pt.x[i]-CAM.x;if(X<0.5)continue;const u=cx-f*pt.y[i]/X,v=cy-f*(pt.z[i]-CAM.z)/X;if(u<0||u>W||v<0||v>H)continue;
+      const b=Math.min(15,pt.r[i]/6|0);if(b!==last){c.fillStyle=`hsl(${b*17} 100% 60%)`;last=b}c.fillRect(u-1,v-1,2,2)}
+  }
+  c.font='500 12px "IBM Plex Mono",monospace';c.textBaseline='alphabetic';c.textAlign='left';
+  for(const d of S.dets){
+    const col=d.cls==='car'?COL.cam:d.cls==='ped'?COL.ped:COL.sign,x=clamp(d.u0*k,0,W),y=clamp(d.v0*k,0,H),w=clamp(d.u1*k,0,W)-x,h=clamp(d.v1*k,0,H)-y;
+    c.strokeStyle=col;c.lineWidth=2;c.strokeRect(x,y,w,h);
+    const txt=`${d.sub?SIGN[d.sub]:CLS[d.cls]} ${d.conf.toFixed(2)} · ${d.xm.toFixed(0)} m`,tw=c.measureText(txt).width+8,ty=y>18?y-16:y+h+2;
+    c.fillStyle=col;c.fillRect(x-1,ty,tw,15);c.fillStyle='#06121c';c.fillText(txt,x+3,ty+11.5);
+  }
+  const tg=S.target;
+  if(tg){const p=pj(tg.lx.p,tg.ly.p,0);if(p){c.strokeStyle=COL.fus;c.lineWidth=2.5;const hw=Math.max(14,1.0*f/p[2]);
+      c.beginPath();c.moveTo(p[0]-hw,p[1]-6);c.lineTo(p[0]-hw,p[1]+4);c.lineTo(p[0]+hw,p[1]+4);c.lineTo(p[0]+hw,p[1]-6);c.stroke();
+      const txt=`ȚINTĂ ${tg.lx.p.toFixed(1)} m · ${(tg.lx.v*3.6).toFixed(0)} km/h`;c.font='600 13px "IBM Plex Mono",monospace';const tw=c.measureText(txt).width+10;
+      c.fillStyle='rgba(13,20,32,.85)';c.fillRect(p[0]-tw/2,Math.min(H-22,p[1]+8),tw,18);c.fillStyle=COL.fus;c.textAlign='center';c.fillText(txt,p[0],Math.min(H-22,p[1]+8)+13)}}
+  const msg=S.collided?`COLIZIUNE cu ${S.collided.what} la ${S.collided.v.toFixed(0)} km/h · apasă Repornește`:!P.camOn?'CAMERĂ OPRITĂ':S.aeb>=2?'FRÂNARE AUTOMATĂ':S.aeb===1?'AVERTIZARE COLIZIUNE':'';
+  if(msg){c.font='700 24px "Barlow Semi Condensed",sans-serif';c.textAlign='center';const tw=c.measureText(msg).width+28;
+    c.fillStyle=S.collided||S.aeb>=2?'rgba(212,58,58,.92)':S.aeb===1?'rgba(201,138,0,.92)':'rgba(40,50,66,.9)';c.fillRect(W/2-tw/2,H-52,tw,36);c.fillStyle='#fff';c.fillText(msg,W/2,H-27)}
+  $('camTag').textContent=`CAMERĂ ${K.W}×${K.H} · HFOV ${P.hfov}° · f = ${K.f.toFixed(0)} px · 20 Hz`;
+}
+function drawBev(){
+  const cv=$('bev'),c=fit(cv),W=1060,H=270,s=(W-20)/108,ox=10+7*s,oy=H/2;
+  const X=x=>ox+x*s,Y=y=>oy-y*s;
+  c.clearRect(0,0,W,H);c.fillStyle='#0d1420';c.fillRect(0,0,W,H);
+  c.fillStyle='#161f2e';c.fillRect(0,Y(5.25),W,7*s);c.fillStyle='#131b28';c.fillRect(0,Y(-1.75),W,2.2*s);
+  c.strokeStyle='#33405a';c.lineWidth=1;c.setLineDash([8,10]);c.lineDashOffset=(S.xe*s)%18;c.beginPath();c.moveTo(0,Y(1.75));c.lineTo(W,Y(1.75));c.stroke();c.setLineDash([]);c.lineDashOffset=0;
+  c.font='11px "IBM Plex Mono",monospace';c.textAlign='center';c.fillStyle='#5d6c85';c.strokeStyle='#1c2638';
+  for(let d=10;d<=100;d+=10){c.beginPath();c.moveTo(X(d),18);c.lineTo(X(d),H-16);c.stroke();c.fillText(d+' m',X(d),H-4)}
+  const wedge=(x0,half,col)=>{c.beginPath();c.moveTo(X(x0),Y(0));c.lineTo(X(x0+110),Y(110*Math.tan(half*RAD)));c.lineTo(X(x0+110),Y(-110*Math.tan(half*RAD)));c.closePath();c.fillStyle=col;c.fill()};
+  if(P.lidOn)wedge(0,Math.min(60,89),'rgba(255,154,74,.05)');if(P.camOn)wedge(CAM.x,P.hfov/2,'rgba(76,194,255,.07)');
+  c.strokeStyle='rgba(197,140,255,.35)';c.setLineDash([3,5]);c.beginPath();c.moveTo(X(0),Y(1.4));c.lineTo(W,Y(1.4));c.moveTo(X(0),Y(-1.4));c.lineTo(W,Y(-1.4));c.stroke();c.setLineDash([]);
+  if(P.showTruth){c.strokeStyle=COL.ref;c.lineWidth=1;c.globalAlpha=0.7;
+    for(const o of S.objs){const xr=o.x-S.xe;if(xr>104||xr<-6)continue;
+      if(o.r){c.beginPath();c.arc(X(xr),Y(o.y),Math.max(2,o.r*s),0,7);c.stroke()}else c.strokeRect(X(xr-o.L/2),Y(o.y+o.W/2),o.L*s,o.W*s)}c.globalAlpha=1}
+  const pt=S.pts;c.fillStyle='#34435c';for(let i=0;i<pt.n;i++)if(pt.z[i]<0.2)c.fillRect(X(pt.x[i]),Y(pt.y[i]),1,1);
+  c.fillStyle=COL.lid;for(let i=0;i<pt.n;i++)if(pt.z[i]>=0.2)c.fillRect(X(pt.x[i])-1,Y(pt.y[i])-1,2,2);
+  c.strokeStyle='rgba(255,154,74,.8)';c.lineWidth=1;for(const k of S.clusters)c.strokeRect(X(k.x0)-3,Y(k.y1)-3,(k.x1-k.x0)*s+6,(k.y1-k.y0)*s+6);
+  c.strokeStyle=COL.cam;c.lineWidth=1.5;
+  for(const t of S.tracks){if(S.t-t.camT>0.06||t.camM>104)continue;const x=X(t.camM),y=Y(t.camY);
+    c.beginPath();c.moveTo(X(t.camM-t.camSx),y);c.lineTo(X(Math.min(104,t.camM+t.camSx)),y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.stroke()}
+  c.textAlign='left';
+  for(const t of S.tracks){if(t.lx.p>104)continue;const x=X(t.lx.p),y=Y(t.ly.p),ok=t.hits>=3,pri=t===S.target;
+    c.strokeStyle=COL.fus;c.fillStyle=COL.fus;c.lineWidth=pri?2.5:1.5;c.globalAlpha=ok?1:0.45;
+    c.beginPath();c.moveTo(x,y-6);c.lineTo(x+6,y);c.lineTo(x,y+6);c.lineTo(x-6,y);c.closePath();if(ok&&t.cls!=='obj')c.fill();else c.stroke();
+    if(ok){const va=(t.lx.v+S.v)*0.5*s;if(Math.abs(va)>3){c.beginPath();c.moveTo(x,y);c.lineTo(x+va,y-t.ly.v*0.5*s);c.stroke()}
+      if(t.cls!=='obj'||pri){c.fillStyle='#dbe4f0';c.fillText(`T${t.id} ${t.sub?SIGN[t.sub]:CLS[t.cls]}`,x+9,y-(t.ly.p<0?-14:8))}}
+    c.globalAlpha=1}
+  c.fillStyle='#dbe4f0';c.fillRect(X(-EGO.L),Y(EGO.W/2),EGO.L*s,EGO.W*s);c.fillStyle='#0d1420';c.fillRect(X(-2.6),Y(0.7),1.2*s,1.4*s);
+  if(S.target&&S.target.lx.p<104){const x=X(S.target.lx.p);c.strokeStyle=COL.fus;c.lineWidth=1;c.beginPath();c.moveTo(X(0),50);c.lineTo(x,50);c.moveTo(X(0),45);c.lineTo(X(0),55);c.moveTo(x,45);c.lineTo(x,55);c.stroke();
+    c.fillStyle=COL.fus;c.textAlign='center';c.font='600 12px "IBM Plex Mono",monospace';c.fillText(S.target.lx.p.toFixed(1)+' m',(X(0)+x)/2,44)}
+}
+function drawChart(id,H,ymax,series,lines){
+  const cv=$(id),c=fit(cv),W=560,L=40,R=10,T=26,B=20,t1=S.t,t0=t1-12;
+  const X=t=>L+(t-t0)/12*(W-L-R),Y=v=>H-B-clamp(v/ymax,0,1)*(H-T-B);
+  c.clearRect(0,0,W,H);c.fillStyle='#0d1420';c.fillRect(0,0,W,H);
+  c.font='11px "IBM Plex Mono",monospace';c.fillStyle='#6b7a93';c.strokeStyle='#1c2638';c.lineWidth=1;c.textAlign='right';
+  for(let i=0;i<=4;i++){const v=ymax*i/4;c.beginPath();c.moveTo(L,Y(v));c.lineTo(W-R,Y(v));c.stroke();c.fillText(v%1?v.toFixed(1):v,L-6,Y(v)+4)}
+  c.textAlign='center';for(let k=0;k<=12;k+=3)c.fillText(k===12?'acum':`−${12-k} s`,X(t0+k)-(k===12?12:0),H-5);
+  for(const l of lines||[]){c.strokeStyle=l[1];c.setLineDash([5,4]);c.beginPath();c.moveTo(L,Y(l[0]));c.lineTo(W-R,Y(l[0]));c.stroke();c.setLineDash([])}
+  for(const sr of series){c.strokeStyle=c.fillStyle=sr.col;c.lineWidth=sr.w||1.5;
+    if(sr.dots){for(const h of S.hist){const v=h[sr.k];if(v!==null&&h.t>=t0)c.fillRect(X(h.t)-1.5,Y(v)-1.5,3,3)}}
+    else{c.beginPath();let pen=false;for(const h of S.hist){const v=h[sr.k];if(v===null||h.t<t0){pen=false;continue}if(pen)c.lineTo(X(h.t),Y(v));else{c.moveTo(X(h.t),Y(v));pen=true}}c.stroke()}}
+}
+function drawCharts(){
+  let m=20;for(const h of S.hist)for(const k of['dT','dL','dC','dF'])if(h[k]>m)m=h[k];m=Math.min(200,Math.ceil(m/20)*20);
+  drawChart('ch1',210,m,[{k:'dT',col:COL.ref,w:3},{k:'dC',col:COL.cam,dots:1},{k:'dL',col:COL.lid,dots:1},{k:'dF',col:COL.fus,w:1.8}]);
+  drawChart('ch2',190,8,[{k:'ttcT',col:COL.ref,w:3},{k:'ttc',col:COL.fus,w:1.8}],[[2.6,'#c9a227'],[1.6,'#e07b2e'],[1.0,'#e04545']]);
+}
+const f1=(v,d=1)=>v===null||v===undefined||!isFinite(v)?'–':v.toFixed(d).replace('.',',');
+function readouts(){
+  const tg=S.target,tr=truthFor(tg),st=$('st');
+  const code=S.collided?4:S.aeb>=2?3:S.aeb===1?2:tg&&P.acc?1:0;
+  st.className='pill'+(code?' s'+code:'');
+  st.textContent=S.collided?'COLIZIUNE':S.aeb===3?'FRÂNARE DE URGENȚĂ':S.aeb===2?'FRÂNARE PARȚIALĂ':S.aeb===1?'AVERTIZARE COLIZIUNE':code===1?'URMĂRIRE ACC':'DRUM LIBER';
+  $('rD').textContent=tg?f1(tg.lx.p):'–';$('rV').textContent=tg?f1(tg.lx.v*3.6,0):'–';
+  $('rT').textContent=tg&&isFinite(S.ttc)?(S.ttc>20?'>20':f1(S.ttc)):'–';$('rH').textContent=tg&&S.v>1?f1(tg.lx.p/S.v):'–';
+  const dT=tr?tr.d:null,row=(id,v)=>{$(id).textContent=f1(v,2);const e=$(id+'E');if(e)e.textContent=v===null||dT===null?'–':(v-dT>=0?'+':'')+f1(v-dT,2)};
+  $('eTrue').textContent=f1(dT,2);
+  row('eLid',tg&&S.t-tg.lidT<0.25?tg.lid:null);row('eGp',tg&&S.t-tg.camT<0.2?tg.gp:null);row('eHh',tg&&S.t-tg.camT<0.2?tg.hh:null);row('eFus',tg?tg.lx.p:null);
+  $('rVe').textContent=f1(S.v*3.6,0)+' km/h';$('rAe').textContent=f1(S.a,2)+' m/s²';
+  $('rLim').textContent=S.limit?S.limit+' km/h':'nicio limită citită';
+  $('rSign').textContent=S.lastSign?`${SIGN[S.lastSign.sub]}, citit la ${f1(S.lastSign.d,0)} m`:'–';
+  $('rCls').textContent=tg?`${CLS[tg.cls]} (pista T${tg.id})`:'–';$('rAreq').textContent=tg&&S.areq>0.05?`${f1(S.areq,2)} m/s² din ${f1(P.mu*G,1)} disponibili`:'–';
+  const ic=$('signIcon').getContext('2d');ic.clearRect(0,0,108,108);
+  if(S.lastSign)drawSign(ic,S.lastSign.sub,54,54,96);else{ic.strokeStyle='#8893a5';ic.setLineDash([6,6]);ic.lineWidth=2;ic.beginPath();ic.arc(54,54,44,0,7);ic.stroke();ic.setLineDash([])}
+  $('stats').innerHTML=`LiDAR: <b>${S.pts.n}</b> puncte/scanare, <b>${S.clusters.length}</b> clustere · Cameră: <b>${S.dets.length}</b> detecții · Piste: <b>${S.tracks.filter(t=>t.hits>=3).length}</b> confirmate · t = ${f1(S.t)} s`;
+}
+function lidarRange(refl){const a=WX[P.weather].a;let lo=0,hi=600;for(let i=0;i<40;i++){const r=(lo+hi)/2;if((refl/0.1)*(P.r10/r)**2*Math.exp(-2*a*r)>=1)lo=r;else hi=r}return lo}
+function theory(){
+  const K=intr(),need=c=>{const q=P.thr/0.98;return q>=1?0:K.f*HASSUME[c]/(-H0[c]*Math.log(1-q))},v=P.vset/3.6,am=P.mu*G;
+  $('t1').innerHTML=`Acum: f = <b>${K.f.toFixed(0)} px</b>, un pixel acoperă <b>${f1(Math.atan(1/K.f)/RAD,3)}°</b>, adică <b>${f1(50/K.f*100,1)} cm</b> la 50 m.`;
+  $('t2').innerHTML=`Distanța maximă de detecție pe timp senin, la pragul ${f1(P.thr,2)}: vehicul <b>${need('car').toFixed(0)} m</b>, pieton <b>${need('ped').toFixed(0)} m</b>, semn <b>${need('sign').toFixed(0)} m</b>. Tipul semnului se citește de la <b>${(K.f*0.7/18).toFixed(0)} m</b>.`;
+  $('t3').innerHTML=`O eroare de 1 px la baza cadrului înseamnă <b>${f1(900/(K.f*CAM.z),2)} m</b> la 30 m și <b>${f1(6400/(K.f*CAM.z),2)} m</b> la 80 m.`;
+  $('t4').innerHTML=`Acum: <b>${(Math.round(LID.hfov/P.hres)+1)*P.layers}</b> raze pe scanare la 10 Hz. La 50 m, Δt = <b>334 ns</b>, iar punctele vecine sunt la <b>${f1(50*P.hres*RAD*100,0)} cm</b> pe orizontală și <b>${f1(50*LID.vfov/(P.layers-1)*RAD*100,0)} cm</b> pe verticală. Raza utilă: pieton (ρ = 20%) <b>${lidarRange(0.2).toFixed(0)} m</b>, vehicul (ρ = 50%) <b>${lidarRange(0.5).toFixed(0)} m</b>.`;
+  $('t6').innerHTML=`La ${P.vset} km/h și μ = ${f1(P.mu)}: a<sub>max</sub> = <b>${f1(am)} m/s²</b>. Oprire cu șofer (t<sub>r</sub> = 1 s): <b>${(v+v*v/(2*am)).toFixed(0)} m</b>. Oprire cu AEB (t<sub>r</sub> ≈ 0,3 s): <b>${(v*0.3+v*v/(2*am)).toFixed(0)} m</b>.`;
+}
+
+
+/* ---------- secțiunea LiDAR ---------- */
+const SCAN={
+ spin:{name:'Rotativ mecanic, 360°',tag:'fereastră de 120° din rotația completă',
+  how:'Un turn cu 16 până la 128 de perechi laser-detector se rotește complet, de 5 până la 20 de ori pe secundă. Coloana de fascicule mătură scena, deci fiecare laser desenează o linie orizontală.',
+  pro:'Vede 360° în jurul vehiculului. Rezoluția verticală este fixă și cunoscută.',con:'Piese grele în rotație, volum mare, cost ridicat. Se montează pe plafon și este greu de calificat pentru producția de serie.',
+  ex:'Velodyne HDL-64E, cu 64 de lasere la 905 nm, senzorul clasic al prototipurilor de vehicule autonome.'},
+ mirror:{name:'Oglindă sau poligon rotativ',tag:'trei fețe de oglindă pe cadru, straturi întrețesute',
+  how:'Laserele și detectorii stau pe loc. O oglindă sau o prismă poligonală rotativă plimbă fasciculele pe orizontală, iar fețele cu înclinări diferite adaugă straturi între cele existente.',
+  pro:'Un singur element mobil, ușor și echilibrat. Soluția cea mai răspândită la vehiculele de serie.',con:'Acoperă numai câmpul frontal. Rezoluția verticală depinde de numărul de canale.',
+  ex:'Valeo Scala 1 de pe Audi A8: patru diode laser și o oglindă cu două fețe, 145° baleiați de 25 de ori pe secundă. Hesai AT128 folosește același principiu cu 128 de canale.'},
+ mems:{name:'MEMS (micro-oglindă)',tag:'axă rapidă la rezonanță, axă lentă liniară',
+  how:'O oglindă de câțiva milimetri, gravată în siliciu, oscilează rapid la rezonanță pe o axă și lent pe cealaltă. Un singur fascicul desenează un raster în zigzag.',
+  pro:'Compact și ieftin în volum mare. Densitatea liniilor poate fi concentrată într-o zonă de interes.',con:'Oglinda mică limitează lumina colectată, deci raza. Mișcarea sinusoidală îndesește punctele la margini. Sensibil la vibrații și temperatură.',
+  ex:'RoboSense M1, cu micro-oglindă pe două axe la 905 nm.'},
+ risley:{name:'Prisme Risley, baleiaj nerepetitiv',tag:'rozetă care nu se închide; acoperirea crește în timp',
+  how:'Două prisme în formă de pană se rotesc cu viteze diferite și deviază fasciculul pe o rozetă care nu se repetă. Cu cât se integrează mai mult timp, cu atât se umple câmpul vizual.',
+  pro:'Densitate mare cu puține lasere, deci cost mic. Nu rămân benzi permanent nevăzute între linii.',con:'Într-un singur cadru de 100 ms rămân goluri. Algoritmii gândiți pentru linii orizontale trebuie adaptați.',
+  ex:'Livox HAP de pe Xpeng P5: numai 6 emițătoare laser, cu densitate echivalentă cu 144 de linii.'},
+ flash:{name:'Flash (fără baleiaj)',tag:'toți pixelii sunt măsurați în același impuls',
+  how:'Un singur impuls luminează toată scena, iar o matrice de detectori SPAD măsoară timpul de zbor în fiecare pixel, ca o cameră cu obturator global.',
+  pro:'Nicio piesă mobilă. Scena este înghețată într-un singur moment, deci nu apar distorsiuni la mișcare.',con:'Energia impulsului se împarte pe toată scena, de aceea raza este scurtă. Rezoluția este numărul de pixeli ai matricei.',
+  ex:'Continental HFL110: 128 × 32 pixeli pe 120° × 30°, rază de 50 m, 25 de cadre pe secundă.'}};
+let scanK='mirror',scanT=0,scanFlash=-1;
+const SX0=30,SY0=34,SW=500,SH=170;
+function scanFrame(c,dt){
+  const t0=scanT,t1=scanT+dt;scanT=t1;const head=[];
+  const dot=(u,v,h)=>{if(u<0||u>1||v<0||v>1)return;c.fillRect(SX0+u*SW-1,SY0+v*SH-1,2,2);if(h)head.push([u,v])};
+  c.fillStyle=COL.lid;
+  if(scanK==='flash'){const k=Math.floor(t1/0.04);if(k!==scanFlash){scanFlash=k;c.fillStyle='#ffe2c4';for(let i=0;i<32;i++)for(let j=0;j<8;j++)c.fillRect(SX0+(i+0.5)/32*SW-2,SY0+(j+0.5)/8*SH-2,4,4)}return head}
+  const n=scanK==='risley'?60:40;
+  for(let i=1;i<=n;i++){const t=t0+(t1-t0)*i/n,ph=(t%0.1)/0.1,last=i===n;
+    if(scanK==='spin'){const u=ph*3;for(let l=0;l<16;l++)dot(u,(l+0.5)/16,last)}
+    else if(scanK==='mirror'){const f=Math.floor(ph*3),u=(ph*3)%1;for(let l=0;l<8;l++)dot(u,(l+0.17+f/3)/8,last)}
+    else if(scanK==='mems')dot(0.5+0.5*Math.sin(2*Math.PI*400*t),ph,last);
+    else{const a=2*Math.PI*117*t,b=2*Math.PI*73.31*t;dot(0.5+0.5*(0.55*Math.cos(a)+0.45*Math.cos(b)),0.5+0.5*(0.55*Math.sin(a)-0.45*Math.sin(b)),last)}}
+  return head;
+}
+function drawScan(dtReal){
+  const cv=$('scan'),c=cv.getContext('2d'),fade={spin:0.03,mirror:0.03,mems:0.03,risley:0.004,flash:0.12}[scanK];
+  c.fillStyle=`rgba(13,20,32,${fade})`;c.fillRect(0,0,560,230);
+  const head=scanFrame(c,dtReal*(scanK==='risley'?0.12:0.035));
+  c.strokeStyle='#33405a';c.lineWidth=1;c.strokeRect(SX0-4.5,SY0-4.5,SW+9,SH+9);
+  c.fillStyle='#fff';for(const h of head)c.fillRect(SX0+h[0]*SW-2,SY0+h[1]*SH-2,4,4);
+  c.fillStyle='#0d1420';c.fillRect(0,SY0+SH+6,560,20);c.fillStyle='#6b7a93';c.font='11px "IBM Plex Mono",monospace';c.textAlign='center';
+  c.fillText('−60°',SX0,224);c.fillText('0°',SX0+SW/2,224);c.fillText('+60°',SX0+SW,224);
+}
+function setScan(k){scanK=k;scanT=0;scanFlash=-1;const d=SCAN[k],c=$('scan').getContext('2d');c.fillStyle='#0d1420';c.fillRect(0,0,560,230);
+  $('scanName').textContent=d.name;$('scanHow').textContent=d.how;$('scanPro').textContent=d.pro;$('scanCon').textContent=d.con;$('scanEx').textContent=d.ex;$('scanTag').textContent=d.tag.toUpperCase();
+  document.querySelectorAll('#scanBtns button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)for(let i=0;i<(k==='risley'?600:180);i++)drawScan(1/60)}
+function drawTof(){
+  const cv=$('tof'),c=fit(cv),W=560,H=200,L=16,R=16,base=H-34,d=+$('tofD').value,rho=+$('tofR').value/100,a=WX[P.weather].a;
+  const tns=2*d/0.299792458,tmax=1700,X=t=>L+t/tmax*(W-L-R),Pr=(rho/0.1)*(P.r10/d)**2*Math.exp(-2*a*d),ok=Pr>=1,thr=26,amp=Math.min(120,thr*Math.sqrt(Pr));
+  c.clearRect(0,0,W,H);c.fillStyle='#0d1420';c.fillRect(0,0,W,H);
+  c.strokeStyle='#1c2638';c.fillStyle='#6b7a93';c.font='11px "IBM Plex Mono",monospace';c.textAlign='center';c.lineWidth=1;
+  for(let t=0;t<=1600;t+=400){c.beginPath();c.moveTo(X(t),28);c.lineTo(X(t),base);c.stroke();c.fillText(t+' ns',X(t),H-18);c.fillText((t*0.149896).toFixed(0)+' m',X(t),H-5)}
+  c.strokeStyle='#e04545';c.setLineDash([5,4]);c.beginPath();c.moveTo(L,base-thr);c.lineTo(W-R,base-thr);c.stroke();c.setLineDash([]);
+  c.fillStyle='#e04545';c.textAlign='right';c.fillText('prag de detecție',W-R,base-thr-4);
+  c.beginPath();c.strokeStyle=COL.lid;c.lineWidth=2;
+  for(let x=L;x<=W-R;x++){const t=(x-L)/(W-L-R)*tmax,g=(m,A)=>A*Math.exp(-(((t-m)/9)**2)),y=base-g(0,120)-g(tns,amp)-3-2.5*Math.sin(x*12.9898)*Math.sin(x*3.7);x===L?c.moveTo(x,y):c.lineTo(x,y)}
+  c.stroke();
+  c.fillStyle='#dbe4f0';c.textAlign='left';c.fillText('impuls emis',X(0)+10,46);
+  if(amp>3){c.textAlign='center';c.fillStyle=ok?'#7dffa8':'#e04545';c.fillText(ok?'ecou detectat':'ecou sub prag',clamp(X(tns),70,W-70),base-Math.max(amp,thr)-12)}
+  c.strokeStyle=COL.fus;c.lineWidth=1;c.beginPath();c.moveTo(X(0),18);c.lineTo(X(tns),18);c.moveTo(X(0),13);c.lineTo(X(0),23);c.moveTo(X(tns),13);c.lineTo(X(tns),23);c.stroke();
+  c.fillStyle=COL.fus;c.textAlign='center';c.fillText('Δt = '+tns.toFixed(0)+' ns',clamp((X(0)+X(tns))/2,60,W-60),12);
+  $('o_tofD').textContent=d+' m';$('o_tofR').textContent=(rho*100).toFixed(0)+'%';
+  $('tofOut').innerHTML=`Δt = 2·${d} m / c = <b>${f1(tns,1)} ns</b>. Puterea ecoului este de <b>${Pr>=10?Pr.toFixed(0):f1(Pr,2)}×</b> pragul, deci ținta ${ok?'<b>este detectată</b>':'<b>nu este detectată</b>'}. Raza maximă pentru această reflectivitate, în condițiile din simulator: <b>${lidarRange(rho).toFixed(0)} m</b>.`;
+  const sh=P.hres*RAD,sv=LID.vfov/(P.layers-1)*RAD,np=x=>Math.max(0,Math.floor(0.5/(x*sh)))*Math.max(0,Math.floor(1.7/(x*sv)));
+  $('tRes').innerHTML=`Cu setările din simulator (${f1(P.hres,2)}° × ${f1(LID.vfov/(P.layers-1),2)}°), un pieton de 0,5 × 1,7 m primește aproximativ <b>${np(20)}</b> puncte la 20 m, <b>${np(50)}</b> la 50 m și <b>${np(100)}</b> la 100 m.`;
+}
+function bindLidar(){
+  document.querySelectorAll('#scanBtns button').forEach(b=>b.addEventListener('click',()=>setScan(b.dataset.k)));
+  $('tofD').addEventListener('input',drawTof);$('tofR').addEventListener('input',drawTof);
+  const preset=o=>()=>{Object.assign(P,o);syncUI();$('c_layers').scrollIntoView({block:'center'})};
+  $('pScala').addEventListener('click',preset({layers:4,hres:0.25,r10:100}));$('pAT').addEventListener('click',preset({layers:32,hres:0.1,r10:200}));
+  setScan('mirror');drawTof();
+}
+
+/* ---------- interfață ---------- */
+const CTL=['camOn','lidOn','showPts','showTruth','acc','aeb','isa','layers','hres','r10','sigma','hfov','resW','thr','weather','night','mu','vset','tgap','rate'];
+const OUT={r10:v=>v+' m',sigma:v=>v+' cm',hfov:v=>v+'°',thr:v=>f1(+v,2),vset:v=>v+' km/h',tgap:v=>f1(+v)+' s'};
+function syncUI(){for(const k of CTL){const e=$('c_'+k);if(e.type==='checkbox')e.checked=P[k];else e.value=P[k];if(OUT[k])$('o_'+k).textContent=OUT[k](P[k])}theory();if($('tofOut'))drawTof()}
+function bindUI(){
+  for(const k of CTL){const e=$('c_'+k);e.addEventListener('input',()=>{P[k]=e.type==='checkbox'?e.checked:k==='weather'?e.value:+e.value;if(OUT[k])$('o_'+k).textContent=OUT[k](P[k]);theory();drawTof()})}
+  document.querySelectorAll('#scn button[data-s]').forEach(b=>b.addEventListener('click',()=>{reset(b.dataset.s);setPaused(false)}));
+  $('bPause').addEventListener('click',()=>setPaused(!paused));
+  $('bStep').addEventListener('click',()=>{setPaused(true);if(!S.collided)for(let i=0;i<6;i++)step(DT);readouts()});
+  $('bReset').addEventListener('click',()=>{reset();setPaused(false)});
+  $('bPed').addEventListener('click',()=>S.objs.push(mkPed(S.xe+Math.max(25,S.v*3.4),-4.6,{vy:1.4})));
+  $('bBrake').addEventListener('click',()=>{const l=S.objs.filter(o=>o.type==='car'&&Math.abs(o.y)<1&&o.x>S.xe).sort((a,b)=>a.x-b.x)[0];if(l)l.brake=7});
+}
+function setPaused(p){paused=p;$('bPause').textContent=p?'Continuă':'Pauză';$('bPause').setAttribute('aria-pressed',p)}
+let last=0,acc=0;
+function frame(ts){
+  const dr=Math.min(0.05,(ts-last)/1000||0);last=ts;
+  if(!paused&&!S.collided){acc+=dr*P.rate;let n=0;while(acc>=DT&&n<4){step(DT);acc-=DT;n++;if(S.collided)break}if(n===4)acc=0}
+  drawCamera();drawBev();drawCharts();if(!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))drawScan(dr||1/60);if((frame.n=(frame.n||0)+1)%6===0)readouts();
+  requestAnimationFrame(frame);
+}
+if(typeof document!=='undefined'&&document.getElementById('cam')){
+  bindUI();reset('follow');bindLidar();for(let i=0;i<90;i++)step(DT);readouts();
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)setPaused(true);
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
