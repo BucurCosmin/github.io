@@ -1,0 +1,44 @@
+<div class="plot">
+    <div class="plot-heading"><h3>@Title</h3><span>@Unit</span></div>
+    <svg viewBox="0 0 720 200" role="img" aria-label="@Title" preserveAspectRatio="none">
+        @for (int i = 0; i <= 4; i++)
+        {
+            var y = 12 + i * 41;
+            <line x1="52" x2="706" y1="@y" y2="@y" class="grid-line" />
+            <g><text x="45" y="@(y + 4)" text-anchor="end">@Format(Max - (Max - Min) * i / 4)</text></g>
+        }
+        @foreach (var line in Lines)
+        {
+            <polyline points="@Points(line.Values)" fill="none" stroke="@line.Color" stroke-width="2" vector-effect="non-scaling-stroke" />
+        }
+        @if (Cursor.HasValue && XMax > XMin)
+        {
+            <line x1="@XPosition(Cursor.Value)" x2="@XPosition(Cursor.Value)" y1="12" y2="176" class="cursor-line" />
+        }
+        <text x="52" y="195">@Format(XMin)</text>
+        <text x="706" y="195" text-anchor="end">@Format(XMax) @XUnit</text>
+    </svg>
+    <div class="legend">
+        @foreach (var line in Lines)
+        {
+            <span><i style="background:@line.Color"></i>@line.Name</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public string XUnit { get; set; } = "s";
+    [Parameter, EditorRequired] public IReadOnlyList<PlotLine> Lines { get; set; } = Array.Empty<PlotLine>();
+    [Parameter] public double XMin { get; set; }
+    [Parameter] public double XMax { get; set; } = 1;
+    [Parameter] public double Min { get; set; }
+    [Parameter] public double Max { get; set; } = 1;
+    [Parameter] public double? Cursor { get; set; }
+
+    private static string Format(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    private string XPosition(double x) => Format(52 + Math.Clamp((x - XMin) / (XMax - XMin), 0, 1) * 654);
+    private string Points(IReadOnlyList<(double X, double Y)> values) => string.Join(" ", values.Select(p =>
+        $"{XPosition(p.X)},{Format(176 - Math.Clamp((p.Y - Min) / Math.Max(Max - Min, 1e-9), 0, 1) * 164)}"));
+}

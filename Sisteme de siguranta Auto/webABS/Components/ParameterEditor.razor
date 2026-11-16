@@ -1,0 +1,99 @@
+@foreach (var group in Properties.GroupBy(p => p.GetCustomAttribute<CategoryAttribute>()?.Category ?? "Parametri"))
+{
+    <div class="parameter-group">
+        <h4>@group.Key</h4>
+        @foreach (var property in group)
+        {
+            var value = property.GetValue(Model);
+            var label = property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name;
+            var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
+            <label class="parameter" title="@description">
+                <span>@label</span>
+                @if (property.PropertyType == typeof(bool))
+                {
+                    <input type="checkbox" checked="@((bool)value!)" @onchange="e => SetValue(property, e.Value)" />
+                }
+                else if (property.PropertyType == typeof(Surface))
+                {
+                    <select value="@Surface.All.IndexOfSurface((Surface)value!)" @onchange="e => SetValue(property, e.Value)">
+                        @for (var i = 0; i < Surface.All.Count; i++)
+                        {
+                            <option value="@i">@Surface.All[i].Name</option>
+                        }
+                    </select>
+                }
+                else if (property.PropertyType.IsEnum)
+                {
+                    <select value="@value" @onchange="e => SetValue(property, e.Value)">
+                        @foreach (var item in Enum.GetValues(property.PropertyType))
+                        {
+                            <option value="@item">@EnumLabel(item)</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input type="@(property.PropertyType == typeof(string) ? "text" : "number")"
+                           step="any" value="@Convert.ToString(value, CultureInfo.InvariantCulture)"
+                           @onchange="e => SetValue(property, e.Value)" />
+                }
+            </label>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public object Model { get; set; } = default!;
+    [Parameter] public EventCallback<ParameterValidation> OnError { get; set; }
+
+    private IEnumerable<PropertyInfo> Properties => Model.GetType().GetProperties()
+        .Where(p => p.CanWrite && p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false);
+
+    private static string EnumLabel(object value) =>
+        value.GetType().GetField(value.ToString()!)?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? value.ToString()!;
+
+    private async Task SetValue(PropertyInfo property, object? input)
+    {
+        var text = Convert.ToString(input, CultureInfo.InvariantCulture) ?? "";
+        object? value;
+        if (property.PropertyType == typeof(bool))
+            value = input is bool b && b;
+        else if (property.PropertyType == typeof(Surface))
+            value = int.TryParse(text, out var index) && index >= 0 && index < Surface.All.Count ? Surface.All[index] : null;
+        else if (property.PropertyType.IsEnum)
+            value = Enum.TryParse(property.PropertyType, text, out var parsed) ? parsed : null;
+        else if (property.PropertyType == typeof(string))
+            value = text;
+        else if (property.PropertyType == typeof(int))
+            value = int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var integer) ? integer : null;
+        else
+            value = double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number) ? number : null;
+
+        if (value is null || !IsValid(property, value))
+        {
+            await OnError.InvokeAsync(new ParameterValidation($"{Model.GetType().Name}.{property.Name}", $"Valoare invalidă pentru „{property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name}”."));
+            return;
+        }
+        property.SetValue(Model, value);
+        await OnError.InvokeAsync(new ParameterValidation($"{Model.GetType().Name}.{property.Name}", null));
+    }
+
+    private static bool IsValid(PropertyInfo property, object value)
+    {
+        if (property.Name == nameof(ControlParameters.Gma2RatesBarPerS))
+        {
+            var parts = ((string)value).Split(new[] { ';', '/', '|' }, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length == 4 && parts.All(p => double.TryParse(p.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v) && v > 0);
+        }
+        if (property.Name == nameof(Scenario.SensorFaultWheel)) return (int)value >= -1 && (int)value <= 3;
+        if (value is int integer) return integer > 0;
+        if (value is not double number) return true;
+        if (property.Name == nameof(Scenario.MaxDuration)) return number >= 0.1 && number <= 120;
+        if (property.Name == nameof(Scenario.InitialSpeedKmh)) return number > 0 && number <= 300;
+        if (property.Name == nameof(ControlParameters.SlipThresholdPercent)) return number > 0 && number < 100;
+        string[] strictlyPositive = { "Mass", "Lf", "Lr", "WheelRadius", "WheelInertiaFront", "WheelInertiaRear",
+            "CorneringStiffnessFront", "CorneringStiffnessRear", "EcuPeriodMs", "DrivenInertiaFactor",
+            "StepPeriodHighMuMs", "StepPeriodLowMuMs" };
+        return strictlyPositive.Contains(property.Name) ? number > 0 : number >= 0;
+    }
+}

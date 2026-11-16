@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Harta electronică 3D</title>
+<meta name="description" content="Model 3D al unui autoturism modern: ECU-uri, senzori, actuatoare, rețele de comunicație și date tehnice pe sisteme.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#eaeeed; --sheet:#f7f9f8; --card:#ffffff; --ink:#16201d; --muted:#596763;
+  --rule:#d0d8d5; --rule-2:#b3beba; --car:#c9d6d2; --phantom:#8fa29c; --view:#f3f6f5; --view-2:#dfe6e4;
+  --sen:#0c8174; --sen-t:#e0f2ef; --act:#b5541a; --act-t:#f8e6d8;
+  --ecu-bg:#16201d; --ecu-fg:#f3f6f5; --focus:#d99a00;
+  --pt:#a23b7f; --ch:#2a5fc4; --bd:#5d7816; --ad:#6d4ad1; --gwc:#16201d; --ps:#c2312f;
+  --f-disp:"Saira Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1513; --sheet:#141b19; --card:#19221f; --ink:#e3eae7; --muted:#93a39d;
+  --rule:#2a3633; --rule-2:#3e4b47; --car:#5f7770; --phantom:#5b6f69; --view:#121a18; --view-2:#0b100f;
+  --sen:#3cc4b2; --sen-t:#123631; --act:#f08c4a; --act-t:#3a2416;
+  --ecu-bg:#e3eae7; --ecu-fg:#101614; --focus:#f2c03a;
+  --pt:#e07ab9; --ch:#6b9cf0; --bd:#a5c44a; --ad:#a58cf5; --gwc:#e3eae7; --ps:#f07a6e; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --sheet:#141b19; --card:#19221f; --ink:#e3eae7; --muted:#93a39d;
+  --rule:#2a3633; --rule-2:#3e4b47; --car:#5f7770; --phantom:#5b6f69; --view:#121a18; --view-2:#0b100f;
+  --sen:#3cc4b2; --sen-t:#123631; --act:#f08c4a; --act-t:#3a2416;
+  --ecu-bg:#e3eae7; --ecu-fg:#101614; --focus:#f2c03a;
+  --pt:#e07ab9; --ch:#6b9cf0; --bd:#a5c44a; --ad:#a58cf5; --gwc:#e3eae7; --ps:#f07a6e; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body)}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px;padding-block:24px 56px;display:grid;gap:22px}
+.eyebrow{font:500 11.5px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font:700 clamp(30px,4.4vw,46px)/1.02 var(--f-disp);letter-spacing:.01em;margin:6px 0 8px;text-wrap:balance}
+.lead{max-width:76ch;color:var(--muted);margin:0}
+.vnav{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.vnav a.back{color:var(--ink);font:500 13px var(--f-body);text-decoration:none;border-bottom:1px solid var(--rule-2)}
+.vnav a.back:hover{border-color:var(--ink)}
+.vseg{display:inline-flex;border:1px solid var(--rule-2);border-radius:4px;overflow:hidden}
+.vseg a,.vseg span{font:600 13px var(--f-disp);letter-spacing:.08em;padding:6px 14px;text-decoration:none;color:var(--ink)}
+.vseg span{background:var(--ink);color:var(--bg)}
+.vseg a:hover{background:var(--card)}
+
+.stage{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:980px){.stage{grid-template-columns:minmax(0,1fr)}}
+.sheet{background:var(--sheet);border:1px solid var(--rule);border-radius:6px}
+.viewbox{padding:14px;display:grid;gap:10px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.toolbar .lab{font:500 10.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12.5px var(--f-body);padding:4px 9px;border-radius:3px;border:1px solid var(--rule-2);background:var(--card);color:var(--ink);cursor:pointer;user-select:none}
+.chip i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.chip[aria-pressed="false"]{background:transparent;color:var(--muted);border-style:dashed}
+.chip[aria-pressed="false"] i{opacity:.35}
+.chip:hover{border-color:var(--ink)}
+.chip:focus-visible,button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sep{flex:1}
+#view{position:relative;height:clamp(380px,64vh,680px);border-radius:4px;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 35%,var(--view) 0%,var(--view-2) 100%);border:1px solid var(--rule);touch-action:none}
+#view canvas{display:block}
+#labels{position:absolute;inset:0;pointer-events:none}
+.l3{pointer-events:auto;font:600 12px var(--f-disp);letter-spacing:.06em;padding:2px 7px;border-radius:3px;border:0;cursor:pointer;
+  background:var(--ecu-bg);color:var(--ecu-fg);margin-top:-36px;white-space:nowrap}
+.l3.dim{opacity:.35}
+.l3.sel{outline:2px solid var(--focus)}
+.l3c{pointer-events:none;font:500 11px var(--f-body);padding:3px 8px;border-radius:3px;background:var(--ink);color:var(--bg);margin-top:-40px;white-space:nowrap}
+#tip{position:absolute;pointer-events:none;font:500 11.5px var(--f-body);padding:4px 8px;border-radius:3px;background:var(--ink);color:var(--bg);opacity:0;transition:opacity .1s;white-space:nowrap;z-index:2}
+.hud{position:absolute;left:10px;bottom:10px;font:400 10.5px var(--f-mono);color:var(--muted);letter-spacing:.04em;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12.5px;color:var(--muted)}
+.lg{display:inline-flex;align-items:center;gap:7px}
+.lg svg{width:16px;height:16px}
+#fallback{position:absolute;inset:0;display:none;place-content:center;text-align:center;padding:24px;color:var(--muted)}
+#fallback a{color:var(--ink)}
+
+#panel{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:20px;display:grid;gap:14px;min-width:0}
+@media (min-width:981px){#panel{position:sticky;top:14px}}
+.kind{display:inline-flex;align-items:center;gap:6px;font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:3px;justify-self:start}
+.k-e{background:var(--ecu-bg);color:var(--ecu-fg)}
+.k-s{background:var(--sen-t);color:var(--sen)}
+.k-a,.k-v{background:var(--act-t);color:var(--act)}
+#panel h2{font:700 30px/1.05 var(--f-disp);margin:0;text-wrap:balance}
+#panel .full{color:var(--muted);margin:-8px 0 0;font-size:14px}
+#panel h3{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+#panel p{margin:0;max-width:65ch}
+.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 14px;margin:0;padding:12px 0;border-block:1px solid var(--rule)}
+.facts dt{font:500 10.5px/1.9 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.facts dd{margin:0;font:400 13px/1.55 var(--f-mono)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:500 12px var(--f-mono)}
+.chain span{padding:4px 8px;border:1px solid var(--rule-2);border-radius:3px;background:var(--sheet)}
+.chain b{color:var(--muted);font-weight:400}
+.dtc{font:400 13px var(--f-mono);background:var(--sheet);border-left:3px solid var(--act);padding:8px 10px}
+.list{margin:0;padding-left:18px;font-size:14px}
+.list li{margin:2px 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b,a.b{font:500 13px var(--f-body);padding:8px 12px;border-radius:4px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer;text-decoration:none}
+button.b.ghost,a.b.ghost{background:transparent;color:var(--ink);border-color:var(--rule-2)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:600 12.5px var(--f-disp);letter-spacing:.06em;padding:4px 9px;border-radius:3px;border:1px solid var(--rule-2);background:var(--sheet);color:var(--ink);cursor:pointer}
+.pill:hover{border-color:var(--ink)}
+
+.specs{padding:18px;display:grid;gap:14px}
+.specs h2,.idx h2{font:700 24px var(--f-disp);margin:0}
+.spec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.spec{background:var(--card);border:1px solid var(--rule);border-top:4px solid var(--c);border-radius:5px;padding:14px 16px;display:grid;gap:10px;align-content:start;min-width:0}
+.spec h3{font:700 19px/1.1 var(--f-disp);margin:0;letter-spacing:.02em}
+.spec p{margin:0;font-size:13.5px;color:var(--muted)}
+.spec dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:0}
+.spec dt{font:500 10.5px/1.8 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.spec dd{margin:0;font:400 12.5px/1.5 var(--f-mono)}
+.spec .b{justify-self:start;font-size:12.5px;padding:6px 10px}
+
+.idx{padding:18px;display:grid;gap:14px}
+.idx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.grp{display:grid;gap:6px;align-content:start;min-width:0}
+.grp button{all:unset;cursor:pointer;display:flex;gap:8px;align-items:center;font-size:13.5px;padding:3px 4px;border-radius:3px}
+.grp button:hover{background:var(--card)}
+.grp button:focus-visible{outline:2px solid var(--focus)}
+.grp .ge{font:700 15px var(--f-disp);letter-spacing:.04em}
+.sw{width:10px;height:10px;flex:none;display:inline-block}
+.sw.s{border:2px solid var(--sen);border-radius:50%}
+.sw.a,.sw.v{border:2px solid var(--act);transform:rotate(45deg);width:8px;height:8px}
+.sw.e{background:var(--ink);border-radius:2px}
+.foot{font-size:12.5px;color:var(--muted);max-width:90ch;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <nav class="vnav" aria-label="Navigare curs"><a class="back" href="index.html">← Sisteme de siguranță ale autovehiculelor</a><span class="vseg" role="group" aria-label="Mod vizualizare"><a id="to2d" href="Harta electronică auto.html">2D</a><span aria-current="page">3D</span></span></nav>
+    <p class="eyebrow">Sisteme de siguranță activă a autovehiculelor · model 3D</p>
+    <h1>Harta electronică a automobilului — 3D</h1>
+    <p class="lead">Același autoturism ca în harta 2D, de data aceasta în spațiu: rotește modelul cu mouse-ul (sau cu degetul), apropie cu rotița și apasă pe un ECU, senzor sau actuator pentru fișa lui tehnică. Straturile de mai jos pornesc și opresc fiecare sistem, iar în 3D apar și componentele ascunse în harta 2D (cele din motor, cutie și unitatea ESP).</p>
+  </header>
+
+  <div class="stage">
+    <section class="sheet viewbox" aria-label="Model 3D al automobilului">
+      <div class="toolbar" id="layers"><span class="lab">Straturi</span></div>
+      <div class="toolbar" id="cams"><span class="lab">Vedere</span></div>
+      <div id="view">
+        <div id="labels"></div>
+        <div id="tip"></div>
+        <div class="hud">trage = rotire · rotiță / ciupire = zoom · clic dreapta = deplasare</div>
+        <div id="fallback"><p>Browserul nu poate afișa grafică 3D (WebGL).<br><a href="Harta electronică auto.html">Deschide harta 2D</a></p></div>
+      </div>
+      <div class="legend">
+        <span class="lg"><svg viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2" fill="var(--ecu-bg)"/></svg>ECU</span>
+        <span class="lg"><svg viewBox="-12 -12 24 24"><circle r="8" fill="var(--sen)"/></svg>Senzor</span>
+        <span class="lg"><svg viewBox="-12 -12 24 24"><path d="M0 -9 L9 0 L0 9 L-9 0Z" fill="var(--act)"/></svg>Actuator / electrovană</span>
+        <span class="lg"><svg viewBox="0 0 24 24"><path d="M2 12H22" stroke="var(--ch)" stroke-width="4"/></svg>conducte de frână</span>
+        <span class="lg"><svg viewBox="0 0 24 24"><path d="M2 12H22" stroke="var(--gwc)" stroke-width="3"/></svg>cablaj rețea (culoarea domeniului)</span>
+      </div>
+    </section>
+    <aside id="panel" aria-live="polite"></aside>
+  </div>
+
+  <section class="sheet specs" aria-label="Date tehnice pe sisteme">
+    <div><p class="eyebrow">Date tehnice</p><h2>Sistemele vehiculului în cifre</h2></div>
+    <div class="spec-grid" id="specs"></div>
+    <p class="foot">Valori tipice și orientative pentru un autoturism de clasă medie; diferă de la un producător și de la o generație la alta.</p>
+  </section>
+
+  <section class="sheet idx" aria-label="Index componente">
+    <h2>Index pe sisteme</h2>
+    <div class="idx-grid" id="idx"></div>
+    <p class="foot">Valorile sunt tipice și orientative; arhitectura exactă (numărul de ECU-uri, magistrale, protocoale) diferă de la un producător la altul. Codurile DTC sunt exemple de coduri generice OBD-II (P0xxx); codurile de șasiu și caroserie sunt de regulă specifice producătorului.</p>
+  </section>
+</div>
+
+<script src="harta-data.js"></script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* ================= date suplimentare 3D ================= */
+/* sistem de coordonate: X = înainte, Y = sus, Z = dreapta (metri, originea în centrul ampatamentului) */
+const P3 = {
+  ecm:[[1.95,0.72,0.60]], tcu:[[1.60,0.34,-0.45]], esp:[[1.30,0.72,-0.60]], eps:[[1.30,0.33,0.28]],
+  acu:[[-0.15,0.42,0]], bcm:[[0.70,0.62,0.45]], adas:[[0.52,1.26,0.10]], gw:[[0.42,0.50,-0.15]],
+  ckp:[[1.47,0.45,-0.22]], cmp:[[1.88,0.80,-0.20]], maf:[[2.02,0.78,-0.35]], map:[[1.45,0.80,0.15]],
+  ect:[[1.72,0.84,0.30]], lambda:[[1.05,0.22,0.30]], knock:[[1.60,0.55,0.38]], app:[[0.62,0.30,-0.42]],
+  etc:[[1.42,0.80,-0.12]], inj:[[1.55,0.70,0.24]], coils:[[1.65,0.86,0.04]], vvt:[[1.90,0.74,0.16]],
+  fuelpump:[[-0.85,0.45,0.20]],
+  nin:[[1.50,0.50,-0.62]], sel:[[0.15,0.62,0]], shiftsol:[[1.70,0.42,-0.36]], epc:[[1.64,0.44,-0.58]], tcc:[[1.48,0.62,-0.40]],
+  ws:[[1.44,0.33,-0.64],[1.44,0.33,0.64],[-1.34,0.33,-0.64],[-1.34,0.33,0.64]],
+  sas:[[0.55,0.86,-0.38]], yaw:[[-0.34,0.38,0]], mcp:[[1.30,0.82,-0.46]],
+  inlet:[[1.20,0.76,-0.70]], outlet:[[1.40,0.76,-0.70]], usv:[[1.20,0.64,-0.56]], pumpm:[[1.40,0.62,-0.54]],
+  torque:[[0.78,0.72,-0.38]], epsmotor:[[1.30,0.30,0.45]],
+  upfront:[[2.16,0.55,-0.45]], side:[[-0.25,0.62,-0.86],[-0.25,0.62,0.86]], occ:[[0.05,0.47,0.38]],
+  airbag:[[0.40,0.97,-0.38],[0.78,1.00,0.38]],
+  rain:[[0.48,1.30,-0.14]], key:[[-0.60,0.95,-0.90]], headl:[[2.12,0.72,-0.62],[2.12,0.72,0.62]],
+  cam:[[0.58,1.21,-0.02]], radar:[[2.34,0.45,0]], uss:[[2.28,0.48,-0.50],[2.28,0.48,0.50],[-2.32,0.52,-0.50],[-2.32,0.52,0.50]]
+};
+const LAYER_OF_ECU = {ecm:'pt',tcu:'pt',esp:'ch',eps:'ch',acu:'ps',bcm:'bd',adas:'ad',gw:'net'};
+const LAYERS = [
+  {id:'body',lbl:'Caroserie fantomă',c:'--car'},
+  {id:'pt',lbl:'Motor + transmisie',c:'--pt'},
+  {id:'ch',lbl:'Frânare + direcție',c:'--ch'},
+  {id:'ps',lbl:'Siguranță pasivă',c:'--ps'},
+  {id:'bd',lbl:'Caroserie + confort',c:'--bd'},
+  {id:'ad',lbl:'ADAS + câmpuri senzori',c:'--ad'},
+  {id:'net',lbl:'Rețea',c:'--gwc'}
+];
+const SPECS = [
+ {l:'net',c:'--gwc',t:'Arhitectura E/E și rețelele',
+  p:'Zeci de ECU-uri comunică prin magistrale separate pe domenii; Gateway-ul le leagă și filtrează accesul din exterior.',
+  r:[['ECU-uri / vehicul','tipic 30–100+, în tranziție spre arhitecturi zonale'],['CAN clasic','125–500 kbit/s · max. 8 octeți date'],['CAN FD','500 kbit/s arbitrare · 2–5 Mbit/s date · 64 octeți'],['LIN','≤ 20 kbit/s · 1 master, max. 16 noduri'],['Ethernet auto','100BASE-T1 / 1000BASE-T1 · o pereche torsadată'],['Alimentare','12 V nominal · 9–16 V funcționare'],['Diagnoză','UDS ISO 14229 · OBD-II pe CAN / DoIP']]},
+ {l:'ch',c:'--ch',t:'Frânare: ABS / ESP',
+  p:'Unitatea hidro-electronică modulează presiunea pe fiecare roată în cicluri rapide de menținere – scădere – creștere.',
+  r:[['Alunecare țintă','≈ 10–20 % (aderență maximă)'],['Ciclu de reglare','4–10 cicluri ABS / s pe roată'],['Buclă de calcul','5–10 ms'],['Electrovane','8 (ABS) · 12 (ESP: + 2 USV + 2 HSV)'],['Presiune sistem','până la ~180–250 bar'],['Prag activare','ABS inactiv sub ~5–7 km/h'],['Senzori roată','Hall activ · semnal 7 / 14 mA · 48–100 poli / tură']]},
+ {l:'ch',c:'--ch',t:'Direcție: EPS',
+  p:'Motorul electric de pe cremalieră adaugă cuplu proporțional cu efortul șoferului și invers proporțional cu viteza.',
+  r:[['Motor','PMSM · comandă FOC'],['Curent maxim','~80–120 A la 12 V'],['Forță cremalieră','~8–14 kN, în funcție de clasă'],['Raport direcție','~13–16 : 1'],['Siguranță','ASIL D · senzor de cuplu redundant'],['Funcții ADAS','LKA · parcare automată · revenire activă']]},
+ {l:'ps',c:'--ps',t:'Siguranță pasivă: airbag + centuri',
+  p:'Decizia de declanșare se ia în milisecunde, înainte ca ocupantul să se deplaseze semnificativ în habitaclu.',
+  r:[['Decizie impact frontal','~10–30 ms de la contact'],['Decizie impact lateral','~5–10 ms'],['Umplere airbag frontal','~25–40 ms'],['Volum airbag','șofer ~60 L · pasager ~100–120 L'],['Pretensionare centură','~10 ms · retragere 10–15 cm'],['Rezervă energie ACU','~100–150 ms după pierderea bateriei'],['Senzori satelit','PSI5 · 125–189 kbit/s']]},
+ {l:'ad',c:'--ad',t:'ADAS: percepție și intervenție',
+  p:'Camera și radarul se completează: camera clasifică obiectele, radarul măsoară precis distanța și viteza relativă.',
+  r:[['Radar frontal','76–81 GHz · rază ~200–250 m'],['Unghi radar','±9° rază lungă · ±45–60° rază scurtă'],['Cameră frontală','1–8 MP · câmp vizual ~50–120°'],['Ultrasonici','40–50 kHz · ~0,2–4,5 m'],['AEB','oraș ≤ ~60 km/h · interurban la viteze mari'],['ACC','0–180 km/h, cu Stop&Go']]},
+ {l:'pt',c:'--pt',t:'Motor + transmisie',
+  p:'ECM-ul realizează cuplul cerut de șofer sau de alte ECU-uri; TCU-ul alege treapta și coordonează schimbarea.',
+  r:[['Injecție directă','200–350 bar · până la 3–5 injecții / ciclu'],['Aprindere','~30–40 kV în secundar'],['Reglaj λ','λ = 1 ± 0,005 pentru catalizator'],['Roată CKP','60-2 dinți · rezoluție 6°'],['Cutie automată','6–9 trepte · schimbare ~200–400 ms'],['Structură cuplu','3 niveluri de monitorizare (E-Gas)']]},
+ {l:'bd',c:'--bd',t:'Caroserie + confort',
+  p:'BCM-ul comandă iluminarea, ștergătoarele și accesul, și coordonează nodurile LIN mai mici.',
+  r:[['Acces fără cheie','LF 125 kHz trezire · RF 433 / 868 MHz răspuns'],['Faruri LED matrix','zeci–sute de segmente comandate individual'],['Senzor ploaie','IR · reflexie totală internă în parbriz'],['Consum în repaus','tipic < 20–30 mA pentru întreg vehiculul']]}
+];
+
+/* ================= utilitare ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim()||'#888';
+const cssOf=c=>css(c.replace(/^var\((.*)\)$/,'$1'));
+const ECUS=['ecm','tcu','esp','eps','acu','bcm','adas','gw'];
+const ecuHas=(e,id)=>[...I[e].in,...I[e].out].some(x=>x.id===id);
+const layerOf=id=>I[id].t==='e'?LAYER_OF_ECU[id]:LAYER_OF_ECU[I[id].ecu];
+const V=a=>new THREE.Vector3(a[0],a[1],a[2]);
+const state={sel:null,ecu:'esp',hl:null};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= scenă ================= */
+const view=$('#view');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); }
+catch(e){ $('#fallback').style.display='grid'; }
+
+function buildPanelOnly(){ buildIndex(); buildSpecs(); selectData(initialId()); }
+function initialId(){ const h=decodeURIComponent(location.hash.slice(1)); return I[h]?h:'esp'; }
+
+let scene,camera,controls,labelR,groups={},themed=[],markers=[],pickables=[],ecuLabels={},selLabel,leaders,raycaster,pointer;
+
+function mat(kind,v,opts={}){
+  const M = kind==='line'?THREE.LineBasicMaterial:kind==='basic'?THREE.MeshBasicMaterial:THREE.MeshStandardMaterial;
+  const m=new M(opts); themed.push([m,v]); m.color.set(css(v)); return m;
+}
+function retheme(){
+  themed.forEach(([m,v])=>m.color.set(css(v)));
+  markers.forEach(m=>m.userData.baseColor=css(m.userData.cv));
+  applySelection();
+}
+
+function init(){
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(36,1,0.05,100);
+  camera.position.set(4.6,2.7,-4.9);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  view.prepend(renderer.domElement);
+  labelR=new CSS2DRenderer({element:$('#labels')});
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.target.set(0.25,0.6,0);
+  controls.enableDamping=true; controls.minDistance=1.2; controls.maxDistance=14;
+  controls.maxPolarAngle=Math.PI*0.495;
+
+  scene.add(new THREE.HemisphereLight(0xffffff,0x667070,1.6));
+  const sun=new THREE.DirectionalLight(0xffffff,1.6); sun.position.set(4,8,-3); scene.add(sun);
+
+  for(const L of LAYERS){ groups[L.id]=new THREE.Group(); groups[L.id].name=L.id; scene.add(groups[L.id]); }
+  groups.always=new THREE.Group(); scene.add(groups.always);
+  leaders=new THREE.Group(); scene.add(leaders);
+
+  buildGround(); buildBody(); buildMechanics(); buildFields(); buildNetwork(); buildMarkers();
+
+  raycaster=new THREE.Raycaster(); pointer=new THREE.Vector2();
+  bindPointer();
+  buildLayerChips(); buildCamButtons(); buildIndex(); buildSpecs();
+
+  new ResizeObserver(resize).observe(view); resize();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',retheme);
+  selectData(initialId(),{fly:false});
+  renderer.setAnimationLoop(tick);
+}
+function resize(){
+  const w=view.clientWidth,h=view.clientHeight;
+  renderer.setSize(w,h); labelR.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+
+/* ---------- sol ---------- */
+function buildGround(){
+  const c=document.createElement('canvas'); c.width=c.height=256;
+  const g=c.getContext('2d'); const gr=g.createRadialGradient(128,128,10,128,128,128);
+  gr.addColorStop(0,'rgba(0,0,0,.38)'); gr.addColorStop(.55,'rgba(0,0,0,.14)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=gr; g.fillRect(0,0,256,256);
+  const sh=new THREE.Mesh(new THREE.PlaneGeometry(6.4,3.2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  sh.rotation.x=-Math.PI/2; sh.position.y=0.002; groups.always.add(sh);
+  const grid=new THREE.GridHelper(12,24); grid.material.transparent=true; grid.material.opacity=.35;
+  themed.push([grid.material,'--rule-2']); grid.material.color.set(css('--rule-2'));
+  groups.always.add(grid);
+}
+
+/* ---------- caroserie ---------- */
+function buildBody(){
+  const s=new THREE.Shape();
+  s.moveTo(2.30,0.26); s.lineTo(2.34,0.46); s.quadraticCurveTo(2.33,0.70,2.12,0.78);
+  s.lineTo(0.95,0.98); s.quadraticCurveTo(0.60,1.30,0.30,1.42);
+  s.quadraticCurveTo(-0.25,1.48,-0.80,1.44); s.quadraticCurveTo(-1.30,1.30,-1.58,1.02);
+  s.lineTo(-2.18,0.98); s.quadraticCurveTo(-2.34,0.90,-2.34,0.66); s.lineTo(-2.30,0.28);
+  s.lineTo(-1.76,0.26); s.absarc(-1.34,0.33,0.42,Math.PI,0,true); s.lineTo(1.02,0.26);
+  s.absarc(1.44,0.33,0.42,Math.PI,0,true); s.lineTo(2.30,0.26);
+  const geo=new THREE.ExtrudeGeometry(s,{depth:1.66,bevelEnabled:true,bevelThickness:0.06,bevelSize:0.05,bevelSegments:4,curveSegments:28});
+  geo.translate(0,0,-0.83);
+  const body=new THREE.Mesh(geo,mat('std','--car',{transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide,roughness:.4,metalness:.1}));
+  body.renderOrder=10;
+  groups.body.add(body);
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo,28),mat('line','--phantom',{transparent:true,opacity:.75}));
+  groups.body.add(edges);
+  // geamuri laterale și parbriz (contur)
+  const wl=mat('line','--phantom',{transparent:true,opacity:.9});
+  for(const z of [-0.895,0.895]){
+    const pts=[[0.88,1.0],[0.34,1.37],[-0.78,1.39],[-1.46,1.03],[0.88,1.0]].map(([x,y])=>new THREE.Vector3(x,y,z));
+    groups.body.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),wl));
+    const bp=[[-0.25,1.0],[-0.25,1.39]].map(([x,y])=>new THREE.Vector3(x,y,z));
+    groups.body.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bp),wl));
+  }
+  // roți
+  const tireM=mat('std','--ink',{roughness:.9}); const rimM=mat('std','--rule-2',{roughness:.4,metalness:.6});
+  for(const [x,z] of [[1.44,-0.78],[1.44,0.78],[-1.34,-0.78],[-1.34,0.78]]){
+    const t=new THREE.Mesh(new THREE.TorusGeometry(0.25,0.085,14,36),tireM); t.position.set(x,0.33,z); groups.always.add(t);
+    const r=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.14,28),rimM); r.rotation.x=Math.PI/2; r.position.set(x,0.33,z); r.material.transparent=true; r.material.opacity=.55; groups.always.add(r);
+  }
+  // interior: scaune, bord, volan
+  const intM=mat('std','--phantom',{transparent:true,opacity:.22,depthWrite:false});
+  const box=(w,h,d,x,y,z,g=groups.body,m=intM)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); b.position.set(x,y,z); g.add(b); return b;};
+  for(const z of [-0.38,0.38]){ box(0.5,0.12,0.48,0.02,0.42,z); const bk=box(0.12,0.62,0.48,-0.24,0.75,z); bk.rotation.z=0.18; }
+  box(0.48,0.12,1.3,-0.92,0.44,0); const rb=box(0.12,0.58,1.3,-1.18,0.74,0); rb.rotation.z=0.2;
+  box(0.34,0.26,1.6,0.80,0.82,0);
+  const wheel=new THREE.Mesh(new THREE.TorusGeometry(0.18,0.02,10,32),mat('std','--ink',{transparent:true,opacity:.7}));
+  wheel.position.set(0.40,0.95,-0.38); wheel.rotation.y=Math.PI/2; wheel.rotation.x=0; wheel.rotateX(0); wheel.rotation.z=0;
+  wheel.lookAt(1.4,0.55,-0.38); groups.body.add(wheel);
+}
+
+/* ---------- mecanică pe sisteme ---------- */
+function tube(points,r,m,g){
+  const path=new THREE.CurvePath(); for(let i=0;i<points.length-1;i++) path.add(new THREE.LineCurve3(V(points[i]),V(points[i+1])));
+  const t=new THREE.Mesh(new THREE.TubeGeometry(path,points.length*12,r,8,false),m); g.add(t); return t;
+}
+function buildMechanics(){
+  const ptM=mat('std','--pt',{transparent:true,opacity:.28,depthWrite:false,roughness:.6});
+  const ptE=mat('line','--pt',{transparent:true,opacity:.8});
+  const solid=(w,h,d,x,y,z,m,e,g)=>{const geo=new THREE.BoxGeometry(w,h,d); const b=new THREE.Mesh(geo,m); b.position.set(x,y,z); g.add(b);
+    const l=new THREE.LineSegments(new THREE.EdgesGeometry(geo),e); l.position.copy(b.position); g.add(l); return b;};
+  solid(0.50,0.42,0.62,1.66,0.62,0.06,ptM,ptE,groups.pt);           // bloc motor transversal
+  solid(0.40,0.32,0.30,1.60,0.50,-0.47,ptM,ptE,groups.pt);          // cutie de viteze
+  solid(0.24,0.16,0.36,2.02,0.80,-0.36,ptM,ptE,groups.pt);          // carcasă filtru aer
+  solid(0.60,0.22,0.95,-0.85,0.32,0,ptM,ptE,groups.pt);             // rezervor
+  const exM=mat('std','--pt',{transparent:true,opacity:.45,roughness:.5,metalness:.4});
+  tube([[1.66,0.42,0.30],[1.30,0.24,0.32],[-1.60,0.24,0.32],[-2.36,0.26,0.40]],0.03,exM,groups.pt); // evacuare
+  const cat=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.32,18),exM); cat.rotation.z=Math.PI/2; cat.position.set(0.86,0.24,0.32); groups.pt.add(cat);
+  const muf=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.42,18),exM); muf.rotation.z=Math.PI/2; muf.position.set(-1.85,0.25,0.34); groups.pt.add(muf);
+  // planetare
+  const shM=mat('std','--pt',{transparent:true,opacity:.5});
+  for(const z of [-0.78,0.78]) tube([[1.60,0.40,z<0?-0.47:0.2],[1.44,0.33,z*0.9]],0.022,shM,groups.pt);
+
+  // frânare + direcție
+  const chM=mat('std','--ch',{roughness:.4,metalness:.3});
+  const chT=mat('std','--ch',{transparent:true,opacity:.35,depthWrite:false});
+  const esp=P3.esp[0];
+  const hcu=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.18,0.2),chT); hcu.position.set(esp[0]+0.0,esp[1]-0.06,esp[2]); groups.ch.add(hcu);
+  const booster=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.12,24),chT); booster.rotation.z=Math.PI/2; booster.position.set(1.02,0.82,-0.38); groups.ch.add(booster);
+  const wheels=[[1.44,-1],[1.44,1],[-1.34,-1],[-1.34,1]];
+  wheels.forEach(([x,s])=>{
+    const disc=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.025,30),chT); disc.rotation.x=Math.PI/2; disc.position.set(x,0.33,s*0.69); groups.ch.add(disc);
+    const cal=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.12,0.07),chM); cal.position.set(x-0.13,0.40,s*0.69); groups.ch.add(cal);
+    tube([[esp[0],esp[1]-0.12,esp[2]],[esp[0],0.27,esp[2]],[esp[0],0.27,s*0.5],[x-0.13,0.27,s*0.5],[x-0.13,0.40,s*0.66]],0.008,chM,groups.ch);
+  });
+  // cremalieră + coloană
+  const rack=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,1.1,16),chT); rack.rotation.x=Math.PI/2; rack.position.set(1.30,0.33,0); groups.ch.add(rack);
+  tube([[1.30,0.33,-0.38],[0.78,0.72,-0.38],[0.42,0.94,-0.38]],0.018,chT,groups.ch);
+  for(const s of [-1,1]) tube([[1.30,0.33,s*0.55],[1.36,0.36,s*0.66]],0.015,chT,groups.ch);
+}
+
+/* ---------- câmpuri senzori ADAS ---------- */
+function cone(origin,len,halfDeg,dir,m,g){
+  const r=Math.tan(halfDeg*Math.PI/180)*len;
+  const c=new THREE.Mesh(new THREE.ConeGeometry(r,len,40,1,true),m);
+  c.rotation.z=dir>0?Math.PI/2:-Math.PI/2;
+  c.position.set(origin[0]+dir*len/2,origin[1],origin[2]); c.renderOrder=5; g.add(c); return c;
+}
+function buildFields(){
+  const fm=mat('basic','--ad',{transparent:true,opacity:.09,depthWrite:false,side:THREE.DoubleSide});
+  const fm2=mat('basic','--ad',{transparent:true,opacity:.05,depthWrite:false,side:THREE.DoubleSide});
+  cone(P3.radar[0],4.2,9,1,fm,groups.ad);      // rază lungă (scalată)
+  cone(P3.radar[0],1.6,45,1,fm2,groups.ad);    // rază scurtă
+  cone(P3.cam[0],3.2,26,1,fm2,groups.ad);      // cameră
+  P3.uss.forEach(p=>cone(p,0.75,32,p[0]>0?1:-1,fm,groups.ad));
+}
+
+/* ---------- rețea ---------- */
+function buildNetwork(){
+  const g=P3.gw[0];
+  ECUS.forEach((e,k)=>{ if(e==='gw') return; const p=P3[e][0]; const y=0.26+k*0.012;
+    const m=mat('std',DOM[I[e].dom].c.replace(/^var\((.*)\)$/,'$1'),{roughness:.5});
+    tube([g,[g[0],y,g[2]],[p[0],y,g[2]],[p[0],y,p[2]],p],0.009,m,groups.net); });
+}
+
+/* ---------- markere ---------- */
+function buildMarkers(){
+  const sGeo=new THREE.SphereGeometry(0.042,20,14), aGeo=new THREE.OctahedronGeometry(0.056), eGeo=new THREE.BoxGeometry(0.15,0.07,0.11);
+  const hitGeo=new THREE.SphereGeometry(0.09,10,8), hitM=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+  for(const id of Object.keys(I)){ const it=I[id]; const pos=P3[id]; if(!pos) continue;
+    const g=groups[layerOf(id)];
+    pos.forEach(p=>{
+      const cv=it.t==='e'?'--ecu-bg':it.t==='s'?'--sen':'--act';
+      const m=new THREE.MeshStandardMaterial({color:css(cv),roughness:.35,metalness:.1,transparent:true,emissive:0x000000});
+      const mesh=new THREE.Mesh(it.t==='e'?eGeo:it.t==='s'?sGeo:aGeo,m);
+      mesh.position.set(...p); mesh.userData={id,cv,baseColor:css(cv)}; mesh.renderOrder=20;
+      const hit=new THREE.Mesh(hitGeo,hitM); hit.userData={id}; mesh.add(hit);
+      g.add(mesh); markers.push(mesh); pickables.push(hit);
+    });
+    if(it.t==='e'){
+      const el=document.createElement('button'); el.className='l3'; el.textContent=it.abbr; el.dataset.go=id;
+      el.setAttribute('aria-label','ECU: '+it.n);
+      const o=new CSS2DObject(el); o.position.set(...pos[0]); g.add(o); ecuLabels[id]=el;
+    }
+  }
+  const el=document.createElement('div'); el.className='l3c'; selLabel=new CSS2DObject(el); selLabel.visible=false; scene.add(selLabel);
+}
+
+/* ---------- selecție ---------- */
+function relatedSet(){
+  const it=I[state.sel], rel=new Set();
+  if(it.t==='e') [...it.in,...it.out].forEach(x=>{ if(x.id&&P3[x.id]) rel.add(x.id); });
+  else rel.add(state.ecu);
+  return rel;
+}
+function applySelection(){
+  if(!scene||!state.sel) return;
+  const rel=relatedSet(), sel=state.sel, focus=new THREE.Color(css('--focus'));
+  markers.forEach(m=>{ const id=m.userData.id, isS=id===sel, isR=rel.has(id);
+    m.material.color.set(isS?focus:m.userData.baseColor);
+    m.material.opacity=(isS||isR)?1:0.28;
+    m.scale.setScalar(isS?1.6:isR?1.2:1);
+    m.material.emissive.set(isS?focus:0x000000); m.material.emissiveIntensity=isS?.35:0; });
+  Object.entries(ecuLabels).forEach(([id,el])=>{ el.classList.toggle('sel',id===sel); el.classList.toggle('dim',!(id===sel||rel.has(id))); });
+  // linii de legătură
+  leaders.clear();
+  const it=I[sel]; const add=(a,b,cv)=>{ const m=new THREE.LineDashedMaterial({color:css(cv),dashSize:.04,gapSize:.03,depthTest:false,transparent:true});
+    const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(a),V(b)]),m); l.computeLineDistances(); l.renderOrder=30; leaders.add(l); };
+  if(it.t==='e'){ const E=P3[sel][0]; [...it.in,...it.out].forEach(x=>{ if(x.id&&P3[x.id]) P3[x.id].forEach(p=>add(p,E,I[x.id].t==='s'?'--sen':'--act')); }); }
+  else if(P3[sel]){ const E=P3[state.ecu][0]; P3[sel].forEach(p=>add(p,E,it.t==='s'?'--sen':'--act')); }
+  // etichetă componentă
+  if(it.t!=='e'&&P3[sel]){ selLabel.element.textContent=it.sh; selLabel.position.set(...P3[sel][0]); selLabel.visible=isShown(sel); }
+  else selLabel.visible=false;
+}
+function isShown(id){ return groups[layerOf(id)].visible; }
+
+let fly=null;
+function flyTo(id){
+  if(!P3[id]) return;
+  const t=new THREE.Vector3(); P3[id].forEach(p=>t.add(V(p))); t.divideScalar(P3[id].length);
+  if(I[id].t==='e') t.lerp(new THREE.Vector3(0.25,0.6,0),0.35);
+  const off=camera.position.clone().sub(controls.target); const d=THREE.MathUtils.clamp(off.length(),3.2,6.5); off.setLength(d);
+  const to={target:t,pos:t.clone().add(off)};
+  if(reduce){ controls.target.copy(to.target); camera.position.copy(to.pos); return; }
+  fly={t0:performance.now(),dur:650,fromT:controls.target.clone(),fromP:camera.position.clone(),...to};
+}
+function setView(name){
+  const T=new THREE.Vector3(0.25,0.6,0);
+  const P={persp:[4.6,2.7,-4.9],top:[0.25,7.4,0.01],side:[0.25,0.9,-6.6],front:[7.2,1.2,0],rear:[-7.2,1.6,0],xray:[2.6,3.6,-2.8]}[name];
+  const to={target:T,pos:V(P)};
+  if(reduce){ controls.target.copy(T); camera.position.copy(to.pos); return; }
+  fly={t0:performance.now(),dur:800,fromT:controls.target.clone(),fromP:camera.position.clone(),...to};
+}
+function tick(now){
+  if(fly){ let k=Math.min(1,(now-fly.t0)/fly.dur); k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    controls.target.lerpVectors(fly.fromT,fly.target,k); camera.position.lerpVectors(fly.fromP,fly.pos,k); if(k>=1) fly=null; }
+  controls.update(); renderer.render(scene,camera); labelR.render(scene,camera);
+}
+
+/* ---------- pointer ---------- */
+function bindPointer(){
+  const el=renderer.domElement, tip=$('#tip'); let down=null, hover=null;
+  const pick=ev=>{ const r=el.getBoundingClientRect(); pointer.set(((ev.clientX-r.left)/r.width)*2-1,-((ev.clientY-r.top)/r.height)*2+1);
+    raycaster.setFromCamera(pointer,camera);
+    const hits=raycaster.intersectObjects(pickables,false).filter(h=>isShown(h.object.userData.id));
+    return hits.length?hits[0].object.userData.id:null; };
+  el.addEventListener('pointerdown',ev=>down=[ev.clientX,ev.clientY]);
+  el.addEventListener('pointerup',ev=>{ if(!down) return; const moved=Math.hypot(ev.clientX-down[0],ev.clientY-down[1]); down=null;
+    if(moved<6){ const id=pick(ev); if(id) select(id,{fly:true}); } });
+  el.addEventListener('pointermove',ev=>{ if(ev.pointerType!=='mouse') return; const id=pick(ev);
+    if(id!==hover){ hover=id; el.style.cursor=id?'pointer':''; tip.style.opacity=id?1:0; if(id) tip.textContent=(I[id].t==='e'?I[id].abbr+' · ':'')+(I[id].sh||I[id].n); }
+    if(id){ const r=view.getBoundingClientRect(); tip.style.left=(ev.clientX-r.left+14)+'px'; tip.style.top=(ev.clientY-r.top+12)+'px'; } });
+  el.addEventListener('pointerleave',()=>{ hover=null; tip.style.opacity=0; });
+}
+
+/* ---------- straturi + vederi ---------- */
+function buildLayerChips(){
+  const box=$('#layers');
+  LAYERS.forEach(L=>{ const b=document.createElement('button'); b.className='chip'; b.setAttribute('aria-pressed','true'); b.dataset.layer=L.id;
+    b.innerHTML=`<i style="background:var(${L.c})"></i>${esc(L.lbl)}`;
+    b.addEventListener('click',()=>{ const on=b.getAttribute('aria-pressed')!=='true'; setLayer(L.id,on); });
+    box.appendChild(b); });
+  const all=document.createElement('button'); all.className='chip'; all.textContent='Toate'; all.style.marginLeft='auto';
+  all.addEventListener('click',()=>LAYERS.forEach(L=>setLayer(L.id,true))); box.appendChild(all);
+}
+function setLayer(id,on){
+  groups[id].visible=on;
+  const b=document.querySelector(`[data-layer="${id}"]`); if(b) b.setAttribute('aria-pressed',String(on));
+  applySelection();
+}
+function isolate(id){ LAYERS.forEach(L=>setLayer(L.id,L.id===id||L.id==='body')); }
+function buildCamButtons(){
+  const box=$('#cams');
+  [['persp','Perspectivă'],['top','Sus'],['side','Lateral'],['front','Față'],['rear','Spate']].forEach(([k,l])=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=l; b.addEventListener('click',()=>setView(k)); box.appendChild(b); });
+  const sep=document.createElement('span'); sep.className='sep'; box.appendChild(sep);
+  const rot=document.createElement('button'); rot.className='chip'; rot.textContent='Rotire automată'; rot.setAttribute('aria-pressed','false');
+  rot.addEventListener('click',()=>{ controls.autoRotate=!controls.autoRotate; controls.autoRotateSpeed=1.2; rot.setAttribute('aria-pressed',String(controls.autoRotate)); });
+  box.appendChild(rot);
+}
+
+/* ================= panou ================= */
+const TN3={e:'ECU',s:'Senzor',a:'Actuator',v:'Electrovană'};
+function panelHTML(){
+  const it=I[state.sel];
+  const L=LAYERS.find(l=>l.id===layerOf(state.sel));
+  if(it.t==='e'){
+    return `<span class="kind k-e">ECU · ${esc(DOM[it.dom].lbl)}</span>
+      <h2>${esc(it.abbr)}</h2><p class="full">${esc(it.n)}</p>
+      <div><h3>Rol</h3><p>${esc(it.rol)}</p></div>
+      <dl class="facts">
+        <dt>Locație</dt><dd>${esc(it.loc)}</dd>
+        <dt>Rețea</dt><dd>${esc(DOM[it.dom].lbl)}</dd>
+        <dt>ISO 26262</dt><dd>${esc(it.asil)}</dd>
+        <dt>Strat 3D</dt><dd>${esc(L.lbl)}</dd>
+      </dl>
+      <div><h3>Funcții calculate</h3><ul class="list">${it.fn.map(f=>`<li>${esc(f)}</li>`).join('')}</ul></div>
+      <div><h3>Intrări (${it.in.length})</h3><div class="pills">${it.in.map(x=>x.id&&I[x.id]?`<button class="pill" data-go="${x.id}">${esc(I[x.id].sh||x.l)}</button>`:`<span class="pill" style="cursor:default;opacity:.7">${esc(x.l)}</span>`).join('')}</div></div>
+      <div><h3>Ieșiri (${it.out.length})</h3><div class="pills">${it.out.map(x=>x.id&&I[x.id]?`<button class="pill" data-go="${x.id}">${esc(I[x.id].sh||x.l)}</button>`:`<span class="pill" style="cursor:default;opacity:.7">${esc(x.l)}</span>`).join('')}</div></div>
+      <div><h3>Comunică cu</h3><div class="pills">${it.link.map(l=>`<button class="pill" data-go="${l.e}">${I[l.e].abbr}</button>`).join('')}</div></div>
+      <div class="btns"><button class="b" data-iso="${layerOf(state.sel)}">Izolează sistemul în 3D</button><a class="b ghost" href="Harta electronică auto.html#${state.sel}">Diagrama funcțională (2D)</a></div>`;
+  }
+  const e=I[state.ecu];
+  const chain = it.t==='s'
+    ? `<span>${esc(it.sh)}</span><b>→</b><span>${e.abbr}</span><b>→</b><span>${esc(DOM[e.dom].lbl)}</span>`
+    : `<span>${esc(DOM[e.dom].lbl)}</span><b>→</b><span>${e.abbr}</span><b>→</b><span>driver</span><b>→</b><span>${esc(it.sh)}</span>`;
+  const n=(P3[state.sel]||[]).length;
+  return `<span class="kind k-${it.t}">${TN3[it.t]}</span>
+    <h2>${esc(it.n)}</h2>
+    <div><h3>Fluxul informației</h3><div class="chain">${chain}</div></div>
+    <div><h3>Principiu de funcționare</h3><p>${esc(it.p)}</p></div>
+    <dl class="facts">${it.sig.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}${n>1?`<dt>Bucăți în 3D</dt><dd>${n}</dd>`:''}</dl>
+    <div><h3>${it.t==='s'?'Ce face ECU-ul cu informația':'Ce realizează comanda'}</h3><p>${esc(it.rol)}</p></div>
+    ${it.def&&it.def!=='—'?`<div><h3>Defecte tipice</h3><div class="dtc">${esc(it.def)}</div></div>`:''}
+    <div class="btns"><button class="b" data-go="${state.ecu}">Deschide ECU-ul ${e.abbr}</button><a class="b ghost" href="Harta electronică auto.html#${state.sel}">Vezi în 2D</a></div>`;
+}
+
+function buildSpecs(){
+  $('#specs').innerHTML=SPECS.map(s=>`<article class="spec" style="--c:var(${s.c})"><h3>${esc(s.t)}</h3><p>${esc(s.p)}</p>
+    <dl>${s.r.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    ${renderer?`<button class="b ghost" data-iso="${s.l}">Arată în 3D ↑</button>`:''}</article>`).join('');
+}
+function buildIndex(){
+  $('#idx').innerHTML=ECUS.map(e=>{const E=I[e]; const seen=new Set();
+    const comps=[...E.in,...E.out].filter(x=>x.id&&I[x.id]&&I[x.id].ecu===e&&!seen.has(x.id)&&seen.add(x.id));
+    return `<div class="grp"><button data-go="${e}"><span class="sw e"></span><span class="ge">${E.abbr}</span><span style="color:var(--muted);font-size:12.5px">${esc(E.n)}</span></button>
+      ${comps.map(x=>`<button data-go="${x.id}"><span class="sw ${I[x.id].t}"></span>${esc(I[x.id].n)}</button>`).join('')}</div>`;}).join('');
+}
+
+function selectData(id,o={}){
+  const it=I[id]; if(!it) return;
+  state.sel=id;
+  if(it.t==='e'){state.ecu=id;}
+  else if(!(o.keep&&ecuHas(state.ecu,id))) state.ecu=it.ecu;
+  $('#panel').innerHTML=panelHTML();
+  $('#to2d').href='Harta electronică auto.html#'+id;
+  try{ history.replaceState(null,'','#'+id); }catch(e){}
+  if(scene){ if(!isShown(id)) setLayer(layerOf(id),true); applySelection(); if(o.fly!==false) flyTo(id); }
+}
+const select=(id,o)=>selectData(id,o);
+
+document.addEventListener('click',ev=>{
+  const go=ev.target.closest('[data-go]');
+  if(go){ const id=go.dataset.go; const inPanel=!!go.closest('#panel');
+    select(id,{keep:inPanel});
+    if(scene&&!go.closest('#view')&&!inPanel){ const r=view.getBoundingClientRect(); if(r.top<0||r.bottom>innerHeight) view.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'}); }
+    return; }
+  const iso=ev.target.closest('[data-iso]');
+  if(iso&&scene){ isolate(iso.dataset.iso); const r=view.getBoundingClientRect(); if(r.top<0||r.bottom>innerHeight) view.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'}); }
+});
+
+if(renderer) init(); else buildPanelOnly();
+</script>
+</body>
+</html>

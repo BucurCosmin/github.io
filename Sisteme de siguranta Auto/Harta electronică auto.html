@@ -1,0 +1,420 @@
+<!doctype html><html lang="ro"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Harta electronică auto</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: planșă de service — vedere „fantomă” de sus a mașinii + fișă tehnică laterală + diagramă funcțională pe toată lățimea */
+:root{
+  --bg:#eaeeed; --sheet:#f7f9f8; --card:#ffffff; --ink:#16201d; --muted:#596763;
+  --rule:#d0d8d5; --rule-2:#b3beba; --car:#ffffff; --glass:#dde8ea; --phantom:#9aaca6;
+  --sen:#0c8174; --sen-t:#e0f2ef; --act:#b5541a; --act-t:#f8e6d8;
+  --ecu-bg:#16201d; --ecu-fg:#f3f6f5; --focus:#d99a00;
+  --pt:#a23b7f; --ch:#2a5fc4; --bd:#5d7816; --ad:#6d4ad1; --gwc:#16201d;
+  --f-disp:"Saira Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1513; --sheet:#141b19; --card:#19221f; --ink:#e3eae7; --muted:#93a39d;
+  --rule:#2a3633; --rule-2:#3e4b47; --car:#1a2421; --glass:#22323a; --phantom:#4f625c;
+  --sen:#3cc4b2; --sen-t:#123631; --act:#f08c4a; --act-t:#3a2416;
+  --ecu-bg:#e3eae7; --ecu-fg:#101614; --focus:#f2c03a;
+  --pt:#e07ab9; --ch:#6b9cf0; --bd:#a5c44a; --ad:#a58cf5; --gwc:#e3eae7; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --sheet:#141b19; --card:#19221f; --ink:#e3eae7; --muted:#93a39d;
+  --rule:#2a3633; --rule-2:#3e4b47; --car:#1a2421; --glass:#22323a; --phantom:#4f625c;
+  --sen:#3cc4b2; --sen-t:#123631; --act:#f08c4a; --act-t:#3a2416;
+  --ecu-bg:#e3eae7; --ecu-fg:#101614; --focus:#f2c03a;
+  --pt:#e07ab9; --ch:#6b9cf0; --bd:#a5c44a; --ad:#a58cf5; --gwc:#e3eae7; color-scheme:dark }
+
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body)}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px;padding-block:24px 56px;display:grid;gap:22px}
+.eyebrow{font:500 11.5px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font:700 clamp(30px,4.4vw,46px)/1.02 var(--f-disp);letter-spacing:.01em;margin:6px 0 8px;text-wrap:balance}
+.lead{max-width:72ch;color:var(--muted);margin:0}
+.stage{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:980px){.stage{grid-template-columns:minmax(0,1fr)}}
+.sheet{background:var(--sheet);border:1px solid var(--rule);border-radius:6px}
+.carbox{padding:14px;display:grid;gap:10px;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12.5px;color:var(--muted)}
+.lg{display:inline-flex;align-items:center;gap:7px}
+.lg svg{width:18px;height:18px}
+.busdots{display:flex;flex-wrap:wrap;gap:6px 14px}
+.bd{display:inline-flex;align-items:center;gap:6px;font:500 11px var(--f-mono)}
+.bd i{width:16px;height:3px;border-radius:2px;display:inline-block}
+.tog{margin-left:auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink)}
+#car{width:100%;height:auto;display:block}
+.caption{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font:400 11px var(--f-mono);color:var(--muted);letter-spacing:.04em}
+
+/* car */
+.c-body{fill:var(--car);stroke:var(--ink);stroke-width:2}
+.c-tire{fill:var(--ink)}
+.c-glass{fill:var(--glass);stroke:var(--rule-2);stroke-width:1}
+.c-seam{fill:none;stroke:var(--rule-2);stroke-width:1.2}
+.c-ph{fill:none;stroke:var(--phantom);stroke-width:1.2;stroke-dasharray:4 3}
+.c-txt{fill:var(--phantom);font:500 10px var(--f-mono);letter-spacing:.1em;text-transform:uppercase}
+.c-dir{fill:var(--muted);font:500 10.5px var(--f-mono);letter-spacing:.14em}
+.net path{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+.net.off{display:none}
+.ld{fill:none;stroke-width:1.5;stroke-dasharray:3 3}
+.ld.s{stroke:var(--sen)} .ld.a{stroke:var(--act)}
+
+/* markers */
+.mk{cursor:pointer;outline:none}
+.mk .hit{fill:transparent}
+.t-s .shp{fill:var(--card);stroke:var(--sen);stroke-width:2}
+.t-s .dot{fill:var(--sen)}
+.t-a .shp,.t-v .shp{fill:var(--card);stroke:var(--act);stroke-width:2}
+.t-a .dot,.t-v .dot{fill:var(--act)}
+.t-e .shp{fill:var(--ecu-bg);stroke:var(--ecu-bg);stroke-width:2}
+.t-e .abbr{fill:var(--ecu-fg);font:600 13.5px var(--f-disp);letter-spacing:.06em}
+.lblg{opacity:0;pointer-events:none;transition:opacity .12s}
+.lblbg{fill:var(--ink)} .lbl{fill:var(--bg);font:500 11px var(--f-body)}
+.mk:hover .lblg,.mk:focus-visible .lblg,.mk.sel .lblg{opacity:1}
+.mk:hover .shp,.mk:focus-visible .shp{stroke:var(--focus);stroke-width:3}
+.mk.sel .shp{stroke:var(--focus);stroke-width:3.2}
+.t-s.rel .shp{fill:var(--sen-t)} .t-a.rel .shp,.t-v.rel .shp{fill:var(--act-t)}
+#markers.has-sel .mk:not(.sel):not(.rel):not(:hover){opacity:.42}
+.mk{transition:opacity .15s}
+
+/* panel */
+#panel{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:20px;display:grid;gap:14px;min-width:0}
+@media (min-width:981px){#panel{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px)}}
+.kind{display:inline-flex;align-items:center;gap:6px;font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:3px;justify-self:start}
+.k-e{background:var(--ecu-bg);color:var(--ecu-fg)}
+.k-s{background:var(--sen-t);color:var(--sen)}
+.k-a,.k-v{background:var(--act-t);color:var(--act)}
+#panel h2{font:700 30px/1.05 var(--f-disp);margin:0;text-wrap:balance}
+#panel .full{color:var(--muted);margin:-8px 0 0;font-size:14px}
+#panel h3{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+#panel p{margin:0;max-width:65ch}
+.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 14px;margin:0;padding:12px 0;border-block:1px solid var(--rule)}
+.facts dt{font:500 10.5px/1.9 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.facts dd{margin:0;font:400 13px/1.55 var(--f-mono)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:500 12px var(--f-mono)}
+.chain span{padding:4px 8px;border:1px solid var(--rule-2);border-radius:3px;background:var(--sheet)}
+.chain b{color:var(--muted);font-weight:400}
+.dtc{font:400 13px var(--f-mono);background:var(--sheet);border-left:3px solid var(--act);padding:8px 10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.b{font:500 13px var(--f-body);padding:8px 12px;border-radius:4px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+button.b.ghost{background:transparent;color:var(--ink);border-color:var(--rule-2)}
+button.b:hover{filter:brightness(1.1)}
+button:focus-visible,.mk:focus-visible,.d-node:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:600 12.5px var(--f-disp);letter-spacing:.06em;padding:4px 9px;border-radius:3px;border:1px solid var(--rule-2);background:var(--sheet);color:var(--ink);cursor:pointer}
+.pill:hover{border-color:var(--ink)}
+
+/* diagram */
+.diag{padding:18px;display:grid;gap:12px;scroll-margin-top:16px}
+.diag-head{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:end;justify-content:space-between}
+.diag-head h2{font:700 26px/1.1 var(--f-disp);margin:0;text-wrap:balance}
+.diag-head .eyebrow{margin-bottom:4px}
+.dlegend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted)}
+.dlegend span{display:inline-flex;align-items:center;gap:6px}
+.dlegend i{width:22px;height:0;border-top:2px solid;display:inline-block}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#dsvg{display:block;width:100%;min-width:880px;height:auto}
+.d-box{fill:var(--card);stroke:var(--rule-2);stroke-width:1.3}
+.d-in .d-box{stroke:var(--sen)} .d-out .d-box{stroke:var(--act)}
+.d-bus .d-box{stroke-dasharray:4 3}
+.d-box.hl{stroke:var(--focus);stroke-width:3.2}
+.d-in .d-box.hl{fill:var(--sen-t)} .d-out .d-box.hl{fill:var(--act-t)}
+.d-node[data-id]{cursor:pointer;outline:none}
+.d-node[data-id]:hover .d-box{stroke-width:2.6}
+.d-ecu{fill:var(--sheet);stroke:var(--ink);stroke-width:2}
+.d-fn{fill:var(--card);stroke:var(--rule-2);stroke-width:1}
+.d-t{fill:var(--ink);font:500 13px var(--f-body)}
+.d-f{fill:var(--ink);font:400 12.5px var(--f-body)}
+.d-s{fill:var(--muted);font:400 10.5px var(--f-mono)}
+.d-h{fill:var(--muted);font:500 10.5px var(--f-mono);letter-spacing:.12em}
+.d-abbr{fill:var(--ink);font:700 28px var(--f-disp);letter-spacing:.04em}
+.d-full{fill:var(--muted);font:400 12px var(--f-body)}
+.d-chip{fill:var(--card);stroke:var(--rule-2);stroke-width:1.3}
+.d-chipn{fill:var(--ink);font:700 16px var(--f-disp);letter-spacing:.05em}
+.d-msg{fill:var(--ink);font:400 10.5px var(--f-mono)}
+.ln-s{stroke:var(--sen);stroke-width:2;fill:none}
+.ln-a{stroke:var(--act);stroke-width:2;fill:none}
+.ln-dash{stroke-dasharray:5 4}
+.ah-s{fill:var(--sen)} .ah-a{fill:var(--act)} .ah-i{fill:var(--ink)}
+
+/* index */
+.idx{padding:18px;display:grid;gap:14px}
+.idx h2{font:700 22px var(--f-disp);margin:0}
+.idx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.grp{display:grid;gap:6px;align-content:start;min-width:0}
+.grp button{all:unset;cursor:pointer;display:flex;gap:8px;align-items:center;font-size:13.5px;padding:3px 4px;border-radius:3px}
+.grp button:hover{background:var(--card)}
+.grp button:focus-visible{outline:2px solid var(--focus)}
+.grp .ge{font:700 15px var(--f-disp);letter-spacing:.04em}
+.sw{width:10px;height:10px;flex:none;display:inline-block}
+.sw.s{border:2px solid var(--sen);border-radius:50%}
+.sw.a,.sw.v{border:2px solid var(--act);transform:rotate(45deg);width:8px;height:8px}
+.sw.e{background:var(--ink);border-radius:2px}
+.foot{font-size:12.5px;color:var(--muted);max-width:90ch;margin:0}
+.vnav{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.vnav a.back{color:var(--ink);font:500 13px var(--f-body);text-decoration:none;border-bottom:1px solid var(--rule-2)}
+.vnav a.back:hover{border-color:var(--ink)}
+.vseg{display:inline-flex;border:1px solid var(--rule-2);border-radius:4px;overflow:hidden}
+.vseg a,.vseg span{font:600 13px var(--f-disp);letter-spacing:.08em;padding:6px 14px;text-decoration:none;color:var(--ink)}
+.vseg span{background:var(--ink);color:var(--bg)}
+.vseg a:hover{background:var(--card)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <nav class="vnav" aria-label="Navigare curs"><a class="back" href="index.html">← Sisteme de siguranță ale autovehiculelor</a><span class="vseg" role="group" aria-label="Mod vizualizare"><span aria-current="page">2D</span><a href="Harta electronică auto 3D.html">3D</a></span></nav>
+    <p class="eyebrow">Sisteme de siguranță activă a autovehiculelor · arhitectura electrică/electronică</p>
+    <h1>Harta electronică a automobilului</h1>
+    <p class="lead">Vedere de sus a unui autoturism modern cu motor pe benzină și cutie automată. Apasă pe un bloc ECU pentru diagrama funcțională: ce citește, ce calculează, ce comandă și cu cine comunică. Apasă pe un senzor sau pe o electrovană pentru fișa ei tehnică.</p>
+  </header>
+
+  <div class="stage">
+    <section class="sheet carbox" aria-label="Vedere de sus a automobilului">
+      <div class="legend">
+        <span class="lg"><svg viewBox="-12 -12 24 24"><rect x="-10" y="-7" width="20" height="14" rx="2" fill="var(--ecu-bg)"/></svg>ECU</span>
+        <span class="lg"><svg viewBox="-12 -12 24 24"><circle r="8" fill="var(--card)" stroke="var(--sen)" stroke-width="2"/><circle r="2.6" fill="var(--sen)"/></svg>Senzor</span>
+        <span class="lg"><svg viewBox="-12 -12 24 24"><path d="M0 -9 L9 0 L0 9 L-9 0Z" fill="var(--card)" stroke="var(--act)" stroke-width="2"/></svg>Actuator / electrovană</span>
+        <label class="tog"><input type="checkbox" id="netTog" checked> Rețea de comunicație</label>
+      </div>
+      <svg id="car" viewBox="0 0 900 420" role="img" aria-label="Automobil văzut de sus, cu ECU-uri, senzori și actuatoare">
+        <g>
+          <text class="c-dir" x="12" y="24">← SPATE</text>
+          <text class="c-dir" x="888" y="24" text-anchor="end">FAȚĂ →</text>
+          <rect class="c-tire" x="655" y="52" width="92" height="30" rx="8"/>
+          <rect class="c-tire" x="655" y="338" width="92" height="30" rx="8"/>
+          <rect class="c-tire" x="175" y="52" width="92" height="30" rx="8"/>
+          <rect class="c-tire" x="175" y="338" width="92" height="30" rx="8"/>
+          <path class="c-body" d="M560 80 L548 58 L580 58 L588 80Z"/>
+          <path class="c-body" d="M560 340 L548 362 L580 362 L588 340Z"/>
+          <path class="c-body" d="M95 80 C70 82 58 110 56 150 L56 270 C58 310 70 338 95 340 L760 340 C820 336 846 300 848 250 L848 170 C846 120 820 84 760 80 Z"/>
+          <path class="c-glass" d="M600 104 Q607 210 600 316 L532 302 Q525 210 532 118 Z"/>
+          <path class="c-glass" d="M258 116 Q252 210 258 304 L298 296 Q293 210 298 124 Z"/>
+          <path class="c-seam" d="M298 122 L532 116 M298 298 L532 304 M612 90 Q620 210 612 330 M420 80 v16 M420 324 v16 M150 84 Q140 210 150 336"/>
+          <rect class="c-ph" x="688" y="128" width="112" height="150" rx="8"/>
+          <circle class="c-ph" cx="744" cy="152" r="11"/><circle class="c-ph" cx="744" cy="187" r="11"/>
+          <circle class="c-ph" cx="744" cy="222" r="11"/><circle class="c-ph" cx="744" cy="257" r="11"/>
+          <path class="c-ph" d="M630 170 L688 160 L688 250 L630 240 Z"/>
+          <path class="c-ph" d="M701 84 V128 M701 278 V338 M221 84 V338"/>
+          <path class="c-ph" d="M700 278 C680 300 640 306 600 306 L180 306 M96 306 H64"/>
+          <rect class="c-ph" x="96" y="292" width="84" height="28" rx="10"/>
+          <rect class="c-ph" x="272" y="150" width="66" height="128" rx="8"/>
+          <rect class="c-ph" x="446" y="102" width="56" height="66" rx="10"/>
+          <rect class="c-ph" x="446" y="252" width="56" height="66" rx="10"/>
+          <rect class="c-ph" x="516" y="116" width="10" height="46" rx="5"/>
+          <text class="c-txt" x="744" y="121" text-anchor="middle">motor</text>
+          <text class="c-txt" x="305" y="294" text-anchor="middle">rezervor</text>
+          <text class="c-txt" x="138" y="286" text-anchor="middle">evacuare</text>
+        </g>
+        <g id="net" class="net"></g>
+        <g id="leaders"></g>
+        <g id="markers"></g>
+      </svg>
+      <div class="caption"><span>vedere de sus · reprezentare „fantomă” · volan pe stânga</span><span>linii colorate = domenii de rețea legate prin Gateway</span></div>
+      <div class="busdots" id="busdots"></div>
+    </section>
+
+    <aside id="panel" aria-live="polite"></aside>
+  </div>
+
+  <section class="sheet diag" id="diag" aria-label="Diagramă funcțională ECU">
+    <div class="diag-head">
+      <div><p class="eyebrow" id="dEyebrow">Diagramă funcțională</p><h2 id="dTitle"></h2></div>
+      <div class="dlegend">
+        <span><i style="border-color:var(--sen)"></i>semnal de la senzor</span>
+        <span><i style="border-color:var(--act)"></i>comandă către actuator</span>
+        <span><i style="border-color:var(--muted);border-top-style:dashed"></i>informație primită pe magistrală</span>
+      </div>
+    </div>
+    <div class="scroll"><svg id="dsvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  </section>
+
+  <section class="sheet idx" aria-label="Index componente">
+    <h2>Index pe sisteme</h2>
+    <div class="idx-grid" id="idx"></div>
+    <p class="foot">Valorile sunt tipice și orientative; arhitectura exactă (numărul de ECU-uri, magistrale, protocoale) diferă de la un producător la altul. Codurile DTC sunt exemple de coduri generice OBD-II (P0xxx); codurile de șasiu și caroserie sunt de regulă specifice producătorului.</p>
+  </section>
+</div>
+
+<script src="harta-data.js"></script>
+<script>
+
+const ECUS=['ecm','tcu','esp','eps','acu','bcm','adas','gw'];
+const state={sel:null,ecu:'esp',hl:null};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ecuHas=(e,id)=>[...I[e].in,...I[e].out].some(x=>x.id===id);
+
+/* ---------- car ---------- */
+function buildMarkers(){
+  let h='';
+  const order=[...Object.keys(I).filter(k=>I[k].t!=='e'),...ECUS];
+  for(const id of order){const it=I[id]; if(!it.pos) continue;
+    it.pos.forEach(([x,y],k)=>{
+      let shp;
+      if(it.t==='e'){const w=it.abbr.length>3?56:48;
+        shp=`<rect class="hit" x="${-w/2-4}" y="-16" width="${w+8}" height="32"/><rect class="shp" x="${-w/2}" y="-12" width="${w}" height="24" rx="3"/><text class="abbr" y="4.5" text-anchor="middle">${it.abbr}</text>`;
+      } else if(it.t==='s'){shp=`<circle class="hit" r="16"/><circle class="shp" r="10"/><circle class="dot" r="3.2"/>`;}
+      else {shp=`<circle class="hit" r="16"/><path class="shp" d="M0 -11 L11 0 L0 11 L-11 0Z"/><rect class="dot" x="-2.6" y="-2.6" width="5.2" height="5.2"/>`;}
+      let lbl='';
+      if(it.t!=='e'){const tw=it.sh.length*6.3+14, left=x>700;
+        lbl=`<g class="lblg"><rect class="lblbg" x="${left?-(16+tw):16}" y="-10" width="${tw}" height="20" rx="3"/><text class="lbl" x="${left?-(16+tw)+7:23}" y="4">${esc(it.sh)}</text></g>`;}
+      h+=`<g class="mk t-${it.t}" data-id="${id}" ${k===0?'tabindex="0"':''} role="button" aria-label="${esc(TN[it.t]+': '+it.n)}" transform="translate(${x} ${y})">${shp}${lbl}</g>`;
+    });
+  }
+  $('#markers').innerHTML=h;
+  // network backbone
+  const [gx,gy]=I.gw.pos[0]; let n='';
+  for(const e of ECUS){ if(e==='gw')continue; const [ex,ey]=I[e].pos[0];
+    n+=`<path d="M${gx} ${gy} H${ex} V${ey}" style="stroke:${DOM[I[e].dom].c}"/>`;}
+  $('#net').innerHTML=n;
+  $('#busdots').innerHTML=['pt','ch','bd','ad'].map(d=>`<span class="bd"><i style="background:${DOM[d].c}"></i>${DOM[d].lbl}</span>`).join('');
+}
+function updateCar(){
+  const sel=state.sel, it=I[sel];
+  const rel=new Set();
+  let ld='';
+  if(it.t==='e'){
+    [...it.in,...it.out].forEach(x=>{ if(x.id&&I[x.id]&&I[x.id].pos){rel.add(x.id);
+      const [ex,ey]=it.pos[0]; const cls=I[x.id].t==='s'?'s':'a';
+      I[x.id].pos.forEach(([x2,y2])=>ld+=`<path class="ld ${cls}" d="M${x2} ${y2} L${ex} ${ey}"/>`);}});
+  } else {
+    rel.add(state.ecu);
+    if(it.pos){const [ex,ey]=I[state.ecu].pos[0]; const cls=it.t==='s'?'s':'a';
+      it.pos.forEach(([x2,y2])=>ld+=`<path class="ld ${cls}" d="M${x2} ${y2} L${ex} ${ey}"/>`);}
+  }
+  $('#leaders').innerHTML=ld;
+  $('#markers').classList.add('has-sel');
+  document.querySelectorAll('.mk').forEach(m=>{const id=m.dataset.id;
+    m.classList.toggle('sel',id===sel); m.classList.toggle('rel',rel.has(id));});
+}
+
+/* ---------- panel ---------- */
+function panelHTML(){
+  const it=I[state.sel];
+  if(it.t==='e'){
+    const nIn=it.in.length, nOut=it.out.length;
+    return `<span class="kind k-e">ECU · ${esc(DOM[it.dom].lbl)}</span>
+      <h2>${esc(it.abbr)}</h2><p class="full">${esc(it.n)}</p>
+      <div><h3>Rol</h3><p>${esc(it.rol)}</p></div>
+      <dl class="facts">
+        <dt>Locație</dt><dd>${esc(it.loc)}</dd>
+        <dt>Rețea</dt><dd>${esc(DOM[it.dom].lbl)}</dd>
+        <dt>ISO 26262</dt><dd>${esc(it.asil)}</dd>
+        <dt>Semnale</dt><dd>${nIn} intrări · ${it.fn.length} funcții · ${nOut} ieșiri</dd>
+      </dl>
+      <div><h3>Comunică cu</h3><div class="pills">${it.link.map(l=>`<button class="pill" data-go="${l.e}">${I[l.e].abbr}</button>`).join('')}</div></div>
+      <div class="btns"><button class="b" data-scroll>Vezi diagrama funcțională ↓</button></div>`;
+  }
+  const e=I[state.ecu];
+  const chain = it.t==='s'
+    ? `<span>${esc(it.sh)}</span><b>→</b><span>${e.abbr}</span><b>→</b><span>${esc(DOM[e.dom].lbl)}</span>`
+    : `<span>${esc(DOM[e.dom].lbl)}</span><b>→</b><span>${e.abbr}</span><b>→</b><span>driver</span><b>→</b><span>${esc(it.sh)}</span>`;
+  return `<span class="kind k-${it.t}">${TN[it.t]}</span>
+    <h2>${esc(it.n)}</h2>
+    <div><h3>Fluxul informației</h3><div class="chain">${chain}</div></div>
+    <div><h3>Principiu de funcționare</h3><p>${esc(it.p)}</p></div>
+    <dl class="facts">${it.sig.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+    <div><h3>${it.t==='s'?'Ce face ECU-ul cu informația':'Ce realizează comanda'}</h3><p>${esc(it.rol)}</p></div>
+    ${it.def&&it.def!=='—'?`<div><h3>Defecte tipice</h3><div class="dtc">${esc(it.def)}</div></div>`:''}
+    <div class="btns"><button class="b" data-go="${state.ecu}">Deschide ECU-ul ${e.abbr}</button><button class="b ghost" data-scroll>Vezi în diagramă ↓</button></div>`;
+}
+
+/* ---------- diagram ---------- */
+function diagram(){
+  const e=I[state.ecu], hl=state.hl;
+  const W=1000, top=48, rowH=48, rg=10;
+  const inH=e.in.length*(rowH+rg)-rg, outH=e.out.length*(rowH+rg)-rg;
+  const fnH=34, fg=8, ecuH=78+e.fn.length*(fnH+fg)-fg+44;
+  const bodyH=Math.max(inH,outH,ecuH);
+  const X={l:16,lw:248,ex:330,ew:340,r:736,rw:248};
+  let s=`<defs>
+    <marker id="aS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="ah-s" d="M0 0L10 5L0 10z"/></marker>
+    <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="ah-a" d="M0 0L10 5L0 10z"/></marker>
+  </defs>`;
+  s+=`<text class="d-h" x="${X.l}" y="26">INTRĂRI · SENZORI</text>
+      <text class="d-h" x="${X.ex+X.ew/2}" y="26" text-anchor="middle">PRELUCRARE ÎN ECU</text>
+      <text class="d-h" x="${X.r+X.rw}" y="26" text-anchor="end">IEȘIRI · ACTUATOARE</text>`;
+  // ECU block
+  s+=`<rect class="d-ecu" x="${X.ex}" y="${top}" width="${X.ew}" height="${bodyH}" rx="6"/>
+      <text class="d-abbr" x="${X.ex+X.ew/2}" y="${top+36}" text-anchor="middle">${e.abbr}</text>
+      <text class="d-full" x="${X.ex+X.ew/2}" y="${top+56}" text-anchor="middle">${esc(e.n.length>48?e.n.slice(0,46)+'…':e.n)}</text>`;
+  const fy0=top+(bodyH-ecuH)/2+76;
+  e.fn.forEach((f,i)=>{const y=fy0+i*(fnH+fg);
+    s+=`<rect class="d-fn" x="${X.ex+16}" y="${y}" width="${X.ew-32}" height="${fnH}" rx="3"/><text class="d-f" x="${X.ex+28}" y="${y+21.5}">${esc(f)}</text>`;});
+  s+=`<text class="d-s" x="${X.ex+X.ew/2}" y="${top+bodyH-16}" text-anchor="middle">${esc(e.asil.length>52?e.asil.slice(0,50)+'…':e.asil)}</text>`;
+  // columns
+  const col=(arr,side)=>{const h=side==='in'?inH:outH; const y0=top+(bodyH-h)/2;
+    arr.forEach((x,i)=>{const y=y0+i*(rowH+rg); const bx=side==='in'?X.l:X.r; const bw=side==='in'?X.lw:X.rw;
+      const has=x.id&&I[x.id]; const isH=has&&x.id===hl; const cy=y+rowH/2;
+      const ln= side==='in'
+        ? `<path class="ln-s${x.bus?' ln-dash':''}" d="M${bx+bw} ${cy} H${X.ex}" marker-end="url(#aS)"${x.bus?' style="stroke:var(--muted)"':''}${isH?' stroke-width="3.2"':''}/>`
+        : `<path class="ln-a${x.bus?' ln-dash':''}" d="M${X.ex+X.ew} ${cy} H${bx}" marker-end="url(#aA)"${x.bus?' style="stroke:var(--muted)"':''}${isH?' stroke-width="3.2"':''}/>`;
+      s+=ln+`<g class="d-node d-${side}${x.bus?' d-bus':''}"${has?` data-id="${x.id}" tabindex="0" role="button" aria-label="${esc(x.l)}"`:''}>
+        <rect class="d-box${isH?' hl':''}" x="${bx}" y="${y}" width="${bw}" height="${rowH}" rx="4"/>
+        <text class="d-t" x="${bx+12}" y="${y+20}">${esc(x.l)}</text>
+        <text class="d-s" x="${bx+12}" y="${y+37}">${esc(x.s)}${has?'  ›':''}</text></g>`;});};
+  col(e.in,'in'); col(e.out,'out');
+  // bus
+  const busY=top+bodyH+52, bc=DOM[e.dom].c;
+  s+=`<path d="M${X.ex+X.ew/2} ${top+bodyH} V${busY}" style="stroke:${bc}" stroke-width="3"/>
+      <path d="M16 ${busY} H984" style="stroke:${bc}" stroke-width="4" stroke-linecap="round"/>
+      <text class="d-h" x="16" y="${busY-10}" style="fill:${bc}">${esc(DOM[e.dom].lbl.toUpperCase())}</text>`;
+  if(state.ecu!=='gw') s+=`<text class="d-s" x="984" y="${busY-10}" text-anchor="end">mesajele către alte domenii trec prin Gateway</text>`;
+  const per=4, cw=226, cg=20, x0=18;
+  const rows=[]; e.link.forEach((l,i)=>{(rows[Math.floor(i/per)]??=[]).push(l)});
+  let cy=busY+30;
+  rows.forEach(r=>{const mh=Math.max(...r.map(l=>30+l.m.length*17));
+    r.forEach((l,j)=>{const x=x0+j*(cw+cg), o=I[l.e], oc=DOM[o.dom].c;
+      s+=`<path d="M${x+cw/2} ${busY} V${cy}" style="stroke:${oc}" stroke-width="2"/>
+        <g class="d-node" data-go="${l.e}" tabindex="0" role="button" aria-label="Deschide ${o.abbr}" style="cursor:pointer">
+        <rect class="d-chip" x="${x}" y="${cy}" width="${cw}" height="${mh}" rx="4" style="stroke:${oc}"/>
+        <text class="d-chipn" x="${x+12}" y="${cy+22}">${o.abbr}</text>
+        ${l.m.map((m,k)=>`<text class="d-msg" x="${x+12}" y="${cy+42+k*17}">${esc(m)}</text>`).join('')}</g>`;});
+    cy+=mh+22;});
+  const H=cy+4;
+  const svg=$('#dsvg'); svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=s;
+  svg.setAttribute('aria-label',`Diagrama funcțională ${e.abbr}`);
+  $('#dTitle').textContent=`${e.abbr} — ${e.n}`;
+  $('#dEyebrow').textContent=`Diagramă funcțională · ${DOM[e.dom].lbl}`;
+}
+
+/* ---------- index ---------- */
+function buildIndex(){
+  $('#idx').innerHTML=ECUS.map(e=>{const E=I[e]; const seen=new Set();
+    const comps=[...E.in,...E.out].filter(x=>x.id&&I[x.id]&&I[x.id].ecu===e&&!seen.has(x.id)&&seen.add(x.id));
+    return `<div class="grp"><button data-go="${e}"><span class="sw e"></span><span class="ge">${E.abbr}</span><span style="color:var(--muted);font-size:12.5px">${esc(E.n)}</span></button>
+      ${comps.map(x=>`<button data-go="${x.id}"><span class="sw ${I[x.id].t}"></span>${esc(I[x.id].n)}</button>`).join('')}</div>`;}).join('');
+}
+
+/* ---------- select ---------- */
+function select(id,o={}){
+  const it=I[id]; if(!it) return;
+  state.sel=id;
+  if(it.t==='e'){state.ecu=id;state.hl=null;}
+  else{ if(!(o.keep&&ecuHas(state.ecu,id))) state.ecu=it.ecu; state.hl=id; }
+  $('#panel').innerHTML=panelHTML();
+  const t3=document.querySelector('.vseg a'); if(t3) t3.href='Harta electronică auto 3D.html#'+id;
+  diagram(); updateCar();
+  if(o.scroll) scrollDiag(true);
+}
+function scrollDiag(onlyIfHidden){
+  const d=$('#diag'), r=d.getBoundingClientRect();
+  if(onlyIfHidden && r.top < innerHeight*0.6 && r.bottom>0) return;
+  d.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'start'});
+}
+function act(t){
+  const mk=t.closest('.mk'); if(mk){const id=mk.dataset.id; select(id,{scroll:I[id].t==='e'}); return true;}
+  const dn=t.closest('.d-node[data-id]'); if(dn){select(dn.dataset.id,{keep:true}); return true;}
+  const go=t.closest('[data-go]'); if(go){const id=go.dataset.go; select(id,{scroll:I[id].t==='e'&&!go.closest('#diag')}); return true;}
+  if(t.closest('[data-scroll]')){scrollDiag(false); return true;}
+  return false;
+}
+document.addEventListener('click',ev=>act(ev.target));
+document.addEventListener('keydown',ev=>{ if((ev.key==='Enter'||ev.key===' ')&&ev.target.closest&&ev.target.closest('.mk,.d-node')){ev.preventDefault(); act(ev.target);} });
+$('#netTog').addEventListener('change',ev=>$('#net').classList.toggle('off',!ev.target.checked));
+
+buildMarkers(); buildIndex();
+{const h=decodeURIComponent(location.hash.slice(1)); select(I[h]?h:'esp');}
+</script>
+
+</body></html>

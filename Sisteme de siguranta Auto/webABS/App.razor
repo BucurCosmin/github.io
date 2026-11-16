@@ -1,0 +1,381 @@
+@implements IDisposable
+@inject IJSRuntime JS
+@using AbsSim.Core.Hydraulics
+
+<PageTitle>Simulator ABS</PageTitle>
+
+<header class="topbar">
+    <div class="brand-mark">ABS</div>
+    <div><strong>Simulator ABS</strong><small>DINAMICA FRÂNĂRII · 4 CANALE</small></div>
+    <span class="header-note">Laborator virtual <span> / </span> simulare interactivă</span>
+</header>
+
+<main class="layout">
+    <aside class="sidebar">
+        <div class="section-kicker">CONFIGURARE</div>
+        <h1>Pregătește<br />simularea<span class="accent">.</span></h1>
+        <p class="intro">Explorează comportamentul sistemului ABS în condiții diferite de aderență.</p>
+
+        <label class="field-label" for="scenario">SCENARIU DE FRÂNARE</label>
+        <select id="scenario" value="@scenarioIndex" @onchange="ChangeScenario">
+            @for (int i = 0; i < presets.Count; i++)
+            {
+                <option value="@i">@presets[i].Name</option>
+            }
+        </select>
+        <p class="scenario-description">@scenario.Description</p>
+
+        <div class="toggle-row">
+            <label><input type="checkbox" checked="@absEnabled" @onchange="ChangeAbs" /> ABS activ</label>
+            <label><input type="checkbox" checked="@compare" @onchange="ChangeCompare" /> Compară fără ABS</label>
+        </div>
+        <button class="primary-button" @onclick="Run" disabled="@(busy || parameterErrors.Count > 0)">
+            @(busy ? "Se simulează…" : "▶  Simulează")
+        </button>
+        <div class="sidebar-actions">
+            <button class="text-button" @onclick="Reset" disabled="@busy">↺ Valori implicite</button>
+            <button class="text-button" @onclick="Export" disabled="@(result is null || busy || exporting)">@(exporting ? "Se exportă…" : "↓ Export CSV")</button>
+        </div>
+        @if (parameterErrors.Count > 0)
+        {
+            <div class="notice error" role="alert">@parameterErrors.Values.First()</div>
+        }
+        @if (error is not null)
+        {
+            <div class="notice error" role="alert">@error</div>
+        }
+        <div class="parameter-header"><span>PARAMETRI</span><span>EDITABILI</span></div>
+        <details open>
+            <summary>Scenariu <span>↗</span></summary>
+            <ParameterEditor Model="scenario" OnError="ParameterChanged" @key="scenario" />
+        </details>
+        <details>
+            <summary>Vehicul <span>↗</span></summary>
+            <ParameterEditor Model="scenario.Vehicle" OnError="ParameterChanged" @key="scenario.Vehicle" />
+        </details>
+        <details>
+            <summary>Hidraulică <span>↗</span></summary>
+            <ParameterEditor Model="scenario.Hydraulics" OnError="ParameterChanged" @key="scenario.Hydraulics" />
+        </details>
+        <details>
+            <summary>Reglare ECU <span>↗</span></summary>
+            <ParameterEditor Model="scenario.Control" OnError="ParameterChanged" @key="scenario.Control" />
+        </details>
+        <p class="sidebar-foot">Modificările se aplică la următoarea simulare.</p>
+    </aside>
+
+    <section class="workspace">
+        <div class="workspace-head">
+            <div>
+                <div class="section-kicker">REZULTATELE SIMULĂRII <span class="accent"> / @((scenarioIndex + 1).ToString("00"))</span></div>
+                <h2>O privire asupra frânării</h2>
+                <p>Analizează viteza, presiunea și aderența în timp real.</p>
+            </div>
+            <div class="status"><span class="status-dot"></span>@(busy ? "CALCUL ÎN CURS" : result is null ? "PREGĂTIT" : "SIMULARE FINALIZATĂ")</div>
+        </div>
+
+        @if (result is not null)
+        {
+            @if (dirty)
+            {
+                <div class="notice">Parametrii au fost modificați. Rezultatele afișate aparțin simulării anterioare; apasă „Simulează” pentru actualizare.</div>
+            }
+            @if (!result.Metrics.Stopped)
+            {
+                <div class="notice">Vehiculul nu s-a oprit în durata maximă. Distanța afișată este cea parcursă până la sfârșitul simulării.</div>
+            }
+            @if (!double.IsNaN(result.Metrics.FaultDetectedAt))
+            {
+                <div class="notice error">Defect de senzor detectat la @Fmt(result.Metrics.FaultDetectedAt) s. ABS dezactivat; lampa de avertizare este aprinsă.</div>
+            }
+            <div class="metrics">
+                <div class="metric"><span>DISTANȚĂ DE FRÂNARE</span><strong>@Fmt(result.Metrics.StoppingDistance)<small> m</small></strong><em>@(result.Metrics.Stopped ? "până la oprire" : "până la limita simulării")</em></div>
+                <div class="metric"><span>TIMP DE FRÂNARE</span><strong>@Fmt(result.Metrics.StoppingTime)<small> s</small></strong><em>de la acționarea pedalei</em></div>
+                <div class="metric"><span>DECELERAȚIE MEDIE</span><strong>@(result.Metrics.Stopped ? Fmt(result.Metrics.MeanDecelG) : "—")<small>@(result.Metrics.Stopped ? " g" : "")</small></strong><em>@(result.Metrics.Stopped ? "valoare echivalentă" : "disponibilă la oprire")</em></div>
+                <div class="metric highlight"><span>FĂRĂ ABS</span><strong>@(resultNo is null ? "—" : Fmt(resultNo.Metrics.StoppingDistance))<small>@(resultNo is null ? "" : " m")</small></strong><em>@(resultNo is null ? "comparație dezactivată" : resultNo.Metrics.Stopped ? "distanță de frânare" : "până la limita simulării")</em></div>
+            </div>
+
+            <div class="player">
+                <div class="player-control"><label for="wheel">ROATA SELECTATĂ</label><select id="wheel" @bind="wheel">
+                    @for (int i = 0; i < 4; i++) { <option value="@i">@SimulationResult.WheelNamesLong[i] (@SimulationResult.WheelNames[i])</option> }
+                </select></div>
+                <button class="play-button" @onclick="TogglePlayback">@(playing ? "❚❚" : "▶")</button>
+                <div class="timeline"><div><span>CRONOLOGIE</span><strong>@Fmt(cursor, "0.00") <small>/ @Fmt(result.Duration, "0.00") s</small></strong></div>
+                    <input type="range" min="0" max="@Invariant(result.Duration)" step="0.001" value="@Invariant(cursor)" @oninput="Seek" aria-label="Poziția în timp" />
+                </div>
+                <div class="player-control speed-control"><label for="playSpeed">REDARE</label><select id="playSpeed" @bind="playbackSpeed">
+                    <option value="0.1">0,1×</option><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1">1×</option><option value="2">2×</option>
+                </select></div>
+            </div>
+
+            <nav class="tabs" aria-label="Vizualizări">
+                @foreach (var tab in tabs)
+                {
+                    <button class="@(activeTab == tab ? "active" : "")" @onclick="() => activeTab = tab">@tab</button>
+                }
+            </nav>
+
+            @if (activeTab == "Diagrame")
+            {
+                <div class="panel-heading"><div><div class="section-kicker">ANALIZĂ ÎN TIMP</div><h2>Diagrame de timp</h2></div><span>Roata @SimulationResult.WheelNames[wheel]</span></div>
+                <div class="charts">
+                    <Plot Title="Viteza vehiculului și a roții" Unit="km/h" XMax="result.Duration" Max="@SpeedMax" Cursor="cursor" Lines="@SpeedLines()" />
+                    <Plot Title="Presiunea de frânare" Unit="bar" XMax="result.Duration" Max="@PressureMax" Cursor="cursor" Lines="@PressureLines()" />
+                    <Plot Title="Alunecarea roții" Unit="%" XMax="result.Duration" Min="-10" Max="100" Cursor="cursor" Lines="@SlipLines()" />
+                    <Plot Title="Accelerația roții" Unit="g" XMax="result.Duration" Min="-15" Max="15" Cursor="cursor" Lines="@AccelerationLines()" />
+                </div>
+            }
+            else if (activeTab == "Toate roțile")
+            {
+                <div class="panel-heading"><div><div class="section-kicker">ANALIZĂ PE CANALE</div><h2>Toate roțile</h2></div><span>FS · FD · SS · SD</span></div>
+                <div class="charts">
+                    <Plot Title="Vitezele roților" Unit="km/h" XMax="result.Duration" Max="@SpeedMax" Cursor="cursor" Lines="@AllWheelLines(result.Vr, 3.6)" />
+                    <Plot Title="Presiunile în frâne" Unit="bar" XMax="result.Duration" Max="@PressureMax" Cursor="cursor" Lines="@AllWheelLines(result.P, 1)" />
+                    <Plot Title="Alunecările roților" Unit="%" XMax="result.Duration" Min="-10" Max="100" Cursor="cursor" Lines="@AllWheelLines(result.SlipTrue, 100)" />
+                    <Plot Title="Momentul de girație" Unit="N·m" XMax="result.Duration" Min="@(-YawMax)" Max="@YawMax" Cursor="cursor" Lines="@SingleLine("Mz", "#d37938", result.Mz, 1)" />
+                </div>
+            }
+            else if (activeTab == "Curba μ–λ")
+            {
+                var surface = result.SurfaceOf(wheel, CurrentIndex);
+                <div class="panel-heading"><div><div class="section-kicker">CONTACTUL CU DRUMUL</div><h2>Curba de aderență</h2></div><span>@surface.Name</span></div>
+                <div class="charts">
+                    <Plot Title="Coeficientul longitudinal μ" Unit="μ" XUnit="%" XMax="100" Max="@Math.Max(0.1, surface.MuMax * 1.15)" Lines="@MuLines(surface, false)" />
+                    <Plot Title="Coeficientul lateral μS" Unit="μ" XUnit="%" XMax="100" Max="@Math.Max(0.1, surface.MuMax * 1.15)" Lines="@MuLines(surface, true)" />
+                </div>
+                <p class="explanation">Suprafața este cea de sub roata selectată la momentul indicat de cursor. La blocarea roții, capacitatea de ghidare laterală scade.</p>
+            }
+            else if (activeTab == "Vehicul")
+            {
+                <div class="panel-heading"><div><div class="section-kicker">STAREA LA CURSOR</div><h2>Vehicul și modulator</h2></div><span>@Fmt(cursor, "0.00") s</span></div>
+                <div class="vehicle-panel">
+                    <div class="vehicle-diagram"><span class="vehicle-front">FAȚĂ ↑</span><div class="car-body"></div>
+                        @for (int w = 0; w < 4; w++)
+                        {
+                            var wi = w;
+                            <button class="wheel wheel-@w @(wheel == w ? "selected" : "")" @onclick="() => wheel = wi">
+                                <b>@SimulationResult.WheelNames[w]</b><span>@Fmt(result.P[w][CurrentIndex]) bar</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="readouts">
+                        <div><span>Viteza vehiculului</span><strong>@Fmt(result.V[CurrentIndex] * 3.6) km/h</strong></div>
+                        <div><span>Suprafață roată</span><strong>@result.SurfaceOf(wheel, CurrentIndex).Name</strong></div>
+                        <div><span>Viteză roată</span><strong>@Fmt(result.Vr[wheel][CurrentIndex] * 3.6) km/h</strong></div>
+                        <div><span>Alunecare</span><strong>@Fmt(result.SlipTrue[wheel][CurrentIndex] * 100) %</strong></div>
+                        <div><span>Presiune / comandă</span><strong>@Fmt(result.P[wheel][CurrentIndex]) bar · @(((ValveCommand)result.Cmd[wheel][CurrentIndex]).ToRo())</strong></div>
+                        <div><span>Fază ECU</span><strong>@(((AbsPhase)result.Phase[wheel][CurrentIndex]).ToRo())</strong></div>
+                        <div><span>Moment de girație</span><strong>@Fmt(result.Mz[CurrentIndex]) N·m</strong></div>
+                        <div><span>Lampă avertizare</span><strong>@(result.Lamp[CurrentIndex] ? "APRINSĂ" : "Stinsă")</strong></div>
+                    </div>
+                </div>
+            }
+            else if (activeTab == "Comparație")
+            {
+                <div class="panel-heading"><div><div class="section-kicker">ABS VS. FRÂNARE CONVENȚIONALĂ</div><h2>Comparație</h2></div></div>
+                @if (resultNo is null)
+                {
+                    <div class="notice">Activează „Compară fără ABS” și rulează simularea din nou.</div>
+                }
+                else
+                {
+                    <div class="charts">
+                        <Plot Title="Viteza în funcție de distanță" Unit="km/h" XUnit="m" XMax="@CompareDistance" Max="@SpeedMax" Lines="@CompareLines()" />
+                        <Plot Title="Decelerația vehiculului" Unit="g" XMax="@Math.Max(result.Duration, resultNo.Duration)" Min="-0.1" Max="@DecelMax" Lines="@CompareAccelLines()" />
+                    </div>
+                    <div class="comparison-table">
+                        <div><span>INDICATOR</span><span>@(result.AbsEnabled ? "CU ABS" : "SIMULARE")</span><span>FĂRĂ ABS</span></div>
+                        <div><span>Distanță de frânare @(result.Metrics.Stopped && resultNo.Metrics.Stopped ? "" : "(la limita simulării)")</span><strong>@Fmt(result.Metrics.StoppingDistance) m</strong><strong>@Fmt(resultNo.Metrics.StoppingDistance) m</strong></div>
+                        <div><span>Decelerație maximă</span><strong>@Fmt(result.Metrics.PeakDecelG) g</strong><strong>@Fmt(resultNo.Metrics.PeakDecelG) g</strong></div>
+                        <div><span>Moment de girație maxim</span><strong>@Fmt(result.Metrics.MaxYawMoment) N·m</strong><strong>@Fmt(resultNo.Metrics.MaxYawMoment) N·m</strong></div>
+                        <div><span>Roată blocată (@SimulationResult.WheelNames[wheel])</span><strong>@Fmt(result.Metrics.LockedPercent[wheel]) %</strong><strong>@Fmt(resultNo.Metrics.LockedPercent[wheel]) %</strong></div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="panel-heading"><div><div class="section-kicker">DESPRE SIMULARE</div><h2>Model și algoritm</h2></div></div>
+                <div class="model-copy">
+                    <p>Simularea folosește același nucleu ca aplicația desktop: patru roți independente, transfer dinamic de sarcină, rezistențe la înaintare și modelul de aderență Burckhardt.</p>
+                    <p><strong>Alunecare:</strong> λ = (v vehicul − v roată) / v vehicul. <strong>Aderență:</strong> μ = c₁ · (1 − e<sup>−c₂λ</sup>) − c₃ · λ.</p>
+                    <p>ECU eșantionează vitezele roților, estimează viteza de referință și comandă creșterea, menținerea sau reducerea presiunii. Select-low pe spate și GMA pe față contribuie la stabilitate pe carosabil μ-split.</p>
+                    <p>Integrarea folosește un pas de 20 µs; datele sunt înregistrate la 1 ms. Mișcarea este rectilinie: momentul de girație și unghiul de volan sunt estimări și nu modifică traiectoria.</p>
+                    <p>Model educațional, nu un sistem de frânare certificat. Parametrii sunt valori ilustrative, nu datele unui vehicul de serie.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state"><div>◌</div><h2>Pregătit pentru simulare</h2><p>Alege un scenariu și apasă „Simulează”.</p></div>
+        }
+        <footer>SIMULATOR ABS <span>·</span> MODEL EDUCAȚIONAL <span>·</span> CALCUL LOCAL ÎN BROWSER</footer>
+    </section>
+</main>
+
+@code {
+    private readonly IReadOnlyList<Scenario> presets = Scenario.Presets();
+    private readonly Dictionary<string, string> parameterErrors = new();
+    private readonly string[] tabs = { "Diagrame", "Toate roțile", "Curba μ–λ", "Vehicul", "Comparație", "Model și algoritm" };
+    private readonly string[] colors = { "#2b6fd5", "#e05c56", "#44a57a", "#e7a14b" };
+    private Scenario scenario = default!;
+    private SimulationResult? result, resultNo;
+    private int scenarioIndex, wheel;
+    private bool absEnabled = true, compare = true, busy, playing, dirty, exporting;
+    private string? error;
+    private string activeTab = "Diagrame";
+    private double cursor, playbackSpeed = 1;
+    private CancellationTokenSource? playback;
+
+    protected override async Task OnInitializedAsync()
+    {
+        scenario = presets[0].Clone();
+        await Run();
+    }
+
+    private async Task Run()
+    {
+        if (busy || parameterErrors.Count > 0) return;
+        if (scenario.BrakeStartTime >= scenario.MaxDuration)
+        {
+            error = "Momentul acționării pedalei trebuie să fie mai mic decât durata maximă a simulării.";
+            return;
+        }
+        StopPlayback();
+        busy = true;
+        error = null;
+        StateHasChanged();
+        await Task.Delay(50);
+        try
+        {
+            var snapshot = scenario.Clone();
+            var primary = Simulator.Run(snapshot, absEnabled);
+            var comparison = compare ? Simulator.Run(snapshot.Clone(), false) : null;
+            result = primary;
+            resultNo = comparison;
+            cursor = 0;
+            dirty = false;
+        }
+        catch (Exception ex)
+        {
+            error = $"Simularea nu a putut fi finalizată: {ex.Message}";
+        }
+        finally { busy = false; }
+    }
+
+    private void ChangeScenario(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var index) && index >= 0 && index < presets.Count)
+        {
+            scenarioIndex = index;
+            Reset();
+        }
+    }
+    private void Reset() { scenario = presets[scenarioIndex].Clone(); parameterErrors.Clear(); error = null; dirty = result is not null; }
+    private void ChangeAbs(ChangeEventArgs e) { absEnabled = e.Value is true; dirty = result is not null; }
+    private void ChangeCompare(ChangeEventArgs e) { compare = e.Value is true; dirty = result is not null; }
+    private void ParameterChanged(ParameterValidation validation)
+    {
+        if (validation.Error is null) parameterErrors.Remove(validation.Key);
+        else parameterErrors[validation.Key] = validation.Error;
+        error = null;
+        dirty = result is not null;
+    }
+    private void Seek(ChangeEventArgs e) { if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var t)) cursor = t; }
+
+    private async Task TogglePlayback()
+    {
+        if (playing) { StopPlayback(); return; }
+        if (result is null) return;
+        if (cursor >= result.Duration) cursor = 0;
+        playing = true;
+        playback = new CancellationTokenSource();
+        var token = playback.Token;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var previous = clock.Elapsed.TotalSeconds;
+        try
+        {
+            while (!token.IsCancellationRequested && result is not null && cursor < result.Duration)
+            {
+                await Task.Delay(50, token);
+                var now = clock.Elapsed.TotalSeconds;
+                cursor = Math.Min(result.Duration, cursor + (now - previous) * playbackSpeed);
+                previous = now;
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        if (!token.IsCancellationRequested) StopPlayback();
+    }
+    private void StopPlayback() { playing = false; playback?.Cancel(); playback?.Dispose(); playback = null; }
+    public void Dispose() => StopPlayback();
+
+    private async Task Export()
+    {
+        if (result is null || exporting) return;
+        exporting = true;
+        error = null;
+        StateHasChanged();
+        await Task.Delay(50);
+        try
+        {
+            await ExportOne(result, result.AbsEnabled ? "simulare_cu_ABS.csv" : "simulare_principala_fara_ABS.csv");
+            if (resultNo is not null) await ExportOne(resultNo, "simulare_fara_ABS.csv");
+        }
+        catch (Exception ex) { error = $"Exportul CSV a eșuat: {ex.Message}"; }
+        finally { exporting = false; }
+    }
+    private async Task ExportOne(SimulationResult simulation, string filename)
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".csv");
+        try
+        {
+            simulation.ExportCsv(path);
+            await JS.InvokeVoidAsync("downloadCsv", filename, File.ReadAllText(path));
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
+    }
+
+    private int CurrentIndex => result!.IndexAt(cursor);
+    private static string Fmt(double value, string format = "0.0") => value.ToString(format, CultureInfo.GetCultureInfo("ro-RO"));
+    private static string Invariant(double value) => value.ToString(CultureInfo.InvariantCulture);
+    private double SpeedMax => Math.Max(1, result!.Scenario.InitialSpeedKmh * 1.1);
+    private double PressureMax => Math.Max(1, result!.Scenario.MasterPressureBar * 1.1);
+    private double YawMax => Math.Max(1, result!.Metrics.MaxYawMoment * 1.1);
+    private double CompareDistance => Math.Max(1, Math.Max(result!.X[result.Count - 1], resultNo!.X[resultNo.Count - 1]));
+    private double DecelMax => Math.Max(0.1, Math.Max(result!.Metrics.PeakDecelG, resultNo!.Metrics.PeakDecelG) * 1.1);
+
+    private static IReadOnlyList<(double X, double Y)> Sample(SimulationResult r, float[] values, double scale = 1, bool distance = false)
+    {
+        var points = new List<(double, double)>();
+        var step = Math.Max(1, r.Count / 900);
+        for (int i = 0; i < r.Count; i += step) points.Add((distance ? r.X[i] : r.T[i], values[i] * scale));
+        if (r.Count > 0 && (r.Count - 1) % step != 0) points.Add((distance ? r.X[r.Count - 1] : r.T[r.Count - 1], values[r.Count - 1] * scale));
+        return points;
+    }
+    private IReadOnlyList<PlotLine> SpeedLines() => new[] {
+        new PlotLine("Vehicul", "#252e3d", Sample(result!, result!.V, 3.6)),
+        new PlotLine("Referință", "#9d73bf", Sample(result!, result!.VRef, 3.6)),
+        new PlotLine("Roată", colors[wheel], Sample(result!, result!.Vr[wheel], 3.6)) };
+    private IReadOnlyList<PlotLine> PressureLines() => new[] {
+        new PlotLine("Cilindru principal", "#a4acb9", Sample(result!, result!.PMc)),
+        new PlotLine("Roată", colors[wheel], Sample(result!, result!.P[wheel])) };
+    private IReadOnlyList<PlotLine> SlipLines() => new[] {
+        new PlotLine("Alunecare reală", colors[wheel], Sample(result!, result!.SlipTrue[wheel], 100)),
+        new PlotLine("Alunecare estimată", "#9d73bf", Sample(result!, result!.SlipEst[wheel], 100)) };
+    private IReadOnlyList<PlotLine> AccelerationLines() => SingleLine("Roată", colors[wheel], result!.AccWheelG[wheel], 1);
+    private IReadOnlyList<PlotLine> SingleLine(string name, string color, float[] values, double scale) => new[] { new PlotLine(name, color, Sample(result!, values, scale)) };
+    private IReadOnlyList<PlotLine> AllWheelLines(float[][] values, double scale) => Enumerable.Range(0, 4)
+        .Select(w => new PlotLine(SimulationResult.WheelNames[w], colors[w], Sample(result!, values[w], scale))).ToArray();
+    private IReadOnlyList<PlotLine> MuLines(Surface surface, bool lateral)
+    {
+        if (!lateral) return new[] { new PlotLine(surface.Name, "#2b6fd5", Enumerable.Range(0, 201).Select(i => (i / 2.0, surface.Mu(i / 200.0))).ToArray()) };
+        return new[] { 2, 4, 10 }.Select((angle, i) => new PlotLine($"α = {angle}°", colors[i],
+            Enumerable.Range(0, 201).Select(j => (j / 2.0, surface.CombinedSlip(j / 200.0, angle * Math.PI / 180).muY)).ToArray())).ToArray();
+    }
+    private IReadOnlyList<PlotLine> CompareLines() => new[] {
+        new PlotLine(result!.AbsEnabled ? "Cu ABS" : "Simulare", "#2b6fd5", Sample(result, result.V, 3.6, true)),
+        new PlotLine("Fără ABS", "#e18b4e", Sample(resultNo!, resultNo!.V, 3.6, true)) };
+    private IReadOnlyList<PlotLine> CompareAccelLines() => new[] {
+        new PlotLine(result!.AbsEnabled ? "Cu ABS" : "Simulare", "#2b6fd5", Sample(result, result.AccG)),
+        new PlotLine("Fără ABS", "#e18b4e", Sample(resultNo!, resultNo!.AccG)) };
+}
