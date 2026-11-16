@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Modulator ABS</title>
+<meta name="description" content="Simulator al modulatorului hidraulic ABS cu supape electromagnetice 2/2: schemă animată, sfert de vehicul, ECU după ciclul Bosch, grafice și vedere 3D.">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f5f7; --card:#ffffff; --ink:#1d2433; --muted:#6b7280; --line:#d0d4da;
+  --primary:#1f5fa8; --on:#f39c12;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
+.wrap{max-width:1500px;margin:0 auto;padding:16px 16px 40px;display:grid;gap:12px}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 20px}
+.head a{color:var(--primary);font-weight:600;text-decoration:none}
+.head a:hover{text-decoration:underline}
+h1{font-size:clamp(20px,2.6vw,28px);margin:4px 0 0;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:2px 0 0;font-size:13.5px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+fieldset{border:1px solid var(--line);border-radius:6px;margin:0;padding:4px 10px 6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;background:var(--card)}
+legend{font-weight:700;font-size:12.5px;padding:0 4px}
+fieldset label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;padding:6px 12px;border-radius:5px;border:1px solid #9aa3ad;background:#fff;color:var(--ink);cursor:pointer}
+button:hover:not(:disabled){border-color:var(--ink)}
+button.big{font-weight:700}
+button.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+button:disabled,input:disabled+span,label:has(input:disabled){opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #d99a00;outline-offset:2px}
+select,input[type=number]{font:inherit;padding:3px 6px;border:1px solid #9aa3ad;border-radius:4px;background:#fff}
+input[type=number]{width:70px}
+.main{display:grid;grid-template-columns:minmax(0,660px) minmax(0,1fr);gap:12px;align-items:stretch}
+@media (max-width:1100px){.main{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px}
+#schem{display:block;width:100%;aspect-ratio:660/520}
+.phase{padding:8px 12px 10px}
+#phTitle{font-size:20px;font-weight:700;margin:0}
+#phExpl{margin:2px 0 0;font-size:13.5px}
+#phEcu{margin:4px 0 0;font-size:13px;font-style:italic;color:var(--muted)}
+.manual{padding:4px 12px 10px}
+.manual .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:6px}
+#pedal{width:150px}
+.plotbox{flex:1;min-height:640px;position:relative}
+#plots{position:absolute;inset:0;width:100%;height:100%}
+.res{padding:8px 12px;font-size:13px}
+.res table{border-collapse:collapse;width:100%;font-family:Consolas,ui-monospace,monospace;font-size:12.5px}
+.res th,.res td{text-align:left;padding:3px 8px;border-bottom:1px solid #eceff1;white-space:nowrap}
+.res th{color:var(--muted);font-weight:600}
+.res .empty{color:var(--muted)}
+.scroll{overflow-x:auto}
+#v3d{display:none;grid-template-columns:minmax(0,1fr) 250px;gap:0;overflow:hidden}
+#v3d.on{display:grid}
+@media (max-width:900px){#v3d.on{grid-template-columns:minmax(0,1fr)}}
+.c3box{position:relative;height:min(76vh,720px);min-height:420px;background:#eef1f5;touch-action:none}
+#c3{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
+.side3{padding:12px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px;font-size:13px}
+.side3 h3{margin:0;font-size:13.5px}
+.side3 button{text-align:left}
+.side3 hr{border:0;border-top:1px solid var(--line);width:100%;margin:6px 0}
+.side3 pre{font:inherit;white-space:pre-wrap;margin:0;color:var(--ink)}
+.v3head{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
+.v3head b{font-size:15px}
+.foot{font-size:12.5px;color:var(--muted);margin:0}
+.foot a{color:var(--primary)}
+.keys{font-size:12.5px;color:var(--muted)}
+kbd{font:600 11.5px Consolas,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:#fff;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <a href="index.html">← Sisteme de siguranță ale autovehiculelor</a>
+      <h1>Simulator modulator hidraulic ABS – supape electromagnetice 2/2</h1>
+      <p class="sub">Principiul modulatorului hidraulic ABS (Fig. 2): pedală, servofrână, cilindru principal, supape 7 și 8, pompă de retur, acumulator și frâna roții, cuplate cu modelul unui sfert de vehicul.</p>
+    </div>
+    <div class="keys"><kbd>Spațiu</kbd> start/pauză · <kbd>R</kbd> reset · mod Manual: <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> supape · <kbd>↑</kbd><kbd>↓</kbd> pedală · <kbd>V</kbd> înapoi la v₀</div>
+  </div>
+
+  <div class="bar">
+    <div class="btns">
+      <button id="bRun" class="big primary">▶ Start</button>
+      <button id="bStep">⏭ 5 ms</button>
+      <button id="bReset">⟲ Reset</button>
+      <button id="b3d" class="big">🧊 Vedere 3D</button>
+    </div>
+    <fieldset><legend>Mod de lucru</legend>
+      <label><input type="radio" name="mode" value="manual"> Manual</label>
+      <label><input type="radio" name="mode" value="abs" checked> ABS automat</label>
+      <label><input type="radio" name="mode" value="noabs"> Fără ABS</label>
+    </fieldset>
+    <fieldset><legend>Drum și vehicul</legend>
+      <label>Suprafață: <select id="scen"></select></label>
+      <label>v₀ [km/h]: <input id="v0" type="number" min="20" max="150" step="10" value="80"></label>
+    </fieldset>
+    <fieldset><legend>Timp</legend>
+      <label>Viteză: <select id="speed"></select></label>
+    </fieldset>
+  </div>
+
+  <section class="card" id="v3d" aria-label="Vizualizare 3D">
+    <div>
+      <div class="v3head"><b>Vizualizare 3D – modulator hidraulic ABS</b><button id="b3dClose">✕ Închide</button></div>
+      <div class="c3box"><canvas id="c3" aria-label="Vedere 3D a modulatorului ABS, sincronizată cu simularea"></canvas></div>
+    </div>
+    <div class="side3">
+      <h3>Vederi</h3>
+      <div id="views3" style="display:grid;gap:4px"></div>
+      <hr>
+      <label><input type="checkbox" id="t3transp" checked> Bloc HCU transparent<br><span style="color:var(--muted);margin-left:22px">(se văd canalele și supapele)</span></label>
+      <label><input type="checkbox" id="t3labels" checked> Etichete</label>
+      <label><input type="checkbox" id="t3rot"> Rotire automată</label>
+      <hr>
+      <pre>Mouse:
+  stânga + tragere – rotire
+  dreapta + tragere – deplasare
+  rotița – zoom
+(pe ecran tactil: tragere = rotire)
+
+Culori:
+  lichid: albastru deschis → roșu
+  = presiune 0 → 140 bar
+  bobină portocalie = alimentată
+  buline albe = curgerea lichidului
+
+Supapa 7 (admisie) este normal deschisă: alimentată, pistonul coboară și închide scaunul.
+
+Supapa 8 (evacuare) este normal închisă: alimentată, pistonul se ridică și deschide drumul spre acumulatorul 9.
+
+Simularea se comandă din bara de sus.</pre>
+    </div>
+  </section>
+
+  <div class="main">
+    <div class="col">
+      <div class="card"><canvas id="schem" aria-label="Schema animată a modulatorului hidraulic ABS"></canvas></div>
+      <div class="card phase" aria-live="polite">
+        <p id="phTitle"></p>
+        <p id="phExpl"></p>
+        <p id="phEcu"></p>
+      </div>
+      <fieldset class="manual" id="manual"><legend>Comenzi manuale (mod Manual)</legend>
+        <div style="width:100%">
+          <div class="row">
+            <label>Pedală (3): <input type="range" id="pedal" min="0" max="100" step="1" value="0"></label>
+            <span id="pedalLbl" style="min-width:42px">0 %</span>
+            <label><input type="checkbox" id="hold" checked> Stand cu role (v = const.)</label>
+            <button id="bRestore">[V] ↻ înapoi la v₀</button>
+          </div>
+          <div class="row">
+            <button id="bBuild">[1] Creștere</button>
+            <button id="bHold">[2] Menținere</button>
+            <button id="bDump">[3] Scădere</button>
+            <label><input type="checkbox" id="c7"> Bobina 7</label>
+            <label><input type="checkbox" id="c8"> Bobina 8</label>
+            <label><input type="checkbox" id="c6"> Pompa 6</label>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    <div class="col">
+      <div class="card plotbox"><canvas id="plots" aria-label="Grafice în timp: viteze, presiuni, accelerația roții, alunecare, stare bobine"></canvas></div>
+      <div class="card res"><div id="res"></div></div>
+    </div>
+  </div>
+
+  <p class="foot">Valorile modelului sunt didactice (ordin de mărime realist), nu ale unui sistem anume. Curbe μ–λ după modelul Burckhardt; logica ECU simplificată după ciclul de reglare Bosch (praguri −a, +a, +A, λ1 și viteză de referință). Versiunea originală pentru desktop (Python + Tkinter): <a href="simulator_modulator_ABS.py" download>simulator_modulator_ABS.py</a>.</p>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Model (port fidel al clasei Simulator din simulator_modulator_ABS.py)
+   ===================================================================== */
+const G = 9.81;
+const SURFACES = {
+  'Asfalt uscat': [1.2801, 23.990, 0.5200],
+  'Asfalt ud':    [0.8570, 33.822, 0.3470],
+  'Zăpadă':       [0.1946, 94.129, 0.0646],
+  'Gheață':       [0.0500, 306.39, 0.0000],
+};
+const SCENARIOS = {
+  'Asfalt uscat': ['Asfalt uscat', null, null],
+  'Asfalt ud': ['Asfalt ud', null, null],
+  'Zăpadă': ['Zăpadă', null, null],
+  'Gheață': ['Gheață', null, null],
+  'Uscat → gheață (la 1,2 s)': ['Asfalt uscat', 'Gheață', 1.2],
+  'Gheață → uscat (la 1,2 s)': ['Gheață', 'Asfalt uscat', 1.2],
+};
+function muOf(surface, lam) {
+  const [c1, c2, c3] = SURFACES[surface];
+  lam = Math.min(Math.max(lam, 0), 1);
+  return Math.max(c1 * (1 - Math.exp(-c2 * lam)) - c3 * lam, 0);
+}
+const _peak = {};
+function muPeak(surface) {
+  if (_peak[surface]) return _peak[surface];
+  let bl = 0, bm = 0;
+  for (let i = 1; i < 400; i++) { const l = i / 400, m = muOf(surface, l); if (m > bm) { bl = l; bm = m; } }
+  return (_peak[surface] = [bl, bm]);
+}
+const ST_BUILD = 0, ST_HOLD1 = 1, ST_DUMP = 2, ST_HOLD2 = 3, ST_FAST = 4, ST_STEP = 5;
+const STATE_NAMES = {
+  [ST_BUILD]: 'Frânare normală – presiunea crește',
+  [ST_HOLD1]: 'Menținere presiune (prag −a depășit)',
+  [ST_DUMP]:  'Scădere presiune (alunecare > λ1)',
+  [ST_HOLD2]: 'Menținere presiune (roata reaccelerează)',
+  [ST_FAST]:  'Creștere presiune (accelerație > +A)',
+  [ST_STEP]:  'Creștere presiune în trepte',
+};
+const MODE_MANUAL = 'manual', MODE_ABS = 'abs', MODE_NOABS = 'noabs';
+
+class Simulator {
+  constructor(mode = MODE_ABS, scenario = 'Asfalt uscat', v0kmh = 80) {
+    // vehicul (sfert de vehicul)
+    this.m = 400; this.r = 0.30; this.J = 1.2; this.kb = 15;
+    // hidraulic
+    this.p_max = 140; this.tau_booster = 0.05; this.C_w = 0.02; this.K_in = 2.0; this.K_out = 2.5;
+    this.C_acc = 1.0; this.V_acc_max = 3.0; this.Q_pump = 6.0;
+    // regulator ABS
+    this.ecu_dt = 0.005; this.th_neg_a = -25; this.th_pos_a = 4; this.th_pos_A = 25; this.lam1 = 0.14;
+    this.v_min = 0.7; this.step_open = 0.003; this.step_closed = 0.030; this.dump_pulse = 0.010;
+    this.acc_filter = 0.004; this.dt = 0.0005;
+    this.mode = mode;
+    this.setScenario(scenario);
+    this.reset(v0kmh);
+  }
+  setScenario(sc) { this.scenario = sc; [this.surf0, this.surf1, this.t_switch] = SCENARIOS[sc]; }
+  surface() { return (this.surf1 && this.t >= this.t_switch) ? this.surf1 : this.surf0; }
+  reset(v0kmh) {
+    if (v0kmh != null) this.v0 = v0kmh / 3.6;
+    this.t = 0; this.v = this.v0; this.omega = this.v0 / this.r; this.x = 0;
+    this.pedal = 0; this.p_mc = 0; this.p_w = 0; this.V_acc = 0;
+    this.in_energized = false; this.out_energized = false; this.pump_on = false;
+    this.q_in = this.q_out = this.q_pump = 0;
+    this.wheel_acc = 0; this.v_ref = this.v0; this.decel_est = 0;
+    this.lam = 0; this.lam_ecu = 0; this.mu = 0; this.Fx = 0; this.Mb = 0;
+    this.abs_active = false; this.state = ST_BUILD; this.state_t = 0; this.was_above_pa = false;
+    this.ecu_timer = 0; this.stopped = false; this.t_stop = null;
+    this.hist = []; this.hist_dt = 0.005; this._hist_timer = 0;
+    this.manual_pedal = 0; this.hold_speed = true; this.t_brake = 0.3; this.panic_rise = 0.15;
+  }
+  driver() {
+    if (this.mode === MODE_MANUAL) return this.manual_pedal;
+    if (this.t < this.t_brake) return 0;
+    return Math.min((this.t - this.t_brake) / this.panic_rise, 1);
+  }
+  valveStates() { return [!this.in_energized, this.out_energized]; }   // [admisie deschisă, evacuare deschisă]
+  ecu() {
+    const aw = this.wheel_acc, lam = this.lam_ecu;
+    this.state_t += this.ecu_dt;
+    if (this.v_ref < this.v_min || this.p_mc < 1.0) { this.abs_active = false; this._set(ST_BUILD); return; }
+    let s = this.state;
+    if (!this.abs_active) {
+      if (aw < this.th_neg_a) { this.abs_active = true; this._set(ST_HOLD1); }
+      return;
+    }
+    if (lam > 0.5 && s !== ST_DUMP) { this._set(ST_DUMP); return; }
+    if (s === ST_BUILD) {
+      if (aw < this.th_neg_a) this._set(ST_HOLD1);
+    } else if (s === ST_HOLD1) {
+      if (lam > this.lam1) this._set(ST_DUMP);
+      else if (aw > this.th_neg_a && this.state_t > 0.02) this._set(ST_STEP);
+    } else if (s === ST_DUMP) {
+      if ((aw > this.th_neg_a && lam < this.lam1) || aw > this.th_pos_a) this._set(ST_HOLD2);
+    } else if (s === ST_HOLD2) {
+      if (aw > this.th_pos_A) this._set(ST_FAST);
+      else if (aw > this.th_pos_a) this.was_above_pa = true;
+      else if (this.was_above_pa && aw < this.th_pos_a) this._set(ST_STEP);
+      else if (lam > this.lam1 && this.state_t > 0.02) this._set(ST_DUMP);
+      else if (!this.was_above_pa && this.state_t > 0.25) this._set(ST_STEP);
+    } else if (s === ST_FAST) {
+      if (aw < this.th_pos_A) { this.was_above_pa = true; this._set(ST_HOLD2, true); }
+    } else if (s === ST_STEP) {
+      if (aw < this.th_neg_a) this._set(ST_DUMP);
+    }
+    s = this.state;
+    if (s === ST_BUILD || s === ST_FAST) { this.in_energized = false; this.out_energized = false; }
+    else if (s === ST_HOLD1 || s === ST_HOLD2) { this.in_energized = true; this.out_energized = false; }
+    else if (s === ST_DUMP) { this.in_energized = true; this.out_energized = true; }
+    else if (s === ST_STEP) {
+      const per = this.step_open + this.step_closed;
+      const phase = this.state_t % per;
+      this.in_energized = phase > this.step_open; this.out_energized = false;
+    }
+  }
+  _set(st, keepFlag = false) {
+    if (st !== this.state) {
+      this.state = st; this.state_t = 0;
+      if (!keepFlag) this.was_above_pa = false;
+      if (st === ST_BUILD) this.in_energized = this.out_energized = false;
+    }
+  }
+  step() {
+    const dt = this.dt;
+    if (this.stopped) {
+      this.t += dt;
+      this.pedal = this.driver();
+      this.p_mc += (this.pedal * this.p_max - this.p_mc) * dt / this.tau_booster;
+      if (this.mode === MODE_MANUAL) this._hydraulics(dt);
+      else this.q_in = this.q_out = this.q_pump = 0;
+      this._log(dt);
+      return;
+    }
+    this.pedal = this.driver();
+    this.p_mc += (this.pedal * this.p_max - this.p_mc) * dt / this.tau_booster;
+    if (this.mode === MODE_ABS) {
+      this.ecu_timer += dt;
+      if (this.ecu_timer >= this.ecu_dt) { this.ecu_timer -= this.ecu_dt; this.ecu(); }
+      this.pump_on = this.abs_active || this.V_acc > 0.05;
+    } else if (this.mode === MODE_NOABS) {
+      this.in_energized = this.out_energized = false; this.pump_on = false;
+    }
+    this._hydraulics(dt);
+    const surf = this.surface();
+    const vw = this.omega * this.r;
+    this.lam = Math.min(Math.max((this.v - vw) / Math.max(this.v, 0.5), 0), 1);
+    this.mu = muOf(surf, this.lam);
+    const Fz = this.m * G;
+    this.Fx = this.mu * Fz;
+    this.Mb = this.kb * this.p_w;
+    let omega_dot = (this.Fx * this.r - this.Mb) / this.J;
+    let new_omega = this.omega + omega_dot * dt;
+    if (new_omega < 0) { new_omega = 0; omega_dot = -this.omega / dt; }
+    const a_w_inst = omega_dot * this.r;
+    this.wheel_acc += (a_w_inst - this.wheel_acc) * Math.min(dt / this.acc_filter, 1);
+    this.omega = new_omega;
+    if (!(this.mode === MODE_MANUAL && this.hold_speed)) this.v -= this.Fx / this.m * dt;
+    if (this.v < 0) this.v = 0;
+    this.x += this.v * dt;
+    if (Math.abs(this.wheel_acc) < 15 && this.omega * this.r > 0.85 * this.v_ref) {
+      const decel_now = Math.max((this.Mb - this.J * omega_dot) / (this.r * this.m), 0);
+      this.decel_est += (Math.min(decel_now, 1.25 * G) - this.decel_est) * Math.min(dt / 0.05, 1);
+    }
+    this.v_ref = Math.max(this.omega * this.r, this.v_ref - 1.05 * this.decel_est * dt);
+    this.lam_ecu = Math.min(Math.max((this.v_ref - this.omega * this.r) / Math.max(this.v_ref, 0.5), 0), 1);
+    this.t += dt;
+    if (this.v <= 0.05) {
+      this.v = 0; this.omega = 0; this.stopped = true; this.t_stop = this.t;
+      this.lam = 0; this.mu = 0; this.wheel_acc = 0; this.abs_active = false;
+      if (this.mode !== MODE_MANUAL) this.in_energized = this.out_energized = false;
+    }
+    this._log(dt);
+  }
+  restoreSpeed() {
+    this.v = this.v0; this.omega = this.v0 / this.r; this.v_ref = this.v0; this.stopped = false; this.t_stop = null;
+  }
+  _hydraulics(dt) {
+    const p_acc = this.V_acc / this.C_acc;
+    const [inlet_open, outlet_open] = this.valveStates();
+    let q_in = 0;
+    if (inlet_open) {
+      const dp = this.p_mc - this.p_w;
+      q_in = this.K_in * Math.sign(dp) * Math.sqrt(Math.abs(dp));
+    } else if (this.p_w > this.p_mc + 0.5) {
+      // supapa de sens montată în paralel cu supapa de admisie
+      q_in = -this.K_in * Math.sqrt(this.p_w - this.p_mc);
+    }
+    let q_out = 0;
+    if (outlet_open && this.p_w > p_acc && this.V_acc < this.V_acc_max) q_out = this.K_out * Math.sqrt(this.p_w - p_acc);
+    let q_pump = 0;
+    if (this.pump_on && this.V_acc > 0) q_pump = Math.min(this.Q_pump, this.V_acc / dt);
+    this.p_w = Math.max(this.p_w + (q_in - q_out) * dt / this.C_w, 0);
+    this.V_acc = Math.min(Math.max(this.V_acc + (q_out - q_pump) * dt, 0), this.V_acc_max);
+    this.q_in = q_in; this.q_out = q_out; this.q_pump = q_pump;
+  }
+  _log(dt) {
+    this._hist_timer += dt;
+    if (this._hist_timer >= this.hist_dt) {
+      this._hist_timer = 0;
+      const [io, oo] = this.valveStates();
+      this.hist.push([this.t, this.v * 3.6, this.omega * this.r * 3.6, this.v_ref * 3.6,
+        this.p_w, this.p_mc, this.lam, this.wheel_acc, this.state, io, oo, this.lam_ecu]);
+      if (this.hist.length > 14000) this.hist.splice(0, 2000);
+    }
+  }
+}
+
+/* =====================================================================
+   Desen pe canvas – utilitare (echivalentul tkinter.Canvas)
+   ===================================================================== */
+const INK = '#1d2433', MUTED = '#6b7280';
+const C_VF = '#1f5fa8', C_VR = '#e07b00', C_REF = '#555555', C_PW = '#c0392b', C_PMC = '#7f8c8d', C_ON = '#f39c12';
+const PHASE_INFO = {
+  build: ['CREȘTERE PRESIUNE', '#2e8b57',
+    'Supapa de admisie (7) NEALIMENTATĂ → DESCHISĂ\nSupapa de evacuare (8) NEALIMENTATĂ → ÎNCHISĂ\nLegătură directă cilindru principal → frână: presiunea la roată crește până la presiunea din cilindrul principal.'],
+  hold: ['MENȚINERE PRESIUNE', '#d68910',
+    'Supapa de admisie (7) ALIMENTATĂ → ÎNCHISĂ\nSupapa de evacuare (8) NEALIMENTATĂ → ÎNCHISĂ\nFrâna este izolată: presiunea la roată rămâne constantă, chiar dacă șoferul apasă mai tare pedala.'],
+  dump: ['SCĂDERE PRESIUNE', '#c0392b',
+    'Supapa de admisie (7) ALIMENTATĂ → ÎNCHISĂ\nSupapa de evacuare (8) ALIMENTATĂ → DESCHISĂ\nLichidul trece din frână în acumulatorul (9); pompa de retur (6) îl trimite înapoi spre cilindrul principal → pulsații în pedală.'],
+  both: ['AMBELE SUPAPE DESCHISE', '#7d3c98',
+    'Supapa 7 deschisă și supapa 8 deschisă: lichidul curge direct din cilindrul principal spre acumulator.\nCombinație care NU este folosită de ECU în funcționare normală.'],
+};
+const fmt = (x, nd = 1) => x.toFixed(nd).replace('.', ',');
+function lerpColor(c1, c2, f) {
+  f = Math.min(Math.max(f, 0), 1);
+  const a = [1, 3, 5].map(i => parseInt(c1.substr(i, 2), 16)), b = [1, 3, 5].map(i => parseInt(c2.substr(i, 2), 16));
+  return '#' + a.map((v, i) => Math.trunc(v + (b[i] - v) * f).toString(16).padStart(2, '0')).join('');
+}
+function pcolor(p) {
+  const f = p / 140;
+  return f < 0.5 ? lerpColor('#cfe0f2', '#f5b041', f / 0.5) : lerpColor('#f5b041', '#b03a2e', (f - 0.5) / 0.5);
+}
+function shade(col, f) {
+  f = Math.min(Math.max(f, 0), 1.25);
+  let rgb = [1, 3, 5].map(i => parseInt(col.substr(i, 2), 16));
+  rgb = f <= 1 ? rgb.map(c => Math.trunc(c * f)) : rgb.map(c => Math.trunc(c + (255 - c) * (f - 1)));
+  return '#' + rgb.map(c => Math.min(Math.max(c, 0), 255).toString(16).padStart(2, '0')).join('');
+}
+const FONT_FAMILY = '"Segoe UI",system-ui,-apple-system,sans-serif';
+const F = (pt, w = 'normal', style = 'normal') => `${style} ${w} ${Math.round(pt * 1.333)}px ${FONT_FAMILY}`;
+
+class Pen {
+  constructor(ctx) { this.c = ctx; }
+  line(pts, color, width = 1, o = {}) {
+    const c = this.c; if (pts.length < 2) return;
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.strokeStyle = color; c.lineWidth = width; c.lineCap = o.cap || 'butt'; c.lineJoin = o.join || 'miter';
+    c.setLineDash(o.dash || []); c.stroke(); c.setLineDash([]);
+    if (o.arrow) {
+      const head = (p, q) => { const [d, l, w] = o.arrowshape || [8, 10, 3]; const ang = Math.atan2(p[1] - q[1], p[0] - q[0]);
+        c.beginPath(); c.moveTo(p[0], p[1]);
+        c.lineTo(p[0] - l * Math.cos(ang) + (w + width / 2) * Math.sin(ang), p[1] - l * Math.sin(ang) - (w + width / 2) * Math.cos(ang));
+        c.lineTo(p[0] - d * Math.cos(ang), p[1] - d * Math.sin(ang));
+        c.lineTo(p[0] - l * Math.cos(ang) - (w + width / 2) * Math.sin(ang), p[1] - l * Math.sin(ang) + (w + width / 2) * Math.cos(ang));
+        c.closePath(); c.fillStyle = color; c.fill(); };
+      const n = pts.length;
+      if (o.arrow === 'both' || o.arrow === 'last') head(pts[n - 1], pts[n - 2]);
+      if (o.arrow === 'both' || o.arrow === 'first') head(pts[0], pts[1]);
+    }
+  }
+  rect(x0, y0, x1, y1, fill, outline, width = 1) {
+    const c = this.c;
+    if (fill) { c.fillStyle = fill; c.fillRect(x0, y0, x1 - x0, y1 - y0); }
+    if (outline) { c.strokeStyle = outline; c.lineWidth = width; c.strokeRect(x0, y0, x1 - x0, y1 - y0); }
+  }
+  oval(x0, y0, x1, y1, fill, outline, width = 1) {
+    const c = this.c; c.beginPath();
+    c.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.abs(x1 - x0) / 2, Math.abs(y1 - y0) / 2, 0, 0, Math.PI * 2);
+    if (fill) { c.fillStyle = fill; c.fill(); }
+    if (outline) { c.strokeStyle = outline; c.lineWidth = width; c.stroke(); }
+  }
+  poly(pts, fill, outline, width = 1) {
+    const c = this.c; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.closePath();
+    if (fill) { c.fillStyle = fill; c.fill(); }
+    if (outline) { c.strokeStyle = outline; c.lineWidth = width; c.lineJoin = 'round'; c.stroke(); }
+  }
+  measure(str, font) {
+    const c = this.c; c.font = font; const lines = String(str).split('\n');
+    const size = parseInt(font.match(/(\d+)px/)[1], 10), lh = Math.round(size * 1.25);
+    return { w: Math.max(...lines.map(l => c.measureText(l).width)), h: lines.length * lh, lh, lines };
+  }
+  text(x, y, str, o = {}) {
+    const c = this.c, font = o.font || F(9), a = o.anchor || 'center';
+    const m = this.measure(str, font);
+    c.font = font; c.fillStyle = o.fill || INK; c.textBaseline = 'top';
+    let align = 'center';
+    if (a === 'w' || a === 'nw' || a === 'sw') align = 'left';
+    else if (a === 'e' || a === 'ne' || a === 'se') align = 'right';
+    let top;
+    if (a === 'n' || a === 'nw' || a === 'ne') top = y;
+    else if (a === 's' || a === 'sw' || a === 'se') top = y - m.h;
+    else top = y - m.h / 2;
+    // fiecare rând aliniat în blocul de text (justify)
+    const just = o.justify || 'left';
+    m.lines.forEach((ln, i) => {
+      let lx = x;
+      if (m.lines.length > 1) {
+        const lw = c.measureText(ln).width;
+        const bx = align === 'left' ? x : align === 'right' ? x - m.w : x - m.w / 2;
+        lx = just === 'center' ? bx + (m.w - lw) / 2 : bx;
+        c.textAlign = 'left';
+      } else c.textAlign = align;
+      c.fillText(ln, lx, top + i * m.lh + 1);
+    });
+    return m;
+  }
+}
+const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+
+/* =====================================================================
+   Aplicația
+   ===================================================================== */
+const SPEEDS = { '0,02× (cu încetinitorul)': 0.02, '0,05×': 0.05, '0,1×': 0.1, '0,25×': 0.25, '0,5×': 0.5, '1× (timp real)': 1.0 };
+const $ = id => document.getElementById(id);
+const app = {
+  sim: null, running: false, wheelAngle: 0, flow: { in: 0, out: 0, pump: 0 }, results: [], carry: 0,
+  mode() { return document.querySelector('input[name=mode]:checked').value; },
+};
+
+// populare controale
+for (const k of Object.keys(SCENARIOS)) $('scen').add(new Option(k, k));
+for (const k of Object.keys(SPEEDS)) $('speed').add(new Option(k, k, k === '0,05×', k === '0,05×'));
+
+const MANUAL_IDS = ['bBuild', 'bHold', 'bDump', 'c7', 'c8', 'c6', 'pedal', 'hold', 'bRestore'];
+function onMode() {
+  const man = app.mode() === MODE_MANUAL;
+  MANUAL_IDS.forEach(id => { $(id).disabled = !man; });
+  reset();
+}
+function v0val() { let v = parseFloat($('v0').value); if (!isFinite(v)) v = 80; v = Math.min(Math.max(v, 20), 150); $('v0').value = v; return v; }
+function reset() {
+  setRunning(false);
+  app.sim = new Simulator(app.mode(), $('scen').value, v0val());
+  app.carry = 0;
+  if (app.mode() === MODE_MANUAL) {
+    app.sim.v = app.sim.v0; app.sim.hold_speed = $('hold').checked;
+    manualValves(); setPedal();
+  }
+  draw();
+}
+function setRunning(on) { app.running = on; $('bRun').textContent = on ? '⏸ Pauză' : '▶ Start'; }
+function toggleRun() { setRunning(!app.running); lastFrame = performance.now(); }
+function singleStep() { setRunning(false); advance(0.005); draw(); }
+function setPedal() { const v = +$('pedal').value; $('pedalLbl').textContent = v.toFixed(0) + ' %'; app.sim.manual_pedal = v / 100; }
+function nudgePedal(d) { if (app.mode() !== MODE_MANUAL) return; $('pedal').value = Math.min(Math.max(+$('pedal').value + d, 0), 100); setPedal(); }
+function restoreSpeed() { if (app.mode() !== MODE_MANUAL) return; app.sim.restoreSpeed(); draw(); }
+function manualValves() {
+  if (app.mode() !== MODE_MANUAL) return;
+  app.sim.in_energized = $('c7').checked; app.sim.out_energized = $('c8').checked; app.sim.pump_on = $('c6').checked;
+}
+function setCombo(which) {
+  if (app.mode() !== MODE_MANUAL) return;
+  const v6 = $('c6').checked;
+  const [e7, e8, e6] = { build: [false, false, v6], hold: [true, false, v6], dump: [true, true, true] }[which];
+  $('c7').checked = e7; $('c8').checked = e8; $('c6').checked = e6;
+  manualValves(); draw();
+}
+function advance(simSeconds) {
+  const s = app.sim, wasStopped = s.stopped;
+  app.carry += simSeconds;
+  const n = Math.floor(app.carry / s.dt + 1e-9);
+  app.carry -= n * s.dt;
+  for (let i = 0; i < n; i++) s.step();
+  app.wheelAngle = (app.wheelAngle + s.omega * simSeconds) % (2 * Math.PI);
+  app.flow.in += s.q_in * simSeconds * 1.2;
+  app.flow.out += s.q_out * simSeconds * 1.2;
+  app.flow.pump += s.q_pump * simSeconds * 1.2;
+  if (s.stopped && !wasStopped && s.mode !== MODE_MANUAL) {
+    app.results.unshift({ mode: s.mode === MODE_ABS ? 'ABS automat' : 'Fără ABS', scen: s.scenario, v0: s.v0 * 3.6, x: s.x, t: s.t_stop - s.t_brake });
+    app.results = app.results.slice(0, 5);
+  }
+}
+function stopT() { const h = app.sim.hist; for (let i = h.length - 1; i >= 0; i--) if (h[i][1] > 0) return h[i][0]; return 0; }
+function hydPhase() {
+  const [io, oo] = app.sim.valveStates();
+  if (io && !oo) return 'build';
+  if (!io && !oo) return 'hold';
+  if (!io && oo) return 'dump';
+  return 'both';
+}
+
+let lastFrame = performance.now();
+function loop(now) {
+  const el = Math.min((now - lastFrame) / 1000, 0.1); lastFrame = now;
+  if (app.running) {
+    advance(el * SPEEDS[$('speed').value]);
+    const s = app.sim;
+    if (s.stopped && s.mode !== MODE_MANUAL && s.t > stopT() + 0.3) setRunning(false);
+    draw();
+  } else if (v3.visible) { v3.tick(el); }
+  requestAnimationFrame(loop);
+}
+
+function draw() {
+  drawSchematic(); drawPlots(); updateTexts();
+  if (v3.visible) v3.tick(0, true);
+}
+
+function updateTexts() {
+  const s = app.sim, [title, col, expl] = PHASE_INFO[hydPhase()];
+  $('phTitle').textContent = title; $('phTitle').style.color = col;
+  $('phExpl').innerHTML = expl.split('\n').map(l => l.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))).join('<br>');
+  let ecu;
+  if (s.mode === MODE_ABS) ecu = 'ECU: ' + (s.abs_active ? STATE_NAMES[s.state] : 'ABS inactiv – frânare convențională');
+  else if (s.mode === MODE_NOABS) ecu = 'ECU dezactivat – supapele rămân în poziția de repaus (frânare convențională)';
+  else ecu = 'Taste: 1/2/3 = creștere/menținere/scădere · ↑/↓ = pedală · V = înapoi la v₀ · spațiu = start';
+  $('phEcu').textContent = ecu;
+  const R = app.results;
+  $('res').innerHTML = R.length
+    ? `<b>Rezultate (ultimele opriri)</b><div class="scroll"><table><tr><th>Mod</th><th>Suprafață</th><th>v₀</th><th>Distanță oprire</th><th>Timp</th></tr>${R.map(r => `<tr><td>${r.mode}</td><td>${r.scen}</td><td>${r.v0.toFixed(0)} km/h</td><td>${fmt(r.x)} m</td><td>${fmt(r.t, 2)} s</td></tr>`).join('')}</table></div>`
+    : '<span class="empty">Rezultatele opririlor apar aici (moduri ABS automat și Fără ABS) – rulează aceeași suprafață în ambele moduri pentru comparație.</span>';
+}
+
+/* ---------------- schema hidraulică (660 × 520 unități) ---------------- */
+const PTS = {
+  mc: [[230, 120], [380, 120]], in_up: [[380, 120], [380, 170]], pump_up: [[290, 120], [290, 190]],
+  pump_mid: [[290, 240], [290, 308]], w: [[380, 230], [380, 300]], w_br: [[380, 300], [534, 300]],
+  out_down: [[380, 300], [380, 365]], acc: [[380, 425], [380, 450]], acc_pump: [[355, 475], [290, 475], [290, 352]],
+  flow_in: [[230, 120], [380, 120], [380, 170], [380, 230], [380, 300], [534, 300]],
+  flow_out: [[534, 300], [380, 300], [380, 365], [380, 425], [380, 455]],
+  flow_pump: [[355, 475], [290, 475], [290, 352], [290, 308], [290, 240], [290, 190], [290, 120]],
+};
+const schemCv = $('schem');
+function fitCanvas(cv, cssW, cssH) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = Math.round(cssW * dpr), H = Math.round(cssH * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  return dpr;
+}
+function drawSchematic() {
+  const cssW = schemCv.clientWidth || 660, cssH = cssW * 520 / 660;
+  const dpr = fitCanvas(schemCv, cssW, cssH);
+  const ctx = schemCv.getContext('2d'); const k = cssW / 660 * dpr;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, schemCv.width, schemCv.height);
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  const c = new Pen(ctx), s = app.sim, [i_open, o_open] = s.valveStates(), p_acc = s.V_acc / s.C_acc;
+  c.text(12, 12, 'Principiul modulatorului hidraulic cu supape 2/2', { anchor: 'nw', font: F(11, 'bold') });
+  for (let i = 0; i < 50; i++) c.rect(440 + i * 3, 16, 443 + i * 3, 26, pcolor(i * 140 / 50));
+  c.text(436, 21, '0', { anchor: 'e', font: F(8), fill: MUTED });
+  c.text(594, 21, '140 bar', { anchor: 'w', font: F(8), fill: MUTED });
+
+  const col_mc = pcolor(s.p_mc), col_w = pcolor(s.p_w), col_a = pcolor(p_acc);
+  for (const [key, col] of [['mc', col_mc], ['in_up', col_mc], ['pump_up', col_mc], ['pump_mid', col_mc], ['w', col_w], ['w_br', col_w], ['out_down', col_w], ['acc', col_a], ['acc_pump', col_a]])
+    c.line(PTS[key], col, 8, { cap: 'round', join: 'round' });
+  for (const [x, y] of [[380, 120], [290, 120], [380, 300]]) c.oval(x - 6, y - 6, x + 6, y + 6, INK);
+
+  // pedală (3) + servofrână (2) + cilindru principal (1)
+  const ang = (75 - 35 * s.pedal) * Math.PI / 180, px = 40, py = 215;
+  const ex = px + 95 * Math.cos(ang), ey = py - 95 * Math.sin(ang);
+  c.line([[px, py], [ex, ey]], '#34495e', 6, { cap: 'round' });
+  c.rect(ex - 14, ey - 4, ex + 14, ey + 6, '#34495e');
+  c.oval(px - 6, py - 6, px + 6, py + 6, '#34495e');
+  const rx = px + 55 * Math.cos(ang), ry = py - 55 * Math.sin(ang);
+  c.line([[rx, ry], [82, 120]], '#34495e', 3);
+  c.text(px + 14, py + 4, '3', { font: F(11, 'bold'), fill: C_VF, anchor: 'w' });
+  c.oval(82, 86, 150, 154, '#e5e8ec', '#7f8c8d', 2);
+  c.text(116, 120, '2', { font: F(12, 'bold'), fill: C_VF });
+  c.rect(150, 102, 230, 138, col_mc, '#566573', 2);
+  c.rect(168, 68, 213, 102, '#d6eaf8', '#566573', 2);
+  c.text(190, 84, '1', { font: F(12, 'bold'), fill: C_VF });
+  c.text(190, 152, `p CP = ${fmt(s.p_mc, 0)} bar`, { font: F(9) });
+  c.text(70, 234, `pedală ${(s.pedal * 100).toFixed(0)} %`, { font: F(9), fill: MUTED, anchor: 'w' });
+  if (s.q_pump > 0.05 && !i_open) c.text(70, 252, '↯ pulsație în pedală', { font: F(9, 'bold'), fill: '#c0392b', anchor: 'w' });
+
+  // cameră de amortizare (5)
+  c.rect(270, 190, 310, 240, col_mc, '#566573', 2);
+  c.text(262, 215, '5', { font: F(11, 'bold'), fill: C_VF, anchor: 'e' });
+  // pompă de retur (6)
+  const on = s.pump_on;
+  c.oval(268, 308, 312, 352, on && s.q_pump > 0 ? C_ON : (on ? '#fdebd0' : '#eceff1'), '#566573', 2);
+  c.poly([[290, 316], [280, 340], [300, 340]], '#566573');
+  c.text(318, 322, '6', { font: F(11, 'bold'), fill: C_VF, anchor: 'w' });
+  c.text(318, 340, 'pompă\n' + (on ? 'PORNITĂ' : 'oprită'), { anchor: 'nw', font: F(8, on ? 'bold' : 'normal') });
+  // acumulator (9)
+  c.rect(355, 450, 405, 500, '#fff', '#566573', 2);
+  const h = 48 * s.V_acc / s.V_acc_max;
+  if (h > 0.5) c.rect(357, 498 - h, 403, 498, col_a);
+  c.text(412, 462, '9', { font: F(11, 'bold'), fill: C_VF, anchor: 'w' });
+  c.text(412, 488, `${fmt(s.V_acc, 2)} cm³`, { font: F(8), anchor: 'w' });
+  // supape
+  valve(c, 380, 200, '7', 'Supapă admisie (NA) + sens', s.in_energized, i_open);
+  valve(c, 380, 395, '8', 'Supapă evacuare (NÎ)', s.out_energized, o_open);
+  // frâna roții (4) și roata
+  const cx = 600, cy = 300, R = 54;
+  c.oval(cx - R, cy - R, cx + R, cy + R, '#2c3e50');
+  c.oval(cx - R + 10, cy - R + 10, cx + R - 10, cy + R - 10, '#95a5a6');
+  for (let i = 0; i < 5; i++) {
+    const a = app.wheelAngle + i * 2 * Math.PI / 5;
+    c.line([[cx, cy], [cx + (R - 12) * Math.cos(a), cy - (R - 12) * Math.sin(a)]], '#5d6d7e', 4);
+  }
+  c.oval(cx - 11, cy - 11, cx + 11, cy + 11, '#5d6d7e');
+  c.rect(534, 282, 556, 318, col_w, '#2c3e50', 2);
+  c.text(545, 270, '4', { font: F(11, 'bold'), fill: C_VF });
+  c.text(cx, cy + R + 12, `p roată = ${fmt(s.p_w, 0)} bar`, { font: F(9, 'bold'), fill: C_PW });
+  // valori
+  const lines = [
+    [`v vehicul = ${fmt(s.v * 3.6)} km/h`, C_VF],
+    [`v roată   = ${fmt(s.omega * s.r * 3.6)} km/h`, C_VR],
+    [`λ = ${fmt(s.lam * 100, 0)} %    μ = ${fmt(s.mu, 2)}`, INK],
+    [`t = ${fmt(s.t, 3)} s    x = ${fmt(s.x)} m`, MUTED],
+  ];
+  lines.forEach(([t, col], i) => c.text(470, 438 + i * 15, t, { anchor: 'nw', font: F(9), fill: col }));
+  if (s.lam > 0.9 && s.v > 0.5) c.text(cx - 8, 224, 'ROATĂ BLOCATĂ\n→ nedirecționabil', { justify: 'center', font: F(9, 'bold'), fill: '#c0392b' });
+  else if (s.lam > 0.35 && s.v > 0.5) c.text(cx - 8, 224, 'alunecare mare\n→ direcționare redusă', { justify: 'center', font: F(9, 'bold'), fill: '#d68910' });
+  else if (s.v > 0.5) c.text(cx - 8, 224, 'roata se rotește\n→ direcționabil', { justify: 'center', font: F(9), fill: '#2e8b57' });
+  else c.text(cx - 8, 224, 'vehicul oprit', { font: F(9), fill: MUTED });
+  // buline de debit
+  flow2d(c, PTS.flow_in, s.q_in, app.flow.in);
+  flow2d(c, PTS.flow_out, s.q_out, app.flow.out);
+  flow2d(c, PTS.flow_pump, s.q_pump, app.flow.pump);
+  muPlot(c, 14, 278, 236, 222);
+  c.text(14, 508, 'NA = normal deschisă · NÎ = normal închisă · „+ sens” = supapă de sens montată în paralel cu 7', { anchor: 'w', font: F(7), fill: MUTED });
+}
+function valve(c, x, y, num, label, energized, isOpen) {
+  const w = 46, h = 60;
+  c.rect(x - w / 2, y - h / 2, x + w / 2, y + h / 2, '#fff', INK, 2);
+  if (isOpen) c.line([[x, y + h / 2 - 6], [x, y - h / 2 + 6]], INK, 3, { arrow: 'both', arrowshape: [8, 10, 4] });
+  else {
+    c.line([[x, y - h / 2 + 6], [x, y - 4]], INK, 3); c.line([[x - 10, y - 4], [x + 10, y - 4]], INK, 3);
+    c.line([[x, y + h / 2 - 6], [x, y + 4]], INK, 3); c.line([[x - 10, y + 4], [x + 10, y + 4]], INK, 3);
+  }
+  const bx = x - w / 2 - 26;
+  c.rect(bx, y - 14, bx + 24, y + 14, energized ? C_ON : '#eceff1', INK, 2);
+  c.line([[bx + 4, y + 10], [bx + 20, y - 10]], INK, 2);
+  c.text(bx - 5, y, num, { font: F(12, 'bold'), fill: C_VF, anchor: 'e' });
+  const sx = x + w / 2, pts = [[sx, y]];
+  for (let i = 1; i < 7; i++) pts.push([sx + i * 4, y + (i % 2 ? 8 : -8)]);
+  pts.push([sx + 28, y]);
+  c.line(pts, INK, 2);
+  const tx = x + w / 2 + 36;
+  c.text(tx, y - 16, label, { anchor: 'w', font: F(8) });
+  c.text(tx, y, 'bobină ' + (energized ? 'ALIMENTATĂ' : 'nealimentată'), { anchor: 'w', font: F(8, energized ? 'bold' : 'normal'), fill: energized ? '#b9770e' : MUTED });
+  c.text(tx, y + 16, isOpen ? '→ DESCHISĂ' : '→ ÎNCHISĂ', { anchor: 'w', font: F(9, 'bold'), fill: isOpen ? '#2e8b57' : '#c0392b' });
+}
+function pathPoints(pts, q, phase, spacing, speedK) {
+  const out = [];
+  if (Math.abs(q) < 0.05) return out;
+  const segs = []; let total = 0;
+  for (let i = 0; i < pts.length - 1; i++) { const L = Math.hypot(...pts[i + 1].map((v, j) => v - pts[i][j])); segs.push([pts[i], pts[i + 1], L]); total += L; }
+  let off = ((phase * speedK) % spacing + spacing) % spacing;
+  let d = q > 0 ? off : spacing - off;
+  while (d < total) {
+    const dd = q > 0 ? d : total - d; let acc = 0;
+    for (const [a, b, L] of segs) {
+      if (acc + L >= dd) { const f = L ? (dd - acc) / L : 0; out.push(a.map((v, j) => v + (b[j] - v) * f)); break; }
+      acc += L;
+    }
+    d += spacing;
+  }
+  return out;
+}
+function flow2d(c, pts, q, phase) {
+  for (const [x, y] of pathPoints(pts, q, phase, 22, 40)) c.oval(x - 3, y - 3, x + 3, y + 3, '#fff', INK);
+}
+function muPlot(c, x0, y0, w, h) {
+  const s = app.sim, surf = s.surface();
+  c.rect(x0, y0, x0 + w, y0 + h, null, '#d0d4da');
+  c.text(x0 + 6, y0 + 4, `Curba μ–λ (${surf})`, { anchor: 'nw', font: F(9, 'bold') });
+  const l = x0 + 34, t = y0 + 24, r = x0 + w - 10, b = y0 + h - 26, ymax = 1.3;
+  c.line([[l, b], [r, b]], MUTED); c.line([[l, b], [l, t]], MUTED);
+  for (const v of [0, 0.5, 1.0]) c.text(l - 4, b - (b - t) * v / ymax, fmt(v), { anchor: 'e', font: F(7), fill: MUTED });
+  for (const v of [0, 0.25, 0.5, 0.75, 1.0]) c.text(l + (r - l) * v, b + 8, `${(v * 100).toFixed(0)}%`, { font: F(7), fill: MUTED });
+  c.text((l + r) / 2, b + 19, 'alunecare λ', { font: F(8), fill: MUTED });
+  c.text(l - 26, t - 6, 'μ', { anchor: 'w', font: F(9, 'normal', 'italic'), fill: MUTED });
+  if (s.mode === MODE_ABS) {
+    const xx = l + (r - l) * s.lam1;
+    c.line([[xx, t], [xx, b]], '#aab7b8', 1, { dash: [3, 3] });
+    c.text(xx + 3, t + 2, 'λ1', { anchor: 'nw', font: F(8), fill: MUTED });
+  }
+  const pts = [];
+  for (let i = 0; i <= 100; i++) { const lam = i / 100; pts.push([l + (r - l) * lam, b - (b - t) * muOf(surf, lam) / ymax]); }
+  c.line(pts, C_VF, 2, { join: 'round' });
+  const [lp, mp] = muPeak(surf);
+  c.text(r, t - 4, `μmax = ${fmt(mp, 2)} la λ = ${(lp * 100).toFixed(0)} %`, { anchor: 'ne', font: F(7), fill: C_VF });
+  c.line([[l + (r - l) * lp, b - (b - t) * mp / ymax], [l + (r - l) * lp, b]], C_VF, 1, { dash: [1, 3] });
+  const xx = l + (r - l) * s.lam, yy = b - (b - t) * s.mu / ymax;
+  c.oval(xx - 6, yy - 6, xx + 6, yy + 6, C_VR, '#fff', 2);
+}
+
+/* ---------------- grafice în timp ---------------- */
+const plotCv = $('plots');
+function drawPlots() {
+  const cssW = plotCv.clientWidth || 600, cssH = plotCv.clientHeight || 640;
+  const dpr = fitCanvas(plotCv, cssW, cssH);
+  const W = Math.max(cssW, 600), H = Math.max(cssH, 600), k = cssW / W * dpr, ky = cssH / H * dpr;
+  const ctx = plotCv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, plotCv.width, plotCv.height);
+  ctx.setTransform(k, 0, 0, ky, 0, 0);
+  const c = new Pen(ctx), s = app.sim, hist = s.hist;
+  const span = s.mode !== MODE_MANUAL ? 3.0 : 6.0, t_end = Math.max(s.t, span), t0 = t_end - span;
+  let data = hist.filter(r => r[0] >= t0);
+  if (data.length > 700) { const st = Math.floor(data.length / 700) + 1; const d2 = data.filter((_, i) => i % st === 0); d2.push(data[data.length - 1]); data = d2; }
+  const L = 84, R = W - 18, top = 10;
+  const panels = [
+    ['Viteze [km/h]', 0, Math.max(s.v0 * 3.6 * 1.05, 10), [[1, C_VF, 'v vehicul'], [2, C_VR, 'v roată'], [3, C_REF, 'v referință ECU']], null],
+    ['Presiune [bar]', 0, 150, [[5, C_PMC, 'p cilindru principal'], [4, C_PW, 'p roată']], null],
+    ['Accelerație roată [m/s²]', -80, 60, [[7, '#8e44ad', 'a roată']], [[s.th_neg_a, '−a'], [s.th_pos_a, '+a'], [s.th_pos_A, '+A']]],
+    ['Alunecare λ [%]', 0, 100, [[11, '#aab7b8', 'λ calculat de ECU (din v ref)'], [6, '#16a085', 'λ real']], [[s.lam1 * 100, 'λ1']]],
+  ];
+  const valve_h = 70, ph = (H - top - valve_h - 34) / panels.length;
+  const X = t => L + (R - L) * (t - t0) / span;
+  panels.forEach(([title, ymin, ymax, series, thr], i) => {
+    const y0 = top + i * ph, y1 = y0 + ph - 18;
+    const Y = v => y1 - (y1 - y0) * (Math.min(Math.max(v, ymin), ymax) - ymin) / (ymax - ymin);
+    c.rect(L, y0, R, y1, null, '#d0d4da');
+    c.text(L + 6, y0 + 4, title, { anchor: 'nw', font: F(9, 'bold') });
+    for (const fr of [0, 0.5, 1]) {
+      const v = ymin + (ymax - ymin) * fr;
+      c.text(L - 6, Y(v), v.toFixed(0), { anchor: 'e', font: F(8), fill: MUTED });
+      if (fr > 0 && fr < 1) c.line([[L, Y(v)], [R, Y(v)]], '#eef0f3');
+    }
+    if (ymin < 0 && 0 < ymax) c.line([[L, Y(0)], [R, Y(0)]], '#cfd4da');
+    if (thr && s.mode === MODE_ABS) for (const [v, lab] of thr) {
+      c.line([[L, Y(v)], [R, Y(v)]], '#aab7b8', 1, { dash: [4, 3] });
+      c.text(R - 4, Y(v) - 2, lab, { anchor: 'se', font: F(8), fill: MUTED });
+    }
+    let lx = R - 8;
+    for (const [idx, col, name] of [...series].reverse()) {
+      const m = c.text(lx, y0 + 4, name, { anchor: 'ne', font: F(8), fill: col });
+      lx -= m.w + 14;
+      if (data.length > 1) c.line(data.map(r => [X(r[0]), Y(r[idx] * ((idx === 6 || idx === 11) ? 100 : 1))]), col, 2, { join: 'round' });
+    }
+  });
+  // stări supape
+  const y0 = top + panels.length * ph;
+  c.text(L + 6, y0, 'Stare bobine (portocaliu = alimentată)', { anchor: 'nw', font: F(9, 'bold') });
+  [['7 admisie', 9], ['8 evacuare', 10]].forEach(([lab, idx], j) => {
+    const yy = y0 + 22 + j * 22;
+    c.text(L - 6, yy + 8, lab, { anchor: 'e', font: F(8) });
+    c.rect(L, yy, R, yy + 16, '#f4f6f7', '#d0d4da');
+    const en = r => idx === 9 ? !r[9] : r[10];
+    let runStart = null;
+    for (let i = 0; i < data.length; i++) {
+      const a = data[i], b = data[i + 1];
+      if (en(a) && runStart === null) runStart = a[0];
+      const endRun = runStart !== null && (!b || !en(b));
+      if (endRun) { c.rect(X(runStart), yy + 1, X(b ? b[0] : a[0]), yy + 15, C_ON); runStart = null; }
+    }
+  });
+  const yb = y0 + 70;
+  for (let i = 0; i <= Math.floor(span); i++) {
+    const tt = Math.floor(t0) + i;
+    if (t0 <= tt && tt <= t_end) c.text(X(tt), yb + 4, `${tt.toFixed(0)} s`, { font: F(8), fill: MUTED, anchor: 'n' });
+  }
+}
+
+/* =====================================================================
+   Vizualizare 3D (port al motorului de randare simplu din Python)
+   ===================================================================== */
+const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const vmul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const vnorm = a => { const L = Math.sqrt(vdot(a, a)) || 1; return [a[0] / L, a[1] / L, a[2] / L]; };
+const dist3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+class Scene {
+  constructor() { this.faces = []; this.lines = []; this.dots = []; this.labels = []; }
+  face(pts, color, center = null, outline = '') {
+    let n = vnorm(vcross(vsub(pts[1], pts[0]), vsub(pts[2], pts[0])));
+    if (center) {
+      let c = [0, 0, 0]; for (const p of pts) c = vadd(c, p); c = vmul(c, 1 / pts.length);
+      if (vdot(n, vsub(c, center)) < 0) n = vmul(n, -1);
+    }
+    this.faces.push([pts, color, n, outline]);
+  }
+  box(lo, hi, color, outline = '') {
+    const [x0, y0, z0] = lo, [x1, y1, z1] = hi, c = [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2];
+    const P = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+    for (const idx of [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [2, 3, 7, 6], [1, 2, 6, 5], [0, 3, 7, 4]]) this.face(idx.map(i => P[i]), color, c, outline);
+  }
+  wireBox(lo, hi, color, width = 0.4) {
+    const [x0, y0, z0] = lo, [x1, y1, z1] = hi;
+    const P = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
+    for (const [a, b] of [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]) this.line(P[a], P[b], color, width, 4);
+  }
+  cylinder(p0, p1, r, color, o = {}) {
+    const n = o.n || 16, caps = o.caps !== false, r1 = o.r1 == null ? r : o.r1, phase = o.phase || 0;
+    const d = vnorm(vsub(p1, p0)), u = vnorm(vcross(d, Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), w = vcross(d, u);
+    const c = vmul(vadd(p0, p1), 0.5), ring0 = [], ring1 = [];
+    for (let i = 0; i < n; i++) {
+      const a = phase + 2 * Math.PI * i / n, off = vadd(vmul(u, Math.cos(a)), vmul(w, Math.sin(a)));
+      ring0.push(vadd(p0, vmul(off, r))); ring1.push(vadd(p1, vmul(off, r1)));
+    }
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; this.face([ring0[i], ring0[j], ring1[j], ring1[i]], color, c); }
+    if (caps) { this.face([...ring0].reverse(), o.cap || color, c); this.face(ring1, o.cap || color, c); }
+  }
+  annulus(center, axis, rIn, rOut, color, o = {}) {
+    const n = o.n || 24, phase = o.phase || 0;
+    const d = vnorm(axis), u = vnorm(vcross(d, Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), w = vcross(d, u);
+    const sc = o.solidCenter || vsub(center, d);
+    for (let i = 0; i < n; i++) {
+      const a0 = phase + 2 * Math.PI * i / n, a1 = phase + 2 * Math.PI * (i + 1) / n;
+      const pts = [[a0, rIn], [a1, rIn], [a1, rOut], [a0, rOut]].map(([a, r]) => vadd(center, vadd(vmul(u, r * Math.cos(a)), vmul(w, r * Math.sin(a)))));
+      this.face(pts, color, sc);
+    }
+  }
+  line(p0, p1, color, width, split = 1) {
+    for (let k = 0; k < split; k++) this.lines.push([vadd(p0, vmul(vsub(p1, p0), k / split)), vadd(p0, vmul(vsub(p1, p0), (k + 1) / split)), color, width]);
+  }
+  pipe(pts, color, width = 1.6) {
+    for (let i = 0; i < pts.length - 1; i++) this.line(pts[i], pts[i + 1], color, width, Math.max(1, Math.floor(dist3(pts[i], pts[i + 1]) / 4)));
+  }
+  flow(pts, q, phase, color = '#ffffff') {
+    for (const p of pathPoints(pts, q, phase, 5, 12)) this.dots.push([p, color, 0.9]);
+  }
+  label(anchor, text, num = '') { this.labels.push([anchor, text, num]); }
+}
+
+const v3 = {
+  VIEWS: {
+    'Ansamblu': [[18, 28, 0], 0.3, 0.35, 210],
+    'Modulator (HCU)': [[27, 24, 2], 0.55, 0.35, 105],
+    'Pedală + cilindru principal': [[-62, 48, 0], -0.75, 0.25, 95],
+    'Roată + senzor': [[100, 22, 4], 0.35, 0.22, 150],
+  },
+  visible: false, f: 900, drag: null, goal: null,
+  init() {
+    [this.target, this.yaw, this.pitch, this.dist] = this.VIEWS['Ansamblu'];
+    this.target = [...this.target];
+    this.cv = $('c3'); this.ctx = this.cv.getContext('2d');
+    for (const name of Object.keys(this.VIEWS)) {
+      const b = document.createElement('button'); b.textContent = name; b.onclick = () => { this.goal = this.VIEWS[name]; };
+      $('views3').appendChild(b);
+    }
+    ['t3transp', 't3labels'].forEach(id => $(id).addEventListener('change', () => this.render()));
+    const cv = this.cv;
+    cv.addEventListener('contextmenu', e => e.preventDefault());
+    cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); this.drag = [e.button === 2 || e.shiftKey ? 'pan' : 'rot', e.clientX, e.clientY]; this.goal = null; cv.style.cursor = 'grabbing'; });
+    cv.addEventListener('pointermove', e => {
+      if (!this.drag) return;
+      const [kind, x0, y0] = this.drag, dx = e.clientX - x0, dy = e.clientY - y0;
+      this.drag = [kind, e.clientX, e.clientY];
+      if (kind === 'rot') { this.yaw += dx * 0.008; this.pitch = Math.min(Math.max(this.pitch + dy * 0.008, -1.3), 1.3); }
+      else {
+        const k = this.dist / this.f, cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
+        this.target = vadd(this.target, vadd(vmul([cy, 0, -sy], -dx * k), [0, dy * k, 0]));
+      }
+      this.render();
+    });
+    const end = () => { this.drag = null; cv.style.cursor = 'grab'; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('wheel', e => { e.preventDefault(); this.dist = Math.min(Math.max(this.dist * (e.deltaY > 0 ? 1.12 : 1 / 1.12), 50), 900); this.render(); }, { passive: false });
+    new ResizeObserver(() => { if (this.visible) this.render(); }).observe(cv);
+  },
+  show(on) {
+    this.visible = on; $('v3d').classList.toggle('on', on); $('b3d').classList.toggle('active', on);
+    if (on) { this.render(); $('v3d').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  },
+  tick(el, forceRender = false) {
+    let changed = forceRender;
+    if (this.goal) {
+      const [t, yw, pt, ds] = this.goal, a = 0.18;
+      this.target = vadd(this.target, vmul(vsub(t, this.target), a));
+      this.yaw += (yw - this.yaw) * a; this.pitch += (pt - this.pitch) * a; this.dist += (ds - this.dist) * a;
+      if (Math.abs(yw - this.yaw) < 1e-3 && Math.abs(ds - this.dist) < 0.5 && dist3(t, this.target) < 0.2) this.goal = null;
+      changed = true;
+    }
+    if ($('t3rot').checked) { this.yaw += 0.01; changed = true; }
+    if (changed) this.render();
+  },
+  view(p) {
+    let [x, y, z] = vsub(p, this.target);
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
+    [x, z] = [cy * x - sy * z, sy * x + cy * z];
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    [y, z] = [cp * y - sp * z, sp * y + cp * z];
+    return [x, y, -z];
+  },
+  rot(n) {
+    let [x, y, z] = n;
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw);
+    [x, z] = [cy * x - sy * z, sy * x + cy * z];
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    [y, z] = [cp * y - sp * z, sp * y + cp * z];
+    return [x, y, -z];
+  },
+  proj(v) { const depth = Math.max(this.dist + v[2], 5); return [this.cx + this.f * v[0] / depth, this.cy - this.f * v[1] / depth, depth]; },
+  build() {
+    const s = app.sim, S = new Scene(), p_acc = s.V_acc / s.C_acc;
+    const c_mc = pcolor(s.p_mc), c_w = pcolor(s.p_w), c_a = pcolor(p_acc), transparent = $('t3transp').checked, ALU = '#b8c0c8';
+    // pedală (3), servofrână (2), cilindru principal + rezervor (1)
+    const piv = [-92, 70, 0], ang = (8 + 22 * s.pedal) * Math.PI / 180;
+    const pad = [piv[0] + 34 * Math.sin(ang), piv[1] - 34 * Math.cos(ang), 0];
+    S.line(piv, pad, '#34495e', 1.6, 3);
+    S.box(vadd(pad, [-1.2, -1.5, -4]), vadd(pad, [1.2, 1.5, 4]), '#34495e');
+    const rodA = vadd(piv, [20 * Math.sin(ang), -20 * Math.cos(ang), 0]);
+    S.line(rodA, [-64, 46, 0], '#7f8c8d', 0.8, 3);
+    S.cylinder([-64, 46, 0], [-50, 46, 0], 13, '#cfd6dd', { n: 20 });
+    S.cylinder([-50, 46, 0], [-24, 46, 0], 4.2, c_mc, { n: 14, cap: shade(c_mc, 0.8) });
+    S.box([-44, 50, -4], [-30, 58, 4], '#cfe6f7');
+    S.cylinder([-37, 58, 0], [-37, 61, 0], 2.5, '#2c3e50', { n: 10 });
+    S.label([-64, 59, 0], 'Servofrână', '2');
+    S.label([-37, 62, 0], 'Cilindru principal + rezervor', '1');
+    S.label(pad, 'Pedală de frână', '3');
+    const mcPipe = [[-24, 46, 0], [-6, 46, 0], [-6, 30, 0], [10, 30, 0]];
+    S.pipe(mcPipe, c_mc);
+    // blocul hidraulic (HCU)
+    const lo = [10, 12, -10], hi = [44, 36, 10];
+    if (transparent) S.wireBox(lo, hi, '#8795a1', 0.35); else S.box(lo, hi, ALU);
+    S.label([27, 12, 10], 'Bloc hidraulic (HCU)', '');
+    S.box([12, 14, -14], [42, 34, -10.5], '#4a6b5a');
+    S.label([42, 34, -14], 'ECU (unitate electronică)', '');
+    const e7 = s.in_energized, e8 = s.out_energized, [i_open, o_open] = s.valveStates();
+    for (const [x, en, num, name] of [[20, e7, '7', 'Supapă admisie (normal deschisă)'], [32, e8, '8', 'Supapă evacuare (normal închisă)']]) {
+      S.cylinder([x, 36, 0], [x, 44, 0], 3.4, en ? C_ON : '#d5d8dc', { n: 16, cap: '#7f8c8d' });
+      S.label([x, 44, 0], name, num);
+    }
+    const ch_a = [[10, 30, 0], [20, 30, 0]], ch_a2 = [[14, 30, 0], [14, 26, 0]];
+    const ch_b = [[20, 22, 0], [32, 22, 0], [44, 22, 0]], ch_b2 = [[32, 22, 0], [32, 20, 0]];
+    const ch_c = [[32, 15, 0], [40, 15, 0], [40, 12, 0]], ch_c2 = [[32, 15, 0], [26, 15, 0], [26, 15, 6]];
+    const ch_d = [[26, 19, 6], [26, 19, 0], [14, 19, 0], [14, 20, 0]];
+    if (transparent) {
+      for (const [pts, col] of [[ch_a, c_mc], [ch_a2, c_mc], [ch_b, c_w], [ch_b2, c_w], [ch_c, c_a], [ch_c2, c_a], [ch_d, c_mc]]) S.pipe(pts, col, 1.4);
+      S.cylinder([20, 22, 0], [20, 30, 0], 2.0, '#dfe4ea', { n: 12, caps: false });
+      S.cylinder([20, 25.6, 0], [20, 26.4, 0], 2.2, '#5d6d7e', { n: 12 });
+      let yp = !i_open ? 26.6 : 29.0;
+      S.cylinder([20, yp, 0], [20, yp + 3.5, 0], 1.3, '#c0392b', { n: 10 });
+      S.line([20, yp + 3.5, 0], [20, 36, 0], '#5d6d7e', 0.45);
+      S.cylinder([32, 15, 0], [32, 22, 0], 2.0, '#dfe4ea', { n: 12, caps: false });
+      S.cylinder([32, 17.6, 0], [32, 18.4, 0], 2.2, '#5d6d7e', { n: 12 });
+      yp = !o_open ? 18.6 : 21.0;
+      S.cylinder([32, yp, 0], [32, yp + 2.2, 0], 1.3, '#c0392b', { n: 10 });
+      S.line([32, yp + 2.2, 0], [32, 36, 0], '#5d6d7e', 0.45);
+      S.cylinder([14, 20, 0], [14, 26, 0], 2.6, c_mc, { n: 12 });
+      S.label([14, 23, -3], 'Cameră de amortizare', '5');
+      S.cylinder([26, 15, 6], [26, 19, 6], 1.6, s.q_pump < 0.05 ? c_a : c_mc, { n: 10 });
+    }
+    S.cylinder([40, 12, 0], [40, 4, 0], 4.0, transparent ? '#dfe4ea' : ALU, { n: 16 });
+    const fill = s.V_acc / s.V_acc_max;
+    if (fill > 0.01) S.cylinder([40, 11.8, 0], [40, 11.8 - 7.5 * fill, 0], 3.6, c_a, { n: 14 });
+    S.label([40, 4, 0], 'Acumulator', '9');
+    S.cylinder([26, 19, 10], [26, 19, 22], 6.0, '#34495e', { n: 18, cap: '#2c3e50' });
+    const rot = app.flow.pump * 3.0;
+    if (s.pump_on) for (let k = 0; k < 3; k++) { const a = rot + k * 2 * Math.PI / 3; S.line([26, 19, 22.1], [26 + 5 * Math.cos(a), 19 + 5 * Math.sin(a), 22.1], C_ON, 0.7); }
+    S.label([26, 25, 22], 'Pompă de retur (motor)', '6');
+    // conductă HCU → etrier
+    const W = [100, 22, 0], cal = [113.5, 35.5, 8];
+    const brakePipe = [[44, 22, 0], [60, 22, 0], [70, 40, 8], [cal[0] - 4, cal[1] + 2, 8]];
+    S.pipe(brakePipe, c_w);
+    // roata
+    const wa = app.wheelAngle;
+    S.cylinder([W[0], W[1], -12], [W[0], W[1], 2], 30, '#2b2b2b', { n: 28, caps: false, phase: wa });
+    S.annulus([W[0], W[1], 2], [0, 0, 1], 21, 30, '#3a3a3a', { n: 28, phase: wa, solidCenter: [W[0], W[1], -5] });
+    S.annulus([W[0], W[1], -12], [0, 0, -1], 21, 30, '#3a3a3a', { n: 28, phase: wa, solidCenter: [W[0], W[1], -5] });
+    S.annulus([W[0], W[1], -4], [0, 0, 1], 0.1, 21, '#9aa3ab', { n: 20, phase: wa, solidCenter: [W[0], W[1], -6] });
+    S.cylinder([W[0], W[1], 4], [W[0], W[1], 6.5], 19, '#9ea7ae', { n: 28, phase: wa, cap: '#b3bbc2' });
+    for (let k = 0; k < 10; k++) {
+      const a = wa + k * 2 * Math.PI / 10, c = [W[0] + 14 * Math.cos(a), W[1] + 14 * Math.sin(a), 6.55];
+      S.cylinder(c, [c[0], c[1], 6.6], 1.0, '#4d565e', { n: 6 });
+    }
+    S.cylinder([W[0], W[1], 6.5], [W[0], W[1], 10], 7, '#7b8590', { n: 14, cap: '#aab3bb' });
+    for (let k = 0; k < 24; k++) {
+      const a = wa + k * 2 * Math.PI / 24;
+      S.line([W[0] + 8 * Math.cos(a), W[1] + 8 * Math.sin(a), 10.2], [W[0] + 9.6 * Math.cos(a), W[1] + 9.6 * Math.sin(a), 10.2], '#555f69', 0.9);
+    }
+    S.cylinder([W[0], W[1] - 18, 10.2], [W[0], W[1] - 10.5, 10.2], 1.4, '#1f5fa8', { n: 10 });
+    S.pipe([[W[0], W[1] - 18, 10.2], [80, -2, 8], [44, 12, -14]], '#1f5fa8', 0.4);
+    S.label([W[0], W[1] - 18, 10.2], 'Senzor de turație + roată dințată', '');
+    const ca = Math.PI / 4, cc = [W[0] + 17 * Math.cos(ca), W[1] + 17 * Math.sin(ca), 5.2];
+    S.box(vadd(cc, [-4.5, -4.5, -3.6]), vadd(cc, [4.5, 4.5, 3.6]), shade(c_w, 0.95));
+    S.label(vadd(cc, [3, 4, 3]), 'Etrier + disc de frână', '4');
+    // buline de curgere
+    const ph = app.flow;
+    if (transparent) {
+      const pathIn = [...mcPipe, [20, 30, 0], [20, 22, 0], [32, 22, 0], [44, 22, 0], ...brakePipe.slice(1)];
+      const pathOut = [...[...brakePipe].reverse(), [32, 22, 0], [32, 15, 0], [40, 15, 0], [40, 6, 0]];
+      const pathPump = [[40, 12, 0], [40, 15, 0], [26, 15, 0], [26, 15, 6], [26, 19, 6], [26, 19, 0], [14, 19, 0], [14, 30, 0], [10, 30, 0]];
+      S.flow(pathIn, s.q_in, ph.in); S.flow(pathOut, s.q_out, ph.out); S.flow(pathPump, s.q_pump, ph.pump);
+    } else {
+      S.flow(mcPipe, s.q_in - s.q_pump, ph.in);
+      S.flow(brakePipe, s.q_in - s.q_out, ph.in - ph.out);
+    }
+    return S;
+  },
+  render() {
+    if (!this.visible) return;
+    const cv = this.cv, cssW = cv.clientWidth || 800, cssH = cv.clientHeight || 600;
+    const dpr = fitCanvas(cv, cssW, cssH), ctx = this.ctx;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#eef1f5'; ctx.fillRect(0, 0, cssW, cssH);
+    // pe ecrane înguste scena se micșorează proporțional
+    this.f = 900 * Math.min(1, cssW / 900);
+    this.cx = cssW / 2; this.cy = cssH / 2 + 20;
+    const c = new Pen(ctx), S = this.build(), Ld = vnorm([-0.45, 0.65, 0.6]), items = [];
+    for (const [pts, col, n, outline] of S.faces) {
+      const nv = this.rot(n), vs = pts.map(p => this.view(p));
+      let cen = [0, 0, 0]; for (const v of vs) cen = vadd(cen, v); cen = vmul(cen, 1 / vs.length);
+      if (vdot(nv, vsub([0, 0, -this.dist], cen)) <= 0) continue;
+      const lam = 0.38 + 0.72 * Math.max(0, vdot(nv, [Ld[0], Ld[1], -Ld[2]]));
+      const pr = vs.map(v => this.proj(v));
+      items.push([pr.reduce((a, p) => a + p[2], 0) / pr.length, 'f', pr, shade(col, lam), outline]);
+    }
+    for (const [a, b, col, wd] of S.lines) {
+      const pa = this.proj(this.view(a)), pb = this.proj(this.view(b));
+      const depth = (pa[2] + pb[2]) / 2 - 0.5;
+      items.push([depth, 'l', [pa, pb], col, Math.max(1, this.f * wd / depth)]);
+    }
+    for (const [p, col, r] of S.dots) {
+      const pp = this.proj(this.view(p));
+      items.push([pp[2] - 1, 'd', [pp[0], pp[1], Math.max(1.8, this.f * r / pp[2])], col, null]);
+    }
+    items.sort((a, b) => b[0] - a[0]);
+    for (const [, kind, data, col, extra] of items) {
+      if (kind === 'f') c.poly(data, col, extra || col, 1);
+      else if (kind === 'l') c.line(data, col, extra, { cap: 'round' });
+      else { const [x, y, r] = data; c.oval(x - r, y - r, x + r, y + r, col, '#1d2433'); }
+    }
+    if ($('t3labels').checked) {
+      const placed = [], labs = S.labels.map(([anchor, text, num]) => { const [x, y] = this.proj(this.view(anchor)); return [y, x, text, num]; });
+      labs.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      for (const [y, x, text, num] of labs) {
+        const t = (num ? num + ' – ' : '') + text, font = F(9, num ? 'bold' : 'normal');
+        const m = c.measure(t, font), w_ = m.w, h_ = m.h;
+        const right = x < this.cx + 60;
+        const lx = right ? x + 24 : x - 24 - w_;
+        let ly = y - 26, box;
+        for (let i = 0; i < 40; i++) {
+          box = [lx - 4, ly - h_ / 2 - 2, lx + w_ + 4, ly + h_ / 2 + 2];
+          if (!placed.some(q => box[0] < q[2] && q[0] < box[2] && box[1] < q[3] && q[1] < box[3])) break;
+          ly += 6;
+        }
+        placed.push(box);
+        c.line([[x, y], [right ? lx : lx + w_, ly]], '#5d6d7e', 1);
+        c.oval(x - 2, y - 2, x + 2, y + 2, '#5d6d7e');
+        c.rect(box[0], box[1], box[2], box[3], '#ffffff', '#d0d4da');
+        c.text(lx, ly, t, { anchor: 'w', font });
+      }
+    }
+    this.overlay(c, cssW, cssH);
+  },
+  overlay(c, W, H) {
+    const s = app.sim, [title, col] = PHASE_INFO[hydPhase()], [io, oo] = s.valveStates();
+    const bw = Math.min(430, W - 20);
+    c.rect(10, 10, 10 + bw, 88, '#fff', '#d0d4da');
+    c.text(20, 18, title, { anchor: 'nw', font: F(14, 'bold'), fill: col });
+    c.text(20, 46, `Supapa 7: ${io ? 'DESCHISĂ' : 'ÎNCHISĂ'}    Supapa 8: ${oo ? 'DESCHISĂ' : 'ÎNCHISĂ'}    Pompa: ${s.pump_on ? 'PORNITĂ' : 'oprită'}`, { anchor: 'nw', font: F(9) });
+    c.text(20, 64, `p CP = ${fmt(s.p_mc, 0)} bar   p roată = ${fmt(s.p_w, 0)} bar   v = ${fmt(s.v * 3.6)} km/h   v roată = ${fmt(s.omega * s.r * 3.6)} km/h`, { anchor: 'nw', font: F(9) });
+    for (let i = 0; i < 50; i++) c.rect(20 + i * 4, H - 26, 24 + i * 4, H - 14, pcolor(i * 140 / 50));
+    c.text(228, H - 20, 'presiune 0 … 140 bar', { anchor: 'w', font: F(8), fill: MUTED });
+  },
+};
+
+/* ---------------- legături UI ---------------- */
+$('bRun').onclick = toggleRun;
+$('bStep').onclick = singleStep;
+$('bReset').onclick = reset;
+$('b3d').onclick = () => v3.show(!v3.visible);
+$('b3dClose').onclick = () => v3.show(false);
+document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', onMode));
+$('scen').addEventListener('change', reset);
+$('v0').addEventListener('change', reset);
+$('pedal').addEventListener('input', setPedal);
+$('hold').addEventListener('change', () => { app.sim.hold_speed = $('hold').checked; });
+$('bRestore').onclick = restoreSpeed;
+$('bBuild').onclick = () => setCombo('build');
+$('bHold').onclick = () => setCombo('hold');
+$('bDump').onclick = () => setCombo('dump');
+['c7', 'c8', 'c6'].forEach(id => $(id).addEventListener('change', () => { manualValves(); draw(); }));
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target, tag = t.tagName;
+  const typing = tag === 'SELECT' || tag === 'TEXTAREA' || (tag === 'INPUT' && !['checkbox', 'radio'].includes(t.type));
+  if (typing) return;
+  const k = e.key;
+  if (k === ' ') { if (tag === 'BUTTON') return; e.preventDefault(); toggleRun(); }
+  else if (k === '1') setCombo('build');
+  else if (k === '2') setCombo('hold');
+  else if (k === '3') setCombo('dump');
+  else if (k === 'ArrowUp' && app.mode() === MODE_MANUAL) { e.preventDefault(); nudgePedal(10); }
+  else if (k === 'ArrowDown' && app.mode() === MODE_MANUAL) { e.preventDefault(); nudgePedal(-10); }
+  else if (k === 'r' || k === 'R') reset();
+  else if (k === 'v' || k === 'V') restoreSpeed();
+});
+new ResizeObserver(() => { if (app.sim) { drawSchematic(); drawPlots(); } }).observe(document.querySelector('.main'));
+
+v3.init();
+onMode();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
