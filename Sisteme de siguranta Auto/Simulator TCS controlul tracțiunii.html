@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator TCS controlul tracțiunii</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: banc de laborator. Ecranele senzorilor sunt mereu întunecate (ca un osciloscop); restul paginii urmează tema. */
+:root{
+  --bg:#edf0f4; --panel:#ffffff; --ink:#18212f; --muted:#586577; --line:#d3dae4; --accent:#0a6fb5;
+  --screen:#0d1420; --screen-ink:#dbe4f0;
+  --cam:#4cc2ff; --lid:#ff9a4a; --fus:#c58cff; --ref:#9aa6b8;
+  --ok:#1f9d57; --warn:#c98a00; --crit:#d43a3a;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#090e16; --panel:#121a27; --ink:#e6ebf2; --muted:#93a0b4; --line:#263246; --accent:#4cc2ff; --ok:#3ecf80; --warn:#f0b429; --crit:#ff5c5c; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#090e16; --panel:#121a27; --ink:#e6ebf2; --muted:#93a0b4; --line:#263246; --accent:#4cc2ff; --ok:#3ecf80; --warn:#f0b429; --crit:#ff5c5c; color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);padding:16px}
+.wrap{max-width:1380px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font:700 26px/1.1 var(--f-display);margin:0;letter-spacing:.2px;text-wrap:balance}
+h2{font:600 17px/1.2 var(--f-display);margin:0 0 8px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+h3{font:600 17px/1.2 var(--f-display);margin:0 0 6px;text-wrap:balance}
+header{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+header p{margin:2px 0 0;color:var(--muted);max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:500 14px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] button[aria-pressed="true"]{color:#06121c}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button[aria-pressed="true"]{color:#06121c}}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.screen{background:var(--screen);border-radius:8px;overflow:hidden;position:relative;border:1px solid #1d2838}
+.screen canvas{display:block;width:100%;height:auto}
+.tag{position:absolute;left:10px;top:8px;font:500 11px var(--f-mono);color:var(--screen-ink);opacity:.85;pointer-events:none;text-shadow:0 1px 2px #000}
+.top{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:14px}
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px}
+@media (max-width:980px){.top,.lower{grid-template-columns:1fr}}
+.pill{display:inline-flex;align-items:center;gap:8px;font:700 18px var(--f-display);letter-spacing:.8px;padding:6px 14px;border-radius:6px;border:2px solid var(--ok);color:var(--ok)}
+.pill::before{content:"";width:10px;height:10px;border-radius:50%;background:currentColor}
+.pill.s1{border-color:var(--accent);color:var(--accent)}
+.pill.s2{border-color:var(--warn);color:var(--warn);border-style:dashed}
+.pill.s3{border-color:var(--crit);color:var(--crit)}
+.pill.s4{background:var(--crit);border-color:var(--crit);color:#fff}
+.big{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.big div{border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.big b{display:block;font:600 22px var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.big span{font-size:12px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--line);font-size:13.5px}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500}
+td{font-family:var(--f-mono)}
+td:first-child{font-family:var(--f-body)}
+.chip{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.ego{display:flex;gap:12px;align-items:center;margin-top:10px}
+.ego canvas{width:54px;height:54px;flex:none}
+.ego dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:0;font-size:13.5px}
+.ego dt{color:var(--muted)} .ego dd{margin:0;font-family:var(--f-mono)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted);margin-top:6px}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+fieldset{border:1px solid var(--line);border-radius:6px;margin:0;padding:8px 10px 10px;min-width:0}
+legend{font:600 14px var(--f-display);text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:0 4px}
+label.row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13.5px;margin-top:6px;align-items:center}
+label.row input[type=range],label.row select{grid-column:1/-1;width:100%}
+label.row output{font:500 13px var(--f-mono)}
+label.ck{display:flex;gap:8px;align-items:center;font-size:13.5px;margin-top:6px;cursor:pointer}
+select{font:14px var(--f-body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:4px 6px}
+input[type=range]{accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.charts{display:flex;flex-direction:column;gap:12px}
+.theory{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.theory p{margin:6px 0;max-width:65ch}
+.eq{font:500 14px var(--f-mono);background:var(--bg);border-left:3px solid var(--accent);padding:6px 10px;border-radius:0 4px 4px 0;margin:6px 0;overflow-x:auto;white-space:nowrap}
+.live{font:13px var(--f-mono);color:var(--muted)}
+.live b{color:var(--ink);font-weight:600}
+.note{color:var(--muted);font-size:13.5px;max-width:80ch;margin:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:980px){.two{grid-template-columns:1fr}}
+.tw{overflow-x:auto}
+.tw table{min-width:760px}
+.tw td{font-family:var(--f-body);text-align:left;vertical-align:top}
+.tw th{text-align:left}
+.tw td.n{font-family:var(--f-mono);white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 0;font-size:14px}
+.kv dt{color:var(--muted);font-weight:500} .kv dd{margin:0;max-width:60ch}
+a{color:var(--accent)}
+ol{margin:6px 0;padding-left:20px} li{margin:3px 0;max-width:65ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Simulator TCS: controlul tracțiunii la demaraj</h1>
+    <p>Vehicul cu o punte motoare și diferențial deschis. Două bucle de reglare: regulatorul turației punții (cuplu motor și frânare simetrică) și regulatorul de blocare a diferențialului (frânare pe o singură roată). Fiecare rulare durează 10 s.</p>
+  </div>
+  <div id="st" class="pill">TCS ÎN AȘTEPTARE</div>
+</header>
+
+<div class="bar" id="scn" role="group" aria-label="Scenarii">
+  <button data-s="split">μ-split: gheață / asfalt</button>
+  <button data-s="low">Aderență scăzută pe ambele roți</button>
+  <button data-s="patch">Petic de gheață la 12 m</button>
+  <button data-s="hill">Pornire în rampă pe μ-split</button>
+  <button data-s="dry">Asfalt uscat</button>
+  <span style="flex:1"></span>
+  <button id="bTcs" aria-pressed="true">TCS activ</button>
+  <button id="bPause">Pauză</button>
+  <button id="bReset">Repornește</button>
+</div>
+
+<div>
+  <div class="screen"><canvas id="scene" width="960" height="300"></canvas><div class="tag" id="sceneTag"></div></div>
+  <div class="legend">
+    <span><span class="chip" style="background:#7dffa8"></span>forță de tracțiune la roată</span>
+    <span><span class="chip" style="background:#ff5c5c"></span>cuplu de frânare TCS</span>
+    <span><span class="chip" style="background:var(--fus)"></span>cuplu pe arbori</span>
+    <span>Dungile de pe roți se mișcă odată cu viteza periferică a roții; marcajele de pe drum, cu viteza vehiculului. L = stânga, R = dreapta.</span>
+  </div>
+</div>
+
+<div class="lower" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)">
+  <div class="charts">
+    <div>
+      <div class="screen"><canvas id="ch1" width="620" height="230"></canvas><div class="tag">VITEZE [km/h]</div></div>
+      <div class="legend">
+        <span><span class="chip" style="background:var(--cam)"></span>υ<sub>L</sub> roată stânga</span>
+        <span><span class="chip" style="background:var(--lid)"></span>υ<sub>R</sub> roată dreapta</span>
+        <span><span class="chip" style="background:#dbe4f0;outline:1px solid #8893a5"></span>υ<sub>Fz</sub> vehicul</span>
+        <span><span class="chip" style="background:var(--fus)"></span>υ<sub>SoKar</sub> referință punte</span>
+        <span><span class="chip" style="background:#6b7a93"></span>υ<sub>Fz</sub> la rularea anterioară</span>
+      </div>
+    </div>
+    <div>
+      <div class="screen"><canvas id="ch2" width="620" height="210"></canvas><div class="tag">CUPLURI LA PUNTE ȘI LA FRÂNE [Nm]</div></div>
+      <div class="legend">
+        <span><span class="chip" style="background:#8893a5"></span>M<sub>FahVorga</sub> cerut de șofer</span>
+        <span><span class="chip" style="background:#7dffa8"></span>M<sub>Kar</sub> livrat de motor</span>
+        <span><span class="chip" style="background:var(--cam)"></span>M<sub>Br,L</sub></span>
+        <span><span class="chip" style="background:var(--lid)"></span>M<sub>Br,R</sub></span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div>
+      <div class="screen"><canvas id="mu" width="480" height="250"></canvas><div class="tag">CURBA μ–ALUNECARE ȘI PUNCTELE DE LUCRU</div></div>
+    </div>
+    <div class="panel">
+      <h2>Rezultate</h2>
+      <div class="big">
+        <div><b id="rV">0</b><span>viteză [km/h]</span></div>
+        <div><b id="rA">0</b><span>accelerație [m/s²]</span></div>
+        <div><b id="rX">0</b><span>distanță [m]</span></div>
+        <div><b id="rU">0</b><span>aderență folosită [%]</span></div>
+      </div>
+      <table>
+        <thead><tr><th>Indicator</th><th>Rularea curentă</th><th>Rularea anterioară</th></tr></thead>
+        <tbody>
+          <tr><td>TCS</td><td id="m_tcs">–</td><td id="p_tcs">–</td></tr>
+          <tr><td>Timp până la 30 km/h [s]</td><td id="m_t30">–</td><td id="p_t30">–</td></tr>
+          <tr><td>Distanță după 5 s [m]</td><td id="m_d5">–</td><td id="p_d5">–</td></tr>
+          <tr><td>Distanță după 10 s [m]</td><td id="m_d10">–</td><td id="p_d10">–</td></tr>
+          <tr><td>Alunecare maximă [%]</td><td id="m_sl">–</td><td id="p_sl">–</td></tr>
+          <tr><td>Rezervă laterală medie [%]</td><td id="m_lat">–</td><td id="p_lat">–</td></tr>
+          <tr><td>Energie disipată în frâne [kJ]</td><td id="m_e">–</td><td id="p_e">–</td></tr>
+        </tbody>
+      </table>
+      <p class="live" id="stats" style="margin:10px 0 0"></p>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>Cele două bucle de reglare</h2>
+  <div class="panel" style="margin-bottom:12px">
+    <div class="tw"><svg viewBox="0 0 980 210" style="min-width:760px;width:100%;height:auto;font:13px var(--f-body)" role="img" aria-label="Schema bloc a celor două bucle de reglare TCS">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--muted)"/></marker></defs>
+      <g fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#ah)">
+        <path d="M110,45H158"/><path d="M182,45H230"/><path d="M430,45H470"/><path d="M690,45H730"/><path d="M880,45H950V95H170V59"/>
+        <path d="M110,150H158"/><path d="M182,150H230"/><path d="M430,150H470"/><path d="M690,150H730"/><path d="M880,150H950V200H170V164"/>
+      </g>
+      <g fill="var(--panel)" stroke="var(--line)" stroke-width="1.5">
+        <circle cx="170" cy="45" r="12"/><circle cx="170" cy="150" r="12"/>
+        <rect x="230" y="22" width="200" height="46" rx="5" stroke="var(--fus)"/><rect x="470" y="22" width="220" height="46" rx="5"/><rect x="730" y="22" width="150" height="46" rx="5"/>
+        <rect x="230" y="127" width="200" height="46" rx="5" stroke="var(--cam)"/><rect x="470" y="127" width="220" height="46" rx="5"/><rect x="730" y="127" width="150" height="46" rx="5"/>
+      </g>
+      <g fill="var(--ink)" text-anchor="middle">
+        <text x="55" y="41">υ<tspan baseline-shift="sub" font-size="10">SoKar</tspan></text><text x="55" y="58" fill="var(--muted)" font-size="11">referință punte</text>
+        <text x="330" y="42">Regulator turație punte</text><text x="330" y="59" fill="var(--muted)" font-size="11">PID</text>
+        <text x="580" y="42">Motor + frânare simetrică</text><text x="580" y="59" fill="var(--muted)" font-size="11">M_Kar, M_Br,Sym</text>
+        <text x="805" y="42">Vehicul</text><text x="805" y="59" fill="var(--muted)" font-size="11">roți, drum</text>
+        <text x="560" y="89" fill="var(--muted)" font-size="11">υ_Kar = (υ_L + υ_R) / 2</text>
+        <text x="55" y="146">υ<tspan baseline-shift="sub" font-size="10">SoDif</tspan> = 0</text><text x="55" y="163" fill="var(--muted)" font-size="11">mers în linie dreaptă</text>
+        <text x="330" y="147">Regulator blocare diferențial</text><text x="330" y="164" fill="var(--muted)" font-size="11">PI cu zonă moartă</text>
+        <text x="580" y="147">Frână pe roata care patinează</text><text x="580" y="164" fill="var(--muted)" font-size="11">M_Br asimetric</text>
+        <text x="805" y="147">Vehicul</text><text x="805" y="164" fill="var(--muted)" font-size="11">diferențial deschis</text>
+        <text x="560" y="194" fill="var(--muted)" font-size="11">υ_Dif = υ_L − υ_R</text>
+        <text x="170" y="49" font-size="12">Σ</text><text x="170" y="154" font-size="12">Σ</text>
+        <text x="206" y="38" fill="var(--muted)" font-size="11">e</text><text x="450" y="38" fill="var(--muted)" font-size="11">u</text>
+        <text x="206" y="143" fill="var(--muted)" font-size="11">e</text><text x="450" y="143" fill="var(--muted)" font-size="11">u</text>
+      </g>
+    </svg></div>
+  </div>
+  <div class="two">
+    <div class="panel" style="border-top:3px solid var(--fus)">
+      <h3>Regulatorul turației punții (PID)</h3>
+      <p class="note">Mărimea reglată este υ<sub>Kar</sub>. Comanda u reduce cuplul motor sub cel cerut de șofer.</p>
+      <table style="margin:8px 0">
+        <tbody>
+          <tr><td>Referință υ<sub>SoKar</sub></td><td id="a_ref">–</td></tr>
+          <tr><td>Măsurat υ<sub>Kar</sub></td><td id="a_act">–</td></tr>
+          <tr><td>Abatere e = υ<sub>Kar</sub> − υ<sub>SoKar</sub></td><td id="a_e">–</td></tr>
+          <tr><td>Termen P = K<sub>P</sub>·e</td><td id="a_p">–</td></tr>
+          <tr><td>Termen I = K<sub>I</sub>·∫e dt</td><td id="a_i">–</td></tr>
+          <tr><td>Termen D = K<sub>D</sub>·de/dt</td><td id="a_d">–</td></tr>
+          <tr><td>Reducere de cuplu u</td><td id="a_u">–</td></tr>
+          <tr><td>Frânare simetrică M<sub>Br,Sym</sub></td><td id="a_s">–</td></tr>
+        </tbody>
+      </table>
+      <div class="ctl">
+        <label class="row">K<sub>P</sub> [Nm·s/m]<output id="o_kpa"></output><input type="range" id="c_kpa" min="0" max="2000" step="50" value="600"></label>
+        <label class="row">K<sub>I</sub> [Nm/m]<output id="o_kia"></output><input type="range" id="c_kia" min="0" max="8000" step="100" value="2500"></label>
+        <label class="row">K<sub>D</sub> [Nm·s²/m]<output id="o_kda"></output><input type="range" id="c_kda" min="0" max="100" step="5" value="15"></label>
+        <label class="row">Alunecare de referință λ<sub>ref</sub><output id="o_lref"></output><input type="range" id="c_lref" min="3" max="40" step="1" value="12"></label>
+      </div>
+      <label class="ck"><input type="checkbox" id="c_cAxle" checked>Regulator activ (intervenție la motor)</label>
+      <label class="ck"><input type="checkbox" id="c_cSym" checked>Frânare simetrică scurtă la abateri mari</label>
+      <label class="row" style="max-width:340px">Intervenția la motor<select id="c_fast"><option value="1">Clapetă + aprindere/injecție (rapidă)</option><option value="0">Numai clapetă (lentă)</option></select></label>
+    </div>
+    <div class="panel" style="border-top:3px solid var(--cam)">
+      <h3>Regulatorul de blocare a diferențialului (PI)</h3>
+      <p class="note">Mărimea reglată este υ<sub>Dif</sub>. Comanda u este cuplul de frânare aplicat roții mai rapide.</p>
+      <table style="margin:8px 0">
+        <tbody>
+          <tr><td>Referință υ<sub>SoDif</sub></td><td>0,0 km/h</td></tr>
+          <tr><td>Măsurat υ<sub>Dif</sub> = υ<sub>L</sub> − υ<sub>R</sub></td><td id="d_act">–</td></tr>
+          <tr><td>Termen P</td><td id="d_p">–</td></tr>
+          <tr><td>Termen I</td><td id="d_i">–</td></tr>
+          <tr><td>Comandă u</td><td id="d_u">–</td></tr>
+          <tr><td>Frână stânga M<sub>Br,L</sub></td><td id="d_l">–</td></tr>
+          <tr><td>Frână dreapta M<sub>Br,R</sub></td><td id="d_r">–</td></tr>
+          <tr><td>Temperatură discuri L / R</td><td id="d_t">–</td></tr>
+        </tbody>
+      </table>
+      <div class="ctl">
+        <label class="row">K<sub>P</sub> [Nm·s/m]<output id="o_kpd"></output><input type="range" id="c_kpd" min="0" max="1000" step="25" value="250"></label>
+        <label class="row">K<sub>I</sub> [Nm/m]<output id="o_kid"></output><input type="range" id="c_kid" min="0" max="5000" step="100" value="1500"></label>
+      </div>
+      <label class="ck"><input type="checkbox" id="c_cDif" checked>Regulator activ (frânare asimetrică)</label>
+    </div>
+  </div>
+</section>
+
+<div class="panel">
+  <div class="ctl">
+    <fieldset><legend>Șofer</legend>
+      <label class="row">Pedala de accelerație<output id="o_pedal"></output><input type="range" id="c_pedal" min="0" max="100" step="5" value="60"></label>
+      <label class="row">Treapta de viteză<select id="c_gear"><option value="1">I (raport total 14,0)</option><option value="2">a II-a (raport total 7,9)</option></select></label>
+    </fieldset>
+    <fieldset><legend>Drum</legend>
+      <label class="row">Suprafață sub roțile din stânga<select id="c_sL"><option value="dry">Asfalt uscat</option><option value="wet">Asfalt ud</option><option value="snow">Zăpadă</option><option value="ice">Gheață</option></select></label>
+      <label class="row">Suprafață sub roțile din dreapta<select id="c_sR"><option value="dry">Asfalt uscat</option><option value="wet">Asfalt ud</option><option value="snow">Zăpadă</option><option value="ice">Gheață</option></select></label>
+      <label class="row">Rampă<output id="o_grade"></output><input type="range" id="c_grade" min="0" max="20" step="1" value="0"></label>
+    </fieldset>
+    <fieldset><legend>Vehicul</legend>
+      <label class="row">Puntea motoare<select id="c_rwd"><option value="1">Spate</option><option value="0">Față</option></select></label>
+      <label class="row">Viteza simulării<select id="c_rate"><option value="1">1× (timp real)</option><option value="0.25">0,25× (încetinit)</option><option value="3">3×</option></select></label>
+      <p class="live" style="margin:8px 0 0">1500 kg, raza roții 0,31 m, cuplu motor 250 Nm, limitator la 6500 rot/min.</p>
+    </fieldset>
+  </div>
+</div>
+
+<section>
+  <h2>Relațiile din spatele simulării</h2>
+  <div class="theory">
+    <div class="panel"><h3>1. Alunecarea la tracțiune</h3>
+      <p>Roata motoare se învârte mai repede decât se deplasează vehiculul. Forța transmisă crește până la alunecarea optimă, apoi scade, iar forța laterală disponibilă se prăbușește.</p>
+      <div class="eq">λ = (υ<sub>roată</sub> − υ<sub>Fz</sub>) / υ<sub>roată</sub> &nbsp;&nbsp; F<sub>x</sub> = μ(λ)·F<sub>z</sub></div>
+      <div class="eq">μ(λ) = c<sub>1</sub>(1 − e<sup>−c<sub>2</sub>λ</sup>) − c<sub>3</sub>λ</div>
+      <p class="live" id="t1"></p></div>
+    <div class="panel"><h3>2. Bilanțul de cupluri la roată</h3>
+      <p>Diferențialul deschis împarte cuplul punții egal între roți. Ce nu poate prelua drumul și nu disipă frâna accelerează roata.</p>
+      <div class="eq">M<sub>Ges</sub> = M<sub>Kar</sub>/2 + M<sub>Br</sub> + M<sub>Str</sub> &nbsp;&nbsp; J·dω/dt = M<sub>Ges</sub></div>
+      <p class="live" id="t2"></p></div>
+    <div class="panel"><h3>3. Efectul de blocare pe μ-split</h3>
+      <p>Fără intervenție, ambele roți transmit doar forța roții cu aderență mică. Frânând roata care patinează, diferențialul trimite același cuplu suplimentar și la roata cu aderență bună.</p>
+      <div class="eq">fără TCS: F = 2·F<sub>l</sub> &nbsp;&nbsp; cu TCS: F = 2·F<sub>l</sub> + F<sub>Br</sub>* ≤ F<sub>l</sub> + F<sub>h</sub></div>
+      <p class="live" id="t3"></p></div>
+    <div class="panel"><h3>4. Legea de reglare</h3>
+      <div class="eq">u(t) = K<sub>P</sub>·e + K<sub>I</sub>·∫e dt + K<sub>D</sub>·de/dt</div>
+      <p>P reacționează la mărimea abaterii, I la durata ei, D la tendința ei. Integratoarele sunt limitate (anti-windup), iar cel al diferențialului se descarcă lent, ca frâna să fie eliberată când roțile merg din nou sincron.</p>
+      <div class="eq">υ<sub>SoKar</sub> = max( υ<sub>Fz</sub>/(1 − λ<sub>ref</sub>), υ<sub>Fz</sub> + 1,4 km/h )</div></div>
+    <div class="panel"><h3>5. Timpul de răspuns al intervențiilor</h3>
+      <p>Clapeta de accelerație are constanta de timp de circa 0,3 s, aprinderea și injecția de circa 0,03 s, iar frâna de circa 0,05 s. De aceea reglarea numai prin clapetă lasă roțile să patineze mai mult și oscilează.</p>
+      <p class="live">Alege „Numai clapetă” și dezactivează frânarea simetrică, apoi compară cu rularea anterioară.</p></div>
+    <div class="panel"><h3>De încercat</h3>
+      <ol>
+        <li>Rulează „μ-split” cu TCS, apoi oprește TCS și repornește. Compară distanța după 5 s.</li>
+        <li>Pe „Aderență scăzută”, pune K<sub>I</sub> = 0. Rămâne o abatere staționară?</li>
+        <li>Mărește K<sub>P</sub> la maximum cu intervenție numai prin clapetă. Ce se întâmplă cu stabilitatea buclei?</li>
+        <li>În rampă pe μ-split, dezactivează numai regulatorul diferențialului. Mai pornește vehiculul?</li>
+        <li>Pornește în treapta a II-a fără TCS pe zăpadă și compară cu treapta I.</li>
+        <li>Urmărește temperatura discului pe μ-split în rampă: de ce cedează blocarea electronică în teren greu?</li>
+      </ol></div>
+  </div>
+</section>
+<p class="note">Structura cu două regulatoare, notațiile (M<sub>Kar</sub>, υ<sub>Kar</sub>, υ<sub>Dif</sub>, M<sub>Br</sub>, M<sub>Str</sub>) și situațiile tipice urmează capitolul „Traction Control System” din K. Reif (ed.), <i>Automotive Mechatronics</i>, Bosch Professional Automotive Information, Springer, 2015. Modelul numeric este al simulatorului: curbele μ–alunecare folosesc formula Burckhardt cu coeficienți uzuali din literatură, iar amplificările, constantele de timp și datele vehiculului sunt valori orientative, nu date ale unui sistem de serie. Rezerva laterală este estimată cu o relație empirică simplificată.</p>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const G=9.81,DT=2e-4,DTC=0.01,RAD=Math.PI/180;
+const V={m:1500,r:0.31,Jw:1.2,Je:0.15,eta:0.9,Me:250,h:0.55,L:2.7,b:1.55,cdA:0.65,fr:0.012,gear:{1:14.0,2:7.9},rpm:6500};
+const SURF={dry:{n:'asfalt uscat',c:[1.2801,23.99,0.52],col:'#4a4f57'},wet:{n:'asfalt ud',c:[0.857,33.822,0.347],col:'#2f3a4a'},snow:{n:'zăpadă',c:[0.1946,94.129,0.0646],col:'#b9c4cf'},ice:{n:'gheață',c:[0.05,306.39,0],col:'#8fc4dc'}};
+const COL={L:'#4cc2ff',R:'#ff9a4a',fus:'#c58cff',veh:'#dbe4f0',f:'#7dffa8',br:'#ff5c5c'};
+const P={pedal:60,gear:1,sL:'ice',sR:'dry',grade:0,rwd:1,rate:1,tcs:true,cAxle:true,cSym:true,cDif:true,fast:1,kpa:600,kia:2500,kda:15,lref:12,kpd:250,kid:1500};
+const SCN={split:{sL:'ice',sR:'dry',grade:0,pedal:60},low:{sL:'snow',sR:'snow',grade:0,pedal:60},patch:{sL:'dry',sR:'dry',grade:0,pedal:70},hill:{sL:'ice',sR:'dry',grade:8,pedal:60},dry:{sL:'dry',sR:'dry',grade:0,pedal:100}};
+const clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const mu=(s,l)=>{const c=SURF[s].c;l=clamp(l,0,1);return c[0]*(1-Math.exp(-c[1]*l))-c[2]*l};
+const PK={};for(const s in SURF){let m=0,lo=0;for(let l=0;l<=1;l+=0.002){const v=mu(s,l);if(v>m*1.0005){m=v;lo=l}}if(s==='ice'){lo=0.03;m=mu(s,1)}PK[s]={l:lo,m}}
+const latRes=l=>Math.exp(-Math.abs(l)/0.25);
+let S,prev=null,paused=false,scnName='split';
+const surfAt=(side,x)=>S.patch&&x>=12&&x<35?'ice':side==='L'?P.sL:P.sR;
+
+function reset(name){
+  if(S&&S.t>1)prev={hist:S.hist,m:S.m,tcs:S.tcsUsed,E:S.E};
+  if(name){scnName=name;Object.assign(P,SCN[name])}
+  S={t:0,x:0,v:0,a:0,wL:0,wR:0,ped:0,Mthr:0,Mk:0,Mkar:0,Mdrv:0,brL:0,brR:0,cmdL:0,cmdR:0,Ia:0,ePrev:0,dF:0,Id:0,Mreq:1e9,
+     c:{vSo:0,vKar:0,e:0,Pt:0,It:0,Dt:0,u:0,sym:0,ed:0,Pd:0,Id:0,ud:0},TL:20,TR:20,E:0,hist:[],rotL:0,rotR:0,tc:0,th:0,done:false,
+     m:{t30:null,d5:null,d10:null,sl:0,latSum:0,latN:0},lamL:0,lamR:0,FL:0,FR:0,FzL:0,FzR:0,T:0,active:false,patch:scnName==='patch',tcsUsed:P.tcs};
+  syncUI();
+  document.querySelectorAll('#scn button[data-s]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===scnName));
+}
+function control(){
+  const c=S.c,vL=S.wL*V.r,vR=S.wR*V.r,lr=P.lref/100;
+  c.vKar=(vL+vR)/2;c.vSo=Math.max(S.v/(1-lr),S.v+0.4);c.e=c.vKar-c.vSo;c.ed=vL-vR;
+  if(P.tcs&&P.cAxle&&S.Mdrv>1){
+    const d=(c.e-S.ePrev)/DTC;S.dF+=(d-S.dF)*0.25;
+    S.Ia=clamp(S.Ia+P.kia*c.e*DTC,0,S.Mdrv);
+    c.Pt=P.kpa*c.e;c.It=S.Ia;c.Dt=P.kda*S.dF;c.u=clamp(c.Pt+c.It+c.Dt,0,S.Mdrv);
+  }else{S.Ia=0;S.dF=0;c.Pt=c.It=c.Dt=c.u=0}
+  S.ePrev=c.e;S.Mreq=S.Mdrv-c.u;
+  c.sym=P.tcs&&P.cSym?clamp(400*(c.e-0.8),0,600):0;
+  if(P.tcs&&P.cDif){
+    const dead=0.25,act=Math.abs(c.ed)>dead;
+    if(act)S.Id+=P.kid*c.ed*DTC;S.Id-=S.Id*DTC/1.5;S.Id=clamp(S.Id,-1500,1500);
+    c.Pd=act?P.kpd*(c.ed-Math.sign(c.ed)*dead):0;c.Id=S.Id;c.ud=clamp(c.Pd+c.Id,-1500,1500);
+  }else{S.Id=0;c.Pd=c.Id=c.ud=0}
+  S.cmdL=Math.min(1800,Math.max(0,c.ud)+c.sym);S.cmdR=Math.min(1800,Math.max(0,-c.ud)+c.sym);
+  S.active=c.u>30||Math.abs(c.ud)>30||c.sym>10;
+}
+function step(dt){
+  const i=V.gear[P.gear],Jc=V.Je*i*i,Mmax=V.Me*i*V.eta,th=Math.atan(P.grade/100);
+  S.ped+=clamp(P.pedal/100-S.ped,-dt/0.15,dt/0.3);S.Mdrv=S.ped*Mmax;
+  S.tc+=dt;if(S.tc>=DTC){S.tc-=DTC;control()}
+  const tgt=Math.min(S.Mdrv,S.Mreq);S.Mthr+=(tgt-S.Mthr)*dt/0.3;
+  S.Mk+=((P.fast?Math.min(S.Mthr,S.Mreq):S.Mthr)-S.Mk)*dt/0.03;if(S.Mk<0)S.Mk=0;
+  const wc=(S.wL+S.wR)/2,wlim=V.rpm/9.549/i;S.Mkar=S.Mk*clamp((wlim-wc)/(0.03*wlim),0,1);
+  S.brL+=(S.cmdL-S.brL)*dt/0.05;S.brR+=(S.cmdR-S.brR)*dt/0.05;
+  const mbL=S.brL*clamp(S.wL/0.3,0,1),mbR=S.brR*clamp(S.wR/0.3,0,1);
+  const tr=V.m*S.a*V.h/(2*V.L)*(P.rwd?1:-1),Fz=Math.max(300,V.m*G*Math.cos(th)/4+tr);S.FzL=S.FzR=Fz;
+  const vL=S.wL*V.r,vR=S.wR*V.r;
+  S.lamL=(vL-S.v)/Math.max(vL,S.v,3);S.lamR=(vR-S.v)/Math.max(vR,S.v,3);
+  const sL=surfAt('L',S.x),sR=surfAt('R',S.x);
+  S.FL=Math.sign(S.lamL)*mu(sL,Math.abs(S.lamL))*Fz;S.FR=Math.sign(S.lamR)*mu(sR,Math.abs(S.lamR))*Fz;
+  const A=mbL+mbR+V.r*(S.FL+S.FR),dwc=(S.Mkar-A)/(2*V.Jw+Jc);S.T=(S.Mkar-Jc*dwc)/2;
+  S.wL=Math.max(0,S.wL+(S.T-mbL-V.r*S.FL)/V.Jw*dt);S.wR=Math.max(0,S.wR+(S.T-mbR-V.r*S.FR)/V.Jw*dt);
+  let F=S.FL+S.FR-V.m*G*Math.sin(th)-(S.v>0.02?V.fr*V.m*G:0)-0.6*V.cdA*S.v*S.v;
+  if(S.v<=0&&F<0)F=0;S.a=F/V.m;S.v=Math.max(0,S.v+S.a*dt);S.x+=S.v*dt;
+  const pL=mbL*S.wL,pR=mbR*S.wR;S.E+=(pL+pR)*dt;S.TL+=pL*dt/3000-(S.TL-20)*dt/90;S.TR+=pR*dt/3000-(S.TR-20)*dt/90;
+  S.rotL+=vL*dt;S.rotR+=vR*dt;S.t+=dt;if(S.active)S.tcsUsed=true;
+  const m=S.m;if(m.t30===null&&S.v>=30/3.6)m.t30=S.t;if(m.d5===null&&S.t>=5)m.d5=S.x;
+  S.th+=dt;if(S.th>=0.02){S.th-=0.02;
+    if(S.t>0.3){if(vL>1||vR>1)m.sl=Math.max(m.sl,S.lamL,S.lamR);m.latSum+=Math.min(latRes(S.lamL),latRes(S.lamR));m.latN++}
+    S.hist.push({t:S.t,vL:vL*3.6,vR:vR*3.6,v:S.v*3.6,vSo:S.c.vSo*3.6,Md:S.Mdrv,Mk:S.Mkar,bL:mbL,bR:mbR})}
+  if(S.t>=10){m.d10=S.x;S.done=true}
+}
+
+/* ---------- desen ---------- */
+function fit(cv){const lw=+cv.getAttribute('data-w')||(cv.setAttribute('data-w',cv.width),cv.setAttribute('data-h',cv.height),cv.width),lh=+cv.getAttribute('data-h');
+  const s=clamp((cv.clientWidth||lw)*(window.devicePixelRatio||1)/lw,0.5,2);if(cv.width!==Math.round(lw*s)){cv.width=Math.round(lw*s);cv.height=Math.round(lh*s)}
+  const c=cv.getContext('2d');c.setTransform(s,0,0,s,0,0);return c}
+const f1=(v,d=1)=>v===null||v===undefined||!isFinite(v)?'–':v.toFixed(d).replace('.',',');
+let visL=0,visR=0,visX=0;
+function arrow(c,x,y,len,col){if(Math.abs(len)<3)return;const d=Math.sign(len);c.strokeStyle=c.fillStyle=col;c.lineWidth=4;c.beginPath();c.moveTo(x,y);c.lineTo(x+len-d*7,y);c.stroke();
+  c.beginPath();c.moveTo(x+len,y);c.lineTo(x+len-d*9,y-6);c.lineTo(x+len-d*9,y+6);c.closePath();c.fill()}
+function drawScene(dr){
+  const c=fit($('scene')),W=960,H=300,sc=60,cx=400,yM=150,X=x=>cx+(x-S.x)*sc;
+  c.clearRect(0,0,W,H);c.fillStyle='#0d1420';c.fillRect(0,0,W,H);
+  const segs=S.patch?[[-1e3,12],[12,35],[35,1e4]]:[[-1e3,1e4]];
+  for(const [a,b] of segs){const x0=clamp(X(a),0,W),x1=clamp(X(b),0,W);if(x1<=x0)continue;const xm=(a+b)/2;
+    c.fillStyle=SURF[surfAt('L',xm)].col;c.fillRect(x0,40,x1-x0,110);c.fillStyle=SURF[surfAt('R',xm)].col;c.fillRect(x0,150,x1-x0,110)}
+  c.font='11px "IBM Plex Mono",monospace';c.textAlign='center';
+  const m0=Math.floor((S.x-cx/sc)/5)*5;
+  for(let m=m0;m<S.x+(W-cx)/sc+5;m+=5){const x=X(m);c.fillStyle='rgba(255,255,255,.35)';c.fillRect(x-1,40,2,220);c.fillStyle='#8a97ab';if(m>=0)c.fillText(m+' m',x,276)}
+  c.textAlign='left';c.fillStyle='#dbe4f0';c.font='500 12px "IBM Plex Mono",monospace';
+  c.fillText(`stânga: ${SURF[surfAt('L',S.x)].n}, μ max ${f1(PK[surfAt('L',S.x)].m,2)}`,12,32);c.fillText(`dreapta: ${SURF[surfAt('R',S.x)].n}, μ max ${f1(PK[surfAt('R',S.x)].m,2)}`,12,292);
+  // caroserie și lanț cinematic
+  const xr=cx-1.35*sc,xf=cx+1.35*sc,yL=yM-0.775*sc,yR=yM+0.775*sc,xd=P.rwd?xr:xf;
+  c.fillStyle='rgba(13,20,32,.72)';c.strokeStyle='#dbe4f0';c.lineWidth=1.5;c.beginPath();c.roundRect(cx-2.05*sc,yM-0.9*sc,4.5*sc,1.8*sc,22);c.fill();c.stroke();
+  const tq=clamp(S.Mkar/3200,0,1),shaft=`rgba(197,140,255,${0.35+0.65*tq})`;
+  c.fillStyle='#2a3445';c.strokeStyle='#8893a5';c.lineWidth=1;c.fillRect(xf-18,yM-26,58,52);c.strokeRect(xf-18,yM-26,58,52);
+  c.fillStyle='#dbe4f0';c.textAlign='center';c.font='11px "IBM Plex Mono",monospace';c.fillText('motor',xf+11,yM-4);c.fillText('+ cutie',xf+11,yM+10);
+  c.strokeStyle=shaft;c.lineWidth=5;c.beginPath();if(P.rwd){c.moveTo(xf-18,yM);c.lineTo(xr,yM)}c.moveTo(xd,yL);c.lineTo(xd,yR);c.stroke();
+  c.strokeStyle='#5d6c85';c.lineWidth=3;const xn=P.rwd?xf:xr;c.beginPath();c.moveTo(xn,yL);c.lineTo(xn,yR);c.stroke();
+  c.fillStyle='#c58cff';c.beginPath();c.arc(xd,yM,11,0,7);c.fill();c.fillStyle='#0d1420';c.font='700 11px "IBM Plex Mono",monospace';c.fillText('D',xd,yM+4);
+  visL+=clamp(S.wL*V.r,0,40)*dr*sc*0.12;visR+=clamp(S.wR*V.r,0,40)*dr*sc*0.12;visX+=S.v*dr*sc*0.12;
+  const wheel=(x,y,ph,drv,br)=>{const w=40,h=16;c.fillStyle='#05070b';c.fillRect(x-w/2,y-h/2,w,h);c.save();c.beginPath();c.rect(x-w/2,y-h/2,w,h);c.clip();
+    c.strokeStyle=drv?'#aeb9c9':'#5d6c85';c.lineWidth=2;c.beginPath();for(let k=-1;k<6;k++){const xx=x+w/2-((ph%9)+k*9);c.moveTo(xx,y-h/2);c.lineTo(xx,y+h/2)}c.stroke();c.restore();
+    if(br>5){c.fillStyle=`rgba(255,92,92,${0.35+0.65*clamp(br/1200,0,1)})`;c.fillRect(x-9,y+(y<yM?h/2+1:-h/2-7),18,6)}};
+  wheel(xn,yL,visX,false,0);wheel(xn,yR,visX,false,0);wheel(xd,yL,visL,true,S.brL);wheel(xd,yR,visR,true,S.brR);
+  arrow(c,xd+24,yL,S.FL/4500*170,COL.f);arrow(c,xd+24,yR,S.FR/4500*170,COL.f);
+  c.font='500 12px "IBM Plex Mono",monospace';c.textAlign='left';
+  const lab=(y,n,w,l,F,b,col)=>{c.fillStyle='rgba(13,20,32,.82)';c.fillRect(xd-196,y-9,186,34);c.fillStyle=col;c.fillText(`υ_${n} ${f1(w*V.r*3.6,1)} km/h · λ ${f1(l*100,0)}%`,xd-190,y+4);
+    c.fillStyle='#dbe4f0';c.fillText(`F ${f1(F,0)} N · M_Br ${f1(b,0)} Nm`,xd-190,y+19)};
+  if(P.rwd){lab(yL-52,'L',S.wL,S.lamL,S.FL,S.brL,COL.L);lab(yR+26,'R',S.wR,S.lamR,S.FR,S.brR,COL.R)}
+  else{c.save();c.translate(-10,0);lab(yL-52,'L',S.wL,S.lamL,S.FL,S.brL,COL.L);lab(yR+26,'R',S.wR,S.lamR,S.FR,S.brR,COL.R);c.restore()}
+  c.fillStyle=COL.fus;c.textAlign='left';c.fillText(`M_Kar ${f1(S.Mkar,0)} Nm`,xr+20,yM-9);c.fillStyle='#dbe4f0';c.fillText(`pe roată ${f1(S.T,0)} Nm`,xr+20,yM+20);
+  const Mz=(S.FR-S.FL)*V.b/2;if(Math.abs(Mz)>150){const tx=`moment de girație ${f1(Mz,0)} Nm, trage spre ${Mz>0?'stânga':'dreapta'}`;c.textAlign='left';c.fillStyle='rgba(13,20,32,.82)';c.fillRect(cx+2.6*sc-6,yM-11,c.measureText(tx).width+12,22);c.fillStyle='#f0b429';c.fillText(tx,cx+2.6*sc,yM+4)}
+  // martor TCS
+  const on=P.tcs&&S.active&&Math.floor(S.t*6)%2===0;c.textAlign='center';c.font='700 15px "Barlow Semi Condensed",sans-serif';
+  c.strokeStyle=c.fillStyle=!P.tcs?'#6b7a93':on?'#f0b429':'#4b566b';c.lineWidth=2;c.beginPath();c.roundRect(W-92,10,80,26,5);c.stroke();c.fillText(P.tcs?'TCS':'TCS OFF',W-52,29);
+  $('sceneTag').textContent='';
+}
+function drawChart(id,H,ymax,series,ghost){
+  const c=fit($(id)),W=620,L=46,R=12,T=28,B=22,X=t=>L+t/10*(W-L-R),Y=v=>H-B-clamp(v/ymax,0,1)*(H-T-B);
+  c.clearRect(0,0,W,H);c.fillStyle='#0d1420';c.fillRect(0,0,W,H);
+  c.font='11px "IBM Plex Mono",monospace';c.fillStyle='#6b7a93';c.strokeStyle='#1c2638';c.lineWidth=1;c.textAlign='right';
+  for(let i=0;i<=4;i++){const v=ymax*i/4;c.beginPath();c.moveTo(L,Y(v));c.lineTo(W-R,Y(v));c.stroke();c.fillText(Math.round(v),L-6,Y(v)+4)}
+  c.textAlign='center';for(let k=0;k<=10;k+=2){c.beginPath();c.moveTo(X(k),T);c.lineTo(X(k),H-B);c.stroke();c.fillText(k+' s',X(k),H-6)}
+  const line=(h,k,col,w,dash)=>{c.strokeStyle=col;c.lineWidth=w;c.setLineDash(dash||[]);c.beginPath();for(let i=0;i<h.length;i++){const p=h[i];i?c.lineTo(X(p.t),Y(p[k])):c.moveTo(X(p.t),Y(p[k]))}c.stroke();c.setLineDash([])};
+  if(ghost&&prev)line(prev.hist,ghost,'#6b7a93',1.5,[2,4]);
+  for(const s of series)line(S.hist,s.k,s.col,s.w||1.8,s.dash);
+  if(S.hist.length){const p=S.hist[S.hist.length-1];c.strokeStyle='rgba(255,255,255,.25)';c.beginPath();c.moveTo(X(p.t),T);c.lineTo(X(p.t),H-B);c.stroke()}
+}
+function drawCharts(){
+  let m=20,mm=500;for(const h of S.hist){m=Math.max(m,h.vL,h.vR,h.v);mm=Math.max(mm,h.Md,h.bL,h.bR)}if(prev)for(const h of prev.hist)m=Math.max(m,h.v);
+  drawChart('ch1',230,Math.ceil(m/20)*20,[{k:'vSo',col:COL.fus,w:1.5,dash:[6,4]},{k:'vL',col:COL.L},{k:'vR',col:COL.R},{k:'v',col:COL.veh,w:2.6}],'v');
+  drawChart('ch2',210,Math.ceil(mm/500)*500,[{k:'Md',col:'#8893a5',w:1.5,dash:[6,4]},{k:'Mk',col:COL.f,w:2.2},{k:'bL',col:COL.L},{k:'bR',col:COL.R}]);
+}
+function drawMu(){
+  const c=fit($('mu')),W=480,H=250,L=42,R=14,T=30,B=30,sL=surfAt('L',S.x),sR=surfAt('R',S.x),ym=Math.max(0.1,Math.ceil(Math.max(PK[sL].m,PK[sR].m)*1.15*10)/10);
+  const X=l=>L+l*(W-L-R),Y=v=>H-B-clamp(v/ym,0,1)*(H-T-B);
+  c.clearRect(0,0,W,H);c.fillStyle='#0d1420';c.fillRect(0,0,W,H);c.font='11px "IBM Plex Mono",monospace';c.fillStyle='#6b7a93';c.strokeStyle='#1c2638';c.lineWidth=1;
+  c.textAlign='right';for(let i=0;i<=4;i++){const v=ym*i/4;c.beginPath();c.moveTo(L,Y(v));c.lineTo(W-R,Y(v));c.stroke();c.fillText(f1(v,2),L-5,Y(v)+4)}
+  c.textAlign='center';for(let l=0;l<=1.001;l+=0.2){c.beginPath();c.moveTo(X(l),T);c.lineTo(X(l),H-B);c.stroke();c.fillText(Math.round(l*100)+'%',X(l),H-14)}
+  c.fillText('alunecare λ',W/2,H-2);
+  const lr=P.lref/100;c.strokeStyle=COL.fus;c.setLineDash([5,4]);c.beginPath();c.moveTo(X(lr),T);c.lineTo(X(lr),H-B);c.stroke();c.setLineDash([]);c.fillStyle=COL.fus;c.textAlign='left';c.fillText('λ_ref',X(lr)+4,T+10);
+  const curve=(s,col)=>{c.strokeStyle=col;c.lineWidth=2;c.beginPath();for(let i=0;i<=200;i++){const l=i/200;i?c.lineTo(X(l),Y(mu(s,l))):c.moveTo(X(l),Y(mu(s,l)))}c.stroke()};
+  curve(sR,COL.R);if(sL!==sR)curve(sL,COL.L);
+  const pt=(s,l,col,n)=>{l=clamp(Math.abs(l),0,1);const x=X(l),y=Y(mu(s,l));c.fillStyle=col;c.strokeStyle='#0d1420';c.lineWidth=2;c.beginPath();c.arc(x,y,7,0,7);c.fill();c.stroke();c.fillStyle='#0d1420';c.font='700 10px "IBM Plex Mono",monospace';c.textAlign='center';c.fillText(n,x,y+3.5)};
+  pt(sR,S.lamR,COL.R,'R');pt(sL,S.lamL,COL.L,'L');
+}
+function readouts(){
+  const c=S.c,st=$('st'),k=x=>f1(x*3.6,1)+' km/h',nm=x=>f1(x,0)+' Nm';
+  st.className='pill'+(S.done?' s1':!P.tcs?' s3':S.active?' s2':'');st.textContent=S.done?'RULARE ÎNCHEIATĂ':!P.tcs?'TCS OPRIT':S.active?'TCS INTERVINE':'TCS ÎN AȘTEPTARE';
+  const cap=PK[surfAt('L',S.x)].m*S.FzL+PK[surfAt('R',S.x)].m*S.FzR;
+  $('rV').textContent=f1(S.v*3.6,1);$('rA').textContent=f1(S.a,2);$('rX').textContent=f1(S.x,1);$('rU').textContent=f1(clamp((S.FL+S.FR)/cap*100,0,100),0);
+  const m=S.m,row=(id,a,b)=>{$('m_'+id).textContent=a;$('p_'+id).textContent=b};
+  row('tcs',P.tcs?'activ':'oprit',prev?(prev.tcs?'a intervenit':'fără intervenție'):'–');
+  row('t30',f1(m.t30,2),prev?f1(prev.m.t30,2):'–');row('d5',f1(m.d5,1),prev?f1(prev.m.d5,1):'–');row('d10',f1(m.d10,1),prev?f1(prev.m.d10,1):'–');
+  row('sl',f1(m.sl*100,0),prev?f1(prev.m.sl*100,0):'–');row('lat',m.latN?f1(100*m.latSum/m.latN,0):'–',prev&&prev.m.latN?f1(100*prev.m.latSum/prev.m.latN,0):'–');row('e',f1(S.E/1000,0),prev?f1(prev.E/1000,0):'–');
+  $('stats').innerHTML=`t = <b>${f1(S.t,1)} s</b> · sarcină pe roata motoare <b>${f1(S.FzL,0)} N</b> · turație motor <b>${f1((S.wL+S.wR)/2*V.gear[P.gear]*9.549,0)} rot/min</b>`;
+  $('a_ref').textContent=k(c.vSo);$('a_act').textContent=k(c.vKar);$('a_e').textContent=k(c.e);$('a_p').textContent=nm(c.Pt);$('a_i').textContent=nm(c.It);$('a_d').textContent=nm(c.Dt);$('a_u').textContent=nm(c.u);$('a_s').textContent=nm(c.sym);
+  $('d_act').textContent=k(c.ed);$('d_p').textContent=nm(c.Pd);$('d_i').textContent=nm(c.Id);$('d_u').textContent=nm(c.ud);$('d_l').textContent=nm(S.brL);$('d_r').textContent=nm(S.brR);$('d_t').textContent=`${f1(S.TL,0)} °C / ${f1(S.TR,0)} °C`;
+  $('t2').innerHTML=`Roata stângă acum: M<sub>Kar</sub>/2 = <b>${f1(S.T,0)}</b>, M<sub>Br</sub> = <b>${f1(-S.brL,0)}</b>, M<sub>Str</sub> = <b>${f1(-V.r*S.FL,0)}</b>, deci M<sub>Ges</sub> = <b>${f1(S.T-S.brL-V.r*S.FL,0)} Nm</b>.`;
+}
+function theory(){
+  const sL=P.sL,sR=P.sR,Fz=V.m*G/4,lo=PK[sL].m<PK[sR].m?sL:sR,hi=lo===sL?sR:sL,Fl=PK[lo].m*Fz,Fh=PK[hi].m*Fz,Fg=V.m*G*Math.sin(Math.atan(P.grade/100));
+  $('t1').innerHTML=`Stânga, ${SURF[sL].n}: μ<sub>max</sub> = <b>${f1(PK[sL].m,2)}</b> la λ ≈ <b>${f1(PK[sL].l*100,0)}%</b>. Dreapta, ${SURF[sR].n}: μ<sub>max</sub> = <b>${f1(PK[sR].m,2)}</b> la λ ≈ <b>${f1(PK[sR].l*100,0)}%</b>.`;
+  $('t3').innerHTML=`Cu sarcina statică de ${f1(Fz,0)} N pe roată: F<sub>l</sub> = <b>${f1(Fl,0)} N</b>, F<sub>h</sub> = <b>${f1(Fh,0)} N</b>. Fără TCS: <b>${f1(2*Fl,0)} N</b>. Cu blocare ideală: <b>${f1(Fl+Fh,0)} N</b>, pentru care frâna trebuie să preia <b>${f1((Fh-Fl)*V.r,0)} Nm</b>.`+(P.grade?` Rezistența rampei de ${P.grade}%: <b>${f1(Fg,0)} N</b>.`:'');
+}
+/* ---------- interfață ---------- */
+const CTL=['pedal','gear','sL','sR','grade','rwd','rate','cAxle','cSym','cDif','fast','kpa','kia','kda','lref','kpd','kid'];
+const OUT={pedal:v=>v+'%',grade:v=>v+'%',kpa:v=>v,kia:v=>v,kda:v=>v,lref:v=>v+'%',kpd:v=>v,kid:v=>v};
+function syncUI(){for(const k of CTL){const e=$('c_'+k);if(e.type==='checkbox')e.checked=P[k];else e.value=P[k];if(OUT[k])$('o_'+k).textContent=OUT[k](P[k])}
+  $('bTcs').setAttribute('aria-pressed',P.tcs);$('bTcs').textContent=P.tcs?'TCS activ':'TCS oprit';theory()}
+function setPaused(p){paused=p;$('bPause').textContent=p?'Continuă':'Pauză';$('bPause').setAttribute('aria-pressed',p)}
+function bindUI(){
+  for(const k of CTL){const e=$('c_'+k);e.addEventListener('input',()=>{P[k]=e.type==='checkbox'?e.checked:(k==='sL'||k==='sR')?e.value:+e.value;if(OUT[k])$('o_'+k).textContent=OUT[k](P[k]);theory()})}
+  document.querySelectorAll('#scn button[data-s]').forEach(b=>b.addEventListener('click',()=>{reset(b.dataset.s);setPaused(false)}));
+  $('bTcs').addEventListener('click',()=>{P.tcs=!P.tcs;reset();setPaused(false)});
+  $('bPause').addEventListener('click',()=>setPaused(!paused));$('bReset').addEventListener('click',()=>{reset();setPaused(false)});
+}
+let last=0,fn=0;
+function frame(ts){
+  const dr=Math.min(0.05,(ts-last)/1000||0);last=ts;
+  if(!paused&&!S.done){let n=Math.round(dr*P.rate/DT);while(n-->0&&!S.done)step(DT)}
+  drawScene(paused||S.done?0:dr*P.rate);drawCharts();drawMu();if(++fn%5===0)readouts();
+  requestAnimationFrame(frame);
+}
+if(typeof document!=='undefined'&&document.getElementById('scene')){
+  bindUI();reset('split');
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){while(!S.done)step(DT)}
+  readouts();requestAnimationFrame(frame);
+}
+
+</script>
+</body>
+</html>

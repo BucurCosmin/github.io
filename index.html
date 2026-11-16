@@ -31,9 +31,22 @@
 
       body {
         margin: 0;
-        background: var(--background);
+        background:
+          radial-gradient(ellipse at 85% 22%, rgba(108, 151, 221, 0.24), transparent 38%),
+          linear-gradient(135deg, #f8fafc 10%, #edf3fa 55%, #dce8f4);
         color: var(--ink);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .automotive-background {
+        bottom: 0;
+        color: #6386b2;
+        height: auto;
+        opacity: 0.25;
+        pointer-events: none;
+        position: fixed;
+        right: 0;
+        width: min(100%, 1200px);
       }
 
       .taskbar {
@@ -96,6 +109,7 @@
         margin: 0 auto;
         max-width: 1160px;
         padding: 5.5rem 7vw;
+        position: relative;
       }
 
       .hero {
@@ -200,6 +214,11 @@
       }
 
       @media (max-width: 700px) {
+        .automotive-background {
+          opacity: 0.16;
+          width: 150%;
+        }
+
         .taskbar {
           min-height: 64px;
           padding: 0 1.4rem;
@@ -225,6 +244,18 @@
     </style>
   </head>
   <body>
+    <svg class="automotive-background" viewBox="0 0 1200 650" fill="none" aria-hidden="true">
+      <path d="M0 574C287 482 731 476 1200 537M0 621C321 532 765 540 1200 591" stroke="currentColor" stroke-width="2"/>
+      <path d="M0 650C327 572 746 578 1200 632" stroke="currentColor" stroke-width="3" stroke-dasharray="48 35"/>
+      <path d="M327 433C349 403 400 388 467 379L543 319C572 296 606 286 650 286H800C846 286 885 305 925 341L972 380L1046 393C1081 399 1105 417 1112 442L1118 468H1080M327 433L319 463L361 468M457 468H883M980 468H984" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M496 377L563 326C584 310 613 302 649 302H795C831 302 863 317 896 346L932 379L496 377Z" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M708 302L700 377M964 390L1009 401M335 429L383 421" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="409" cy="468" r="48" stroke="currentColor" stroke-width="8"/>
+      <circle cx="409" cy="468" r="24" stroke="currentColor" stroke-width="4"/>
+      <circle cx="932" cy="468" r="48" stroke="currentColor" stroke-width="8"/>
+      <circle cx="932" cy="468" r="24" stroke="currentColor" stroke-width="4"/>
+      <path d="M80 262H343M145 280H288M860 205H1102M929 223H1153" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
     <header class="taskbar">
       <a class="brand" href="#top">Cosmin<span class="brand-mark">.</span></a>
       <nav class="nav-links" aria-label="Navigare principală">
