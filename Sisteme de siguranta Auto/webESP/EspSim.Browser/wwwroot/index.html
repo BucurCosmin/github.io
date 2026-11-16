@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ro" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulator ESP – Programul Electronic de Stabilitate</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c7ed6'/%3E%3Cpath d='M9 22c3-9 11-3 14-12' stroke='white' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">ESP</span>
+    <div>
+      <div class="brand-title">Simulator ESP</div>
+      <div class="brand-sub">Programul Electronic de Stabilitate – dinamica vehiculului la limită</div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="sim">Simulare</button>
+    <button class="tab" data-tab="theory">Teorie ESP</button>
+    <button class="tab" data-tab="brakes">Sisteme de frânare</button>
+    <button class="tab" data-tab="model">Modelul matematic</button>
+    <button class="tab" data-tab="about">Despre aplicație</button>
+  </nav>
+  <div class="top-actions">
+    <a class="ghost course-back" href="../../../index.html" title="Înapoi la cursul Sisteme de siguranță ale autovehiculelor">← Curs</a>
+    <button id="presentBtn" class="ghost" title="Mod prezentare (ascunde panourile laterale)">⛶ Prezentare</button>
+    <button id="themeBtn" class="ghost" title="Temă luminoasă / întunecată">◐ Temă</button>
+  </div>
+</header>
+
+<!-- ============================================================ SIMULARE -->
+<main id="tab-sim" class="tabpane active">
+  <aside class="sidebar" id="sidebar">
+    <section class="panel">
+      <h3>Manevra</h3>
+      <div id="scenarioList" class="scenario-list"></div>
+    </section>
+
+    <section class="panel">
+      <h3>Parametri</h3>
+      <div class="field">
+        <label>Viteză inițială <output id="speedOut"></output></label>
+        <input type="range" id="speed" min="20" max="200" step="1">
+      </div>
+      <div class="field">
+        <label>Coeficient de aderență μ <output id="muOut"></output></label>
+        <input type="range" id="mu" min="0.1" max="1.1" step="0.05">
+        <div class="mu-presets">
+          <button data-mu="1.0">uscat</button><button data-mu="0.7">umed</button>
+          <button data-mu="0.45">zăpadă</button><button data-mu="0.15">polei</button>
+        </div>
+      </div>
+      <div class="field" id="steerField">
+        <label>Amplitudine volan <output id="steerOut"></output></label>
+        <input type="range" id="steer" min="0.4" max="1.8" step="0.05" value="1">
+      </div>
+      <div class="field" id="swdField">
+        <label>Multiplicator SWD (×A₀,₃g) <output id="swdOut"></output></label>
+        <input type="range" id="swd" min="2" max="9" step="0.5" value="6.5">
+      </div>
+      <div class="field two">
+        <label>Tracțiune
+          <select id="drivetrain">
+            <option value="RWD">spate (RWD)</option>
+            <option value="FWD">față (FWD)</option>
+            <option value="AWD">integrală (AWD)</option>
+          </select>
+        </label>
+        <label>Sarcină suplim.
+          <select id="mass">
+            <option value="0">0 kg</option><option value="150">+150 kg</option>
+            <option value="300">+300 kg</option><option value="450">+450 kg</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Sisteme electronice</h3>
+      <div class="systems" id="systemsA"><span class="veh-tag a">A</span></div>
+      <div class="systems" id="systemsB"><span class="veh-tag b">B</span></div>
+      <details class="advanced">
+        <summary>Setări avansate regulator ESP</summary>
+        <div class="field"><label>K<sub>p</sub> giratie <output id="kpOut"></output></label><input type="range" id="kp" min="5000" max="60000" step="1000"></div>
+        <div class="field"><label>K<sub>β</sub> derivă <output id="kbOut"></output></label><input type="range" id="kb" min="0" max="120000" step="5000"></div>
+        <div class="field"><label>Bandă moartă <output id="dbOut"></output></label><input type="range" id="db" min="0.01" max="0.12" step="0.005"></div>
+        <label class="check"><input type="checkbox" id="engInt" checked> Intervenție asupra motorului</label>
+        <label class="check"><input type="checkbox" id="noise"> Zgomot și offset senzori</label>
+        <label class="check"><input type="checkbox" id="idealMu"> μ cunoscut ideal (fără estimare)</label>
+      </details>
+    </section>
+
+    <button id="runBtn" class="primary big">▶ Rulează simularea</button>
+    <div id="runInfo" class="muted small"></div>
+  </aside>
+
+  <section class="workspace">
+    <div class="scenario-header">
+      <div>
+        <h2 id="scTitle">—</h2>
+        <div id="scRef" class="muted"></div>
+      </div>
+      <div class="legend-top">
+        <span class="lg a"><i></i><b id="lblA">A</b> <span id="sysA" class="muted"></span></span>
+        <span class="lg b"><i></i><b id="lblB">B</b> <span id="sysB" class="muted"></span></span>
+      </div>
+    </div>
+    <p id="scDesc" class="desc"></p>
+
+    <div class="stage">
+      <div class="scene-wrap">
+        <canvas id="scene"></canvas>
+        <div class="scene-hud" id="hud"></div>
+        <div class="scene-tools">
+          <div class="seg" id="camSeg">
+            <button data-cam="fit" class="on">Ansamblu</button>
+            <button data-cam="A">Urmărește A</button>
+            <button data-cam="B">Urmărește B</button>
+          </div>
+          <div class="seg" id="showSeg">
+            <button data-show="both" class="on">A + B</button>
+            <button data-show="A">A</button>
+            <button data-show="B">B</button>
+          </div>
+          <label class="check mini"><input type="checkbox" id="optTrail" checked> urme</label>
+          <label class="check mini"><input type="checkbox" id="optForces" checked> forțe</label>
+          <label class="check mini"><input type="checkbox" id="optVel" checked> vectori v</label>
+          <label class="check mini"><input type="checkbox" id="optGhost"> poziții la 0,5 s</label>
+        </div>
+        <div class="scene-legend">
+          <span><i class="sw brake"></i>frânare șofer</span>
+          <span><i class="sw esp"></i>frânare activă ESP</span>
+          <span><i class="sw abs"></i>reglare ABS</span>
+          <span><i class="sw tcs"></i>TCS</span>
+          <span><i class="sw ebd"></i>EBD</span>
+        </div>
+      </div>
+
+      <aside class="detail">
+        <div class="detail-head">
+          <h3>Vehiculul</h3>
+          <div class="seg" id="viewSeg">
+            <button data-view="wheels" class="on">Roți</button>
+            <button data-view="mod">Modulator</button>
+          </div>
+          <div class="seg" id="focusSeg">
+            <button data-focus="A">A</button>
+            <button data-focus="B" class="on">B</button>
+          </div>
+        </div>
+        <div id="statusBox" class="status-box"></div>
+        <div id="wheelsView">
+          <canvas id="wheels" class="wheels"></canvas>
+          <div class="muted tiny center">Cercul de aderență (Kamm) al fiecărei roți: raza = μ·F<sub>z</sub>, săgeata = forța transmisă</div>
+        </div>
+        <div id="modView" class="modulator-host" style="display:none"></div>
+        <div id="diagram" class="diagram"></div>
+      </aside>
+    </div>
+
+    <div class="playbar">
+      <button id="playBtn" class="primary" title="Redare / pauză (Spațiu)">▶</button>
+      <button id="restartBtn" title="De la început (Home)">⏮</button>
+      <button id="stepBack" title="Pas înapoi (←)">◀︎</button>
+      <button id="stepFwd" title="Pas înainte (→)">▶︎</button>
+      <div class="timeline">
+        <input type="range" id="scrub" min="0" max="1000" value="0">
+        <div id="marks" class="marks"></div>
+      </div>
+      <span id="timeOut" class="mono">0,00 s</span>
+      <select id="rate" title="Viteza de redare">
+        <option value="0.1">0,1×</option><option value="0.25">0,25×</option><option value="0.5">0,5×</option>
+        <option value="1" selected>1×</option><option value="2">2×</option>
+      </select>
+    </div>
+
+    <div class="lower">
+      <section class="charts-panel">
+        <div class="charts-head">
+          <h3>Mărimi măsurate și estimate</h3>
+          <div id="chartChips" class="chips"></div>
+        </div>
+        <div id="charts" class="charts"></div>
+      </section>
+      <section class="side-panels">
+        <div class="panel">
+          <h3>Rezultat comparativ</h3>
+          <table id="summary" class="summary"></table>
+          <div id="checks"></div>
+        </div>
+        <div class="panel">
+          <h3>Ce urmărim</h3>
+          <ul id="observe" class="observe"></ul>
+        </div>
+        <div class="panel">
+          <h3>Jurnalul intervențiilor <span class="seg small" id="evSeg"><button data-ev="A">A</button><button data-ev="B" class="on">B</button></span></h3>
+          <ol id="events" class="events"></ol>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<!-- ============================================================ TEORIE -->
+<main id="tab-brakes" class="tabpane"></main>
+<main id="tab-theory" class="tabpane doc"></main>
+<main id="tab-model" class="tabpane doc"></main>
+<main id="tab-about" class="tabpane doc"></main>
+
+<div id="toast" class="toast"></div>
+<script type="module" src="js/wasm-api.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

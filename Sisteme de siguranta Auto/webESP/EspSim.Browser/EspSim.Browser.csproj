@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+  <!--
+    Gazdă WebAssembly pentru simulatorul ESP: rulează EspSim.Core direct în browser
+    (fără server), ca aplicația să poată fi publicată pe GitHub Pages.
+    Interfața din wwwroot este cea din EspSim.Web; js/wasm-api.js înlocuiește apelurile /api/*.
+
+    Publicare:  dotnet publish -c Release -o ../publish
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- serializarea JSON (tipuri anonime, record-uri din EspSim.Core) folosește reflexia -->
+    <TrimMode>partial</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="C:\work\Simulators\EspSim\EspSim\src\EspSim.Core\EspSim.Core.csproj" />
+  </ItemGroup>
+
+</Project>
