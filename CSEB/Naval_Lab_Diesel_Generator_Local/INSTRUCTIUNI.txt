@@ -1,0 +1,65 @@
+NAVAL LAB — DIESEL GENERATOR NAVAL 3D
+Versiunea 1.0 — 9 noiembrie 2026
+
+PORNIRE PE WINDOWS
+1. Descarcă arhiva și extrage-o într-un dosar de pe calculator.
+2. Deschide NAVAL_LAB_3D.html prin dublu click, în Edge, Chrome sau Firefox.
+3. Folosește modelul. Nu ai nevoie de internet, instalare sau server local.
+
+IMPORTANT
+Deschide fișierul HTML după extragere, nu direct din interiorul arhivei ZIP.
+Dacă browserul nu este aplicația implicită, click dreapta pe HTML > Deschide cu > Edge/Chrome/Firefox.
+Toate resursele de rulare sunt incluse în HTML. Linkul către referință din fereastra
+Despre model este opțional și necesită internet doar dacă îl accesezi.
+
+CE INCLUDE
+- Model geometric original al unui diesel generator naval cu șase cilindri.
+- 40 tipuri de componente, grupate în opt sisteme constructive.
+- Selectare din model sau listă și explicații în limba română.
+- Căutare și filtrare; căutarea acceptă și text fără diacritice.
+- Secțiune, transparență, izolarea și ascunderea componentelor.
+- Separarea sistemelor cu glisor și etichete ale sistemelor.
+- Animație lentă a pistoanelor, bielelor, arborelui cotit, distribuției și rotorului.
+- Raport de turație 1:2 între arborele cu came și arborele cotit.
+- Șase pași de explorare în turul ghidat.
+- Salvarea imaginii modelului în format PNG.
+
+COMENZI
+Rotire: trage cu butonul stâng al mouse-ului.
+Zoom: rotița mouse-ului sau tastele + și -.
+Deplasare: Shift + trage sau butonul drept + trage.
+Selectare: click scurt pe o componentă sau pe numele ei din listă.
+Izolează: arată numai piesa selectată; fără piesă selectată, arată sistemul ales.
+Centrează componenta: adaptează camera la piesa selectată.
+R: resetarea vederii și a selecției.
+Săgeți: rotirea camerei.
+Escape: anularea selecției.
+Pe ecran tactil: glisare cu un deget pentru rotire și două degete pentru zoom.
+
+DESPRE MODEL
+Geometria și codul aplicației sunt realizate pentru acest material didactic.
+Nu reprezintă un anumit fabricant și nu sunt o copie a geometriei sau a codului
+OceanSphere. Referința de explorare a fost:
+https://engines.oceansphere.io/engines/auxiliary-engine-3d
+
+Modelul este simplificat: dimensiunile, canalele, lagărele, antrenările și racordurile
+sunt convenționale. Secțiunea îndepărtează vizual o parte din carcase.
+La vederea explodată, conexiunile nu rămân conectate geometric.
+Timpii distribuției sunt ideali; nu sunt simulate arderea, debitele, temperaturile,
+reglarea electrică sau procedurile reale de exploatare. Auxiliarele reprezintă
+ansamblurile locale ale grupului, nu întregul compartiment mașini al unei nave.
+
+AFIȘARE
+Aplicația încearcă afișarea WebGL. Dacă nu este disponibilă, folosește automat
+un mod Canvas care păstrează explorarea geometrică, cu performanță mai redusă.
+Modul Canvas și comenzile principale au fost verificate în browser.
+Randarea WebGL nu a putut fi verificată în mediul de test, care are GPU dezactivat.
+
+EDITAREA SURSELOR
+Dosarul sursa conține app.js, software-renderer.js, shell.html, three.min.js și build.py.
+Modelul este construit procedural: componentele, explicațiile și pozițiile se pot edita.
+Pentru a recompila HTML-ul, rulează build.py cu Python 3; se generează dist/index.html.
+Python este necesar doar pentru recompilare, nu pentru utilizarea aplicației.
+
+LICENȚĂ TERȚĂ
+Three.js r160.1 — licență MIT. Textul licenței este inclus în LICENSE_three.txt.

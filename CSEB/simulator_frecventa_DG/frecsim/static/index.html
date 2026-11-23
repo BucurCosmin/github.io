@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DG1 – Simulator reglare frecvență</title>
+<script>
+  if (!location.pathname.endsWith("/static/index.html")) {
+    const base = document.createElement("base");
+    base.href = "static/";
+    document.head.appendChild(base);
+  }
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="title">
+    <span class="plate big">TABLOU PRINCIPAL DE DISTRIBUȚIE · DG1</span>
+    <span class="sub">Grup diesel-generator 400 kW · 500 kVA · 400 V · 50 Hz · 1500 rot/min</span>
+  </div>
+  <div class="topctl">
+    <span class="lcd small" id="clock">t = 0,0 s</span>
+    <label class="ctl">Timp
+      <select id="speed">
+        <option value="0">pauză</option><option value="0.25">×0,25</option>
+        <option value="0.5">×0,5</option><option value="1" selected>×1</option><option value="2">×2</option>
+      </select>
+    </label>
+    <button class="btn flat" id="reset">Repornește simularea</button>
+    <span class="conn" id="conn">● deconectat</span>
+  </div>
+</header>
+
+<main class="room">
+  <!-- ======= Panou generator -->
+  <section class="panel gen">
+    <div class="plate">GENERATOR DG1</div>
+    <div class="meters">
+      <div class="meter" id="m_f"></div>
+      <div class="meter" id="m_rpm"></div>
+      <div class="meter" id="m_kw"></div>
+      <div class="meter" id="m_a"></div>
+      <div class="meter" id="m_v"></div>
+      <div class="meter" id="m_cos"></div>
+    </div>
+    <div class="ctlrow">
+      <div class="lampgrp">
+        <div class="lamp-wrap"><span class="lamp green" id="l_run"></span><span class="lbl">MOTOR<br>ÎN FUNCȚIUNE</span></div>
+        <div class="lamp-wrap"><span class="lamp amber" id="l_start"></span><span class="lbl">LANSARE</span></div>
+        <div class="lamp-wrap"><span class="lamp red" id="l_acb"></span><span class="lbl">ACB<br>ÎNCHIS</span></div>
+        <div class="lamp-wrap"><span class="lamp white" id="l_acbo"></span><span class="lbl">ACB<br>DESCHIS</span></div>
+      </div>
+      <div class="btngrp">
+        <button class="pb green" data-cmd="engine_start">START<br>MOTOR</button>
+        <button class="pb red" data-cmd="engine_stop">STOP<br>MOTOR</button>
+        <button class="pb black" data-cmd="acb_close">ÎNCHIDE<br>ACB</button>
+        <button class="pb black" data-cmd="acb_open">DESCHIDE<br>ACB</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= Panou regulator de turație -->
+  <section class="panel gov">
+    <div class="plate">REGULATOR DE TURAȚIE · MOTOR</div>
+    <div class="gov-grid">
+      <div class="selector">
+        <div class="knob" id="modeKnob" title="Comutator mod regulator"><div class="pointer"></div></div>
+        <div class="knob-labels"><span id="lbl_droop">STATISM</span><span id="lbl_iso">IZOCRON</span></div>
+        <div class="cap">MOD REGULATOR</div>
+      </div>
+      <div class="droop">
+        <div class="cap">STATISM s</div>
+        <input type="range" id="droop" min="0" max="8" step="0.5" value="4">
+        <div class="lcd" id="droopVal">4,0 %</div>
+      </div>
+      <div class="raise">
+        <button class="pb black hold" id="btnRaise">▲<br>MĂRIRE</button>
+        <button class="pb black hold" id="btnLower">▼<br>MICȘORARE</button>
+        <div class="cap">CONSEMN TURAȚIE</div>
+      </div>
+    </div>
+    <div class="readouts">
+      <div><span class="rl">Frecvență la gol f₀</span><span class="lcd" id="r_f0">–</span></div>
+      <div><span class="rl">Cremalieră combustibil</span><span class="lcd" id="r_rack">–</span></div>
+      <div><span class="rl">Presiune aer supraalimentare</span><span class="lcd" id="r_boost">–</span></div>
+      <div><span class="rl">Temperatură gaze evacuare</span><span class="lcd" id="r_exh">–</span></div>
+      <div><span class="rl">Presiune ulei ungere</span><span class="lcd" id="r_lo">–</span></div>
+      <div><span class="rl">Limitare combustibil (boost)</span><span class="lamp amber small" id="l_sl"></span></div>
+    </div>
+    <div class="rackbar"><div class="rackfill" id="rackfill"></div><div class="rackmark" style="left:90.9%"></div><span>CREMALIERĂ 0 … 110 %</span></div>
+    <label class="toggle"><input type="checkbox" id="anticip"> Anticipare sarcină (semnal de putere în regulator)</label>
+  </section>
+
+  <!-- ======= Înregistrator -->
+  <section class="panel trend">
+    <div class="plate">ÎNREGISTRATOR · ULTIMELE 60 s</div>
+    <canvas id="trend" width="640" height="352"></canvas>
+    <div class="legend">
+      <span><i style="background:#2a78d6"></i>Frecvență [Hz]</span>
+      <span><i style="background:#eb6834"></i>Putere activă [kW]</span>
+      <span><i style="background:#2f9e62"></i>Cremalieră [%]</span>
+      <span><i class="dash"></i>±10 % (IACS UR M3)</span>
+    </div>
+  </section>
+
+  <!-- ======= Alarme -->
+  <section class="panel alarms">
+    <div class="plate">SISTEM DE ALARMĂ</div>
+    <div class="annunciator" id="ann"></div>
+    <div class="alarm-ctl">
+      <button class="pb amber" data-cmd="ack">CONFIRMARE<br>(ACK)</button>
+      <button class="pb black" data-cmd="reset">RESET</button>
+      <label class="toggle"><input type="checkbox" id="horn"> Sirenă</label>
+    </div>
+    <div class="log" id="log"></div>
+  </section>
+
+  <!-- ======= Consumatori -->
+  <section class="panel feeders">
+    <div class="plate">TABLOU CONSUMATORI · PORNITOARE</div>
+    <div class="busbar" id="busbar"><span>BARE 400 V · 50 Hz</span></div>
+    <div class="feeder-row" id="feeders"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  Model: ecuația de mișcare 2H·dω/dt = Pₘ − Pₑ − pierderi; regulator PID cu statism, timp mort de injecție, întârzierea arderii,
+  turbosuflantă cu limitare de combustibil, AVR, pornire directă a motoarelor. Valori didactice – nu reprezintă un motor anume.
+</footer>
+<script src="gauges.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

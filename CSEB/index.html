@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explorează diesel-generatoare și centrale navale prin modele și simulatoare interactive.">
+  <title>Centrale și sisteme navale | Cosmin Bucur</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #edf8fc;
+      background: #071d2c;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .background {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    main { position: relative; max-width: 1160px; margin: auto; padding: 3rem 7vw 6rem; }
+    a { color: inherit; }
+    .back { color: #a7dce4; font-weight: 700; text-decoration: none; }
+    .back:hover, .back:focus-visible { color: white; text-decoration: underline; }
+    .hero { max-width: 730px; padding: 6rem 0 4.5rem; }
+    .eyebrow, .number {
+      color: #79d4db;
+      font-size: .75rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 { font-size: clamp(2.8rem, 7vw, 5.5rem); letter-spacing: -.055em; line-height: 1; margin: 1rem 0 1.5rem; }
+    .intro { color: #c1d9e3; font-size: 1.12rem; line-height: 1.75; max-width: 620px; }
+    .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #426172; margin-bottom: 1.5rem; }
+    .section-heading h2 { font-size: 1.5rem; letter-spacing: -.03em; }
+    .section-heading span { color: #a5c2ce; font-size: .9rem; }
+    .modules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+    .module {
+      display: flex;
+      flex-direction: column;
+      min-height: 260px;
+      padding: 1.8rem;
+      border: 1px solid rgba(164, 213, 224, .25);
+      border-radius: 1rem;
+      background: rgba(10, 39, 54, .9);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, .17);
+      text-decoration: none;
+      transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+    }
+    .module:hover, .module:focus-visible { transform: translateY(-4px); border-color: #79d4db; background: #103c4c; }
+    .module h3 { font-size: 1.45rem; letter-spacing: -.03em; margin: .8rem 0; }
+    .module p { color: #c1d9e3; line-height: 1.6; margin: 0 0 1.5rem; }
+    .action { color: #8de2e4; font-weight: 800; margin-top: auto; }
+    .note { color: #b4ced9; font-size: .9rem; line-height: 1.6; margin-top: 1.5rem; }
+    @media (max-width: 700px) {
+      main { padding: 2rem 1.4rem 4rem; }
+      .hero { padding: 4.5rem 0 3rem; }
+      .modules { grid-template-columns: 1fr; }
+      .module { min-height: 220px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .module { transition: none; } }
+  </style>
+</head>
+<body>
+  <svg class="background" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sea" x1="0" y1="0" x2="0.85" y2="1">
+        <stop stop-color="#103b50"/><stop offset=".58" stop-color="#092b3c"/><stop offset="1" stop-color="#061923"/>
+      </linearGradient>
+    </defs>
+    <rect width="1440" height="900" fill="url(#sea)"/>
+    <circle cx="1120" cy="170" r="220" fill="#6fb8c1" opacity=".06"/>
+    <g fill="none" stroke="#90ced4" opacity=".12" stroke-linecap="round">
+      <path d="M0 640 Q180 605 360 640 T720 640 T1080 640 T1440 640 M0 685 Q180 650 360 685 T720 685 T1080 685 T1440 685 M0 730 Q180 695 360 730 T720 730 T1080 730 T1440 730 M0 775 Q180 740 360 775 T720 775 T1080 775 T1440 775" stroke-width="2"/>
+      <path d="M770 545h530l-50 67H850z M875 545v-67h230v67 M925 478v-59h100v59 M945 419v-35h35v35 M1130 545v-98h5v98 M1132 447l90 98 M890 512h190 M950 447h16 M985 447h16" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M125 242h120m-90 18h80m840-10h165" stroke-width="2"/>
+    </g>
+  </svg>
+  <main>
+    <a class="back" href="../courses.html">← Înapoi la cursuri</a>
+    <section class="hero">
+      <p class="eyebrow">Laborator naval interactiv</p>
+      <h1>Centrale și sisteme navale</h1>
+      <p class="intro">Descoperă echipamentele din compartimentul mașini și înțelege funcționarea centralei electrice navale prin explorare și simulare.</p>
+    </section>
+    <section aria-labelledby="modules-title">
+      <div class="section-heading"><h2 id="modules-title">Modulele cursului</h2><span>02 module interactive</span></div>
+      <div class="modules">
+        <a class="module" href="Naval_Lab_Diesel_Generator_Local/NAVAL_LAB_3D.html">
+          <span class="number">Modulul 01 · Explorare 3D</span>
+          <h3>Diesel-generator naval</h3>
+          <p>Explorează componentele și sistemele unui grup diesel-generator într-un model 3D interactiv.</p>
+          <span class="action">Deschide modelul 3D →</span>
+        </a>
+        <a class="module" href="simulator_frecventa_DG/frecsim/static/index.html">
+          <span class="number">Modulul 02 · Simulator</span>
+          <h3>Centrala navală cu un generator</h3>
+          <p>Pornește generatorul, conectează consumatori și urmărește reglarea frecvenței și a puterii.</p>
+          <span class="action">Deschide simulatorul →</span>
+        </a>
+      </div>
+      <p class="note">Simulatorul centralei se încarcă în browser și necesită conexiune la internet pentru inițializare.</p>
+    </section>
+  </main>
+</body>
+</html>
