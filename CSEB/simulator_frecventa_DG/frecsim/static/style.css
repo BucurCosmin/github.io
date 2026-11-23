@@ -23,6 +23,8 @@ body { min-height: 100vh; background: radial-gradient(1200px 600px at 50% -10%, 
 .title { display: flex; flex-direction: column; gap: 4px; }
 .title .sub { color: #aab2b9; font-size: 12px; }
 .topctl { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: #cfd6dc; font-size: 13px; }
+.course-back { color: #b6e4ec; font-weight: 700; text-decoration: none; }
+.course-back:hover, .course-back:focus-visible { color: #fff; text-decoration: underline; }
 .ctl select { margin-left: 6px; background: #1f2429; color: #e8ecef; border: 1px solid #3a424a; border-radius: 4px; padding: 3px 6px; }
 .conn { font-size: 12px; color: #e35d5d; }
 .conn.ok { color: #6fdc8c; }

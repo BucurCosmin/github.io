@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala mașinilor 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday learning tool, technical and calm, like a good shipyard general-arrangement drawing
+   IDEA the engine room of a two-stroke ship cut deck by deck, with equipment tagged in the pipe colours of ISO 14726
+   PICTURE the live 3D cutaway filling the left side; numbered pins on the active deck; an elevation of the decks as navigation
+   COLOUR graphite scene; machinery grey-green; system colours (fuel brown, lube yellow, sea water green, fresh water blue, air light blue, steam silver, fire red, waste black)
+   TYPE Barlow Condensed for plates and titles + Barlow for text
+   LAYOUT laptop: 3D left, 390px sheet right; phone: 3D on top (56%), sheet below */
+:root{color-scheme:light dark;--bg:light-dark(#f4f5f3,#121517);--sheet:light-dark(#ffffff,#1a1e21);--ink:light-dark(#15191c,#e8ecee);--muted:light-dark(#59626a,#9aa5ad);--rule:light-dark(#dfe3e2,#2b3237);--hi:light-dark(#e9f0ec,#22302b);--accent:#d8481c;--scene:#1b2024}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15.5px/1.5 Barlow,"Segoe UI",Arial,sans-serif;overflow:hidden}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 400px;height:100%}
+.view{position:relative;background:var(--scene);overflow:hidden}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.head{position:absolute;left:16px;top:14px;right:16px;pointer-events:none;color:#eef2f3}
+.head h1{font:700 clamp(26px,3vw,38px)/1.05 "Barlow Condensed",Arial,sans-serif;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.head p{margin:4px 0 0;color:#b8c3c9;font-size:14px;max-width:560px}
+.course-back{display:inline-block;margin-bottom:8px;color:#c5e8ed;font:600 14px Barlow,Arial,sans-serif;text-decoration:none;pointer-events:auto}
+.course-back:hover,.course-back:focus-visible{color:#fff;text-decoration:underline}
+.course-back:focus-visible{outline:3px solid #d8481c;outline-offset:3px}
+.tools{position:absolute;left:16px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap}
+.tools button,.decks button{font:600 14px Barlow,Arial,sans-serif;min-height:40px;padding:0 14px;border-radius:6px;cursor:pointer}
+.tools button{background:rgba(20,24,27,.82);color:#e8ecee;border:1px solid #3b454c}
+.tools button[aria-pressed=true]{background:#e8ecee;color:#15191c;border-color:#e8ecee}
+.tools button:focus-visible,.decks button:focus-visible,.list button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hint{position:absolute;right:16px;bottom:18px;color:#8e9aa2;font-size:13px}
+.pin{position:absolute;transform:translate(-50%,-100%);font:700 13px "Barlow Condensed",Arial,sans-serif;min-width:24px;height:24px;padding:0 6px;border-radius:12px 12px 12px 2px;background:#f2f4f4;color:#15191c;border:2px solid var(--c,#888);display:flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+.pin.sel{background:var(--accent);color:#fff;border-color:#fff;z-index:2}
+.pin .tt{display:none;margin-left:6px;font-weight:600}
+.pin:hover .tt,.pin.sel .tt{display:inline}
+.sheet{background:var(--sheet);border-left:1px solid var(--rule);overflow-y:auto;padding:16px 18px 28px;display:flex;flex-direction:column;gap:16px}
+.sheet h2{font:700 21px/1.1 "Barlow Condensed",Arial,sans-serif;margin:0}
+.lbl{font-size:13px;color:var(--muted)}
+.elev{width:100%;height:150px;display:block}
+.elev .band{cursor:pointer}
+.elev text{font:600 12.5px Barlow,Arial,sans-serif}
+.decks{display:flex;flex-wrap:wrap;gap:6px}
+.decks button{background:transparent;color:var(--ink);border:1px solid var(--rule);flex:1 1 auto}
+.decks button[aria-pressed=true]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.list button{width:100%;display:grid;grid-template-columns:28px 12px minmax(0,1fr);gap:8px;align-items:center;text-align:left;background:transparent;border:0;color:var(--ink);font:500 14.5px Barlow,Arial,sans-serif;padding:7px 6px;border-radius:5px;cursor:pointer;min-height:40px}
+.list button:hover{background:var(--hi)}
+.list button.sel{background:var(--hi);font-weight:600}
+.num{font:700 13px "Barlow Condensed",Arial,sans-serif;color:var(--muted);text-align:right}
+.dot{width:12px;height:12px;border-radius:3px;background:var(--c);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.card{border-top:3px solid var(--c,#888);padding-top:12px}
+.card h3{font:700 24px/1.1 "Barlow Condensed",Arial,sans-serif;margin:0 0 4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{font-size:12.5px;padding:2px 8px;border-radius:10px;background:var(--hi);color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+.card p{margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:5px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+td:last-child{text-align:right;padding-left:10px;white-space:nowrap}
+.rule{font-size:13.5px;color:var(--muted);margin-top:8px}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;font-size:13.5px}
+.legend span{display:flex;gap:8px;align-items:center}
+.note{font-size:13px;color:var(--muted)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--hi);padding:4px;border-radius:8px;position:sticky;top:-16px;z-index:3}
+.tabs button{font:600 14.5px Barlow,Arial,sans-serif;min-height:40px;border:0;border-radius:6px;background:transparent;color:var(--ink);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--sheet);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.tabs button:focus-visible,.sysgrid button:focus-visible,.flow button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.pane{display:flex;flex-direction:column;gap:16px}
+.pane[hidden]{display:none}
+.sysgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.sysgrid button{text-align:left;border:1px solid var(--rule);border-left:6px solid var(--c);background:transparent;color:var(--ink);border-radius:6px;padding:7px 9px;cursor:pointer;font:600 14px/1.2 Barlow,Arial,sans-serif;min-height:44px}
+.sysgrid button.sel{background:var(--hi);border-color:var(--c)}
+.sysgrid button small{display:block;font-weight:400;font-size:12.5px;color:var(--muted);margin-top:2px}
+.flow{list-style:none;margin:6px 0 10px;padding:0;position:relative}
+.flow li{position:relative;padding:0 0 10px 34px}
+.flow li::before{content:"";position:absolute;left:12px;top:22px;bottom:-2px;width:3px;background:var(--c)}
+.flow li:last-child::before{display:none}
+.flow li::after{content:"";position:absolute;left:8px;bottom:2px;border:5.5px solid transparent;border-top:7px solid var(--c)}
+.flow li:last-child::after{display:none}
+.flow .k{position:absolute;left:0;top:0;width:27px;height:27px;border-radius:50%;background:var(--c);color:#fff;font:700 14px/27px "Barlow Condensed",Arial,sans-serif;text-align:center}
+.flow button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink);font:inherit;padding:2px 4px;border-radius:5px;cursor:pointer;min-height:27px}
+.flow button:hover{background:var(--hi)}
+.flow b{display:block;font-weight:600}
+.flow span.d{font-size:13.5px;color:var(--muted)}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap}
+.btnrow button{font:600 14px Barlow,Arial,sans-serif;min-height:40px;padding:0 12px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer}
+.chip.link{cursor:pointer;border:0;font:inherit;font-size:12.5px}
+.err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#e8ecee;padding:24px;text-align:center}
+@media(max-width:900px){body{overflow:auto}.app{grid-template-columns:1fr;grid-template-rows:56vh auto;height:auto}.sheet{border-left:0;border-top:1px solid var(--rule)}.hint{display:none}}
+@media(max-width:600px){.head p{display:none}.tools button{min-height:36px;padding:0 10px;font-size:13px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="view" aria-label="Model 3D al sălii mașinilor">
+    <canvas id="c"></canvas>
+    <div id="pins"></div>
+    <div class="head">
+      <a class="course-back" href="index.html">← Înapoi la curs</a>
+      <h1>Sala mașinilor unei nave cu motor în doi timpi</h1>
+      <p>Secțiune punte cu punte: alegeți o punte, rotiți modelul și apăsați pe un echipament pentru fișa lui.</p>
+    </div>
+    <div class="tools">
+      <button id="bRot" aria-pressed="true">Arbore în rotație</button>
+      <button id="bHull" aria-pressed="true">Corp navă</button>
+      <button id="bPipes" aria-pressed="true">Tubulaturi</button>
+      <button id="bReset">Vedere inițială</button>
+    </div>
+    <div class="hint">Tragere: rotire · rotiță / ciupire: zoom · clic dreapta: deplasare</div>
+    <div class="err" id="err">Modelul 3D nu s-a putut încărca (WebGL indisponibil). Lista echipamentelor rămâne disponibilă în panoul alăturat.</div>
+  </section>
+  <aside class="sheet">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabDecks" aria-selected="true">Punți și echipamente</button>
+      <button role="tab" id="tabSys" aria-selected="false">Harta instalațiilor</button>
+    </div>
+    <div class="pane" id="paneSys" hidden>
+      <div class="lbl">Alegeți o instalație: în model rămân vizibile doar tubulaturile și echipamentele ei, iar fluxul este animat.</div>
+      <div class="sysgrid" id="sysgrid"></div>
+      <div id="syscard"></div>
+    </div>
+    <div class="pane" id="paneDecks">
+    <div>
+      <h2>Punțile sălii mașinilor</h2>
+      <svg class="elev" id="elev" role="img" aria-label="Vedere laterală a punților"></svg>
+      <div class="decks" id="decks"></div>
+    </div>
+    <div class="card" id="card"></div>
+    <div>
+      <div class="lbl" id="listTitle"></div>
+      <ul class="list" id="list"></ul>
+    </div>
+    </div>
+    <div>
+      <div class="lbl" style="margin-bottom:6px">Culori de sistem (după culorile de bază ISO 14726 pentru tubulaturi)</div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <p class="note">Model didactic, la scară aproximativă: navă de tip vrachier cu motor principal lent în doi timpi cu cap de cruce. Valorile sunt tipice, nu ale unei nave anume.</p>
+  </aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+{
+const SYS = {
+  prop: { n: "Propulsie", c: "#8fa39a" },
+  fuel: { n: "Combustibil", c: "#8a5a2b" },
+  lube: { n: "Ulei de ungere", c: "#e2c227" },
+  sw:   { n: "Apă de mare", c: "#2f9e57" },
+  fw:   { n: "Apă dulce / tehnică", c: "#2f6fd1" },
+  air:  { n: "Aer comprimat", c: "#8cc7ea" },
+  steam:{ n: "Abur", c: "#b9c0c6" },
+  fire: { n: "Incendiu", c: "#d23b2f" },
+  waste:{ n: "Ape uzate, reziduuri", c: "#34373a" },
+  elec: { n: "Electric, automatizare", c: "#e07b2a" },
+  hyd:  { n: "Hidraulic (guvernare)", c: "#9b59b6" },
+  evac: { n: "Gaze de evacuare", c: "#6d747a" },
+};
+const DECKS = [
+  { id: "toata", name: "Toată sala", short: "Toată", y: null },
+  { id: "punte-0", name: "Plafonul dublului fund", short: "0 m", y: 0 },
+  { id: "punte-5", name: "Platforma intermediară", short: "+5 m", y: 5 },
+  { id: "punte-10", name: "Platforma superioară", short: "+10 m", y: 10 },
+  { id: "punte-15", name: "Puntea principală și casing", short: "+15 m", y: 15 },
+];
+// d = indexul punții (1…4); p = poziția [x în lungul navei, y, z în bordaj]; b = constructorul geometriei
+const ITEMS = [
+ { id:"me", d:1, s:"prop", name:"Motor principal în doi timpi", p:[0,0,0], b:"engine",
+   t:"Motor diesel lent, cu cap de cruce și baleaj în echicurent (ferestre de baleaj în cămașă, supapă de evacuare în chiulasă). Este cuplat direct cu elicea, fără reductor, și se inversează pentru marș înapoi. Ocupă înălțimea a trei punți: placa de bază pe plafonul dublului fund, chiulasele la platforma superioară.",
+   sp:[["Cilindri","6 în linie"],["Alezaj × cursă","0,6 × 2,4 m"],["Putere maximă continuă","≈ 10 MW"],["Turație nominală","≈ 95 rot/min"],["Consum specific","≈ 165–170 g/kWh"]],
+   r:"Emisii NOₓ: MARPOL Anexa VI, Reg. 13 (Tier II; Tier III în zonele ECA, cu SCR sau EGR)." },
+ { id:"thrust", d:1, s:"prop", name:"Lagăr axial", p:[-9.2,0,0], b:"thrust",
+   t:"Integrat în capătul pupa al plăcii de bază. Preia împingerea elicei și o transmite corpului navei prin fundația motorului; segmenții de tip Michell lucrează în baie de ulei.",
+   sp:[["Tip","segmenți oscilanți (Michell)"],["Ungere","din circuitul de ulei al motorului"]] },
+ { id:"shaft", d:1, s:"prop", name:"Linia de arbori și lagărele intermediare", p:[-12.2,0,0], b:"shaft",
+   t:"Arborele intermediar leagă flanșa motorului de arborele port-elice. Lagărele intermediare susțin greutatea; frâna de arbore și alternatorul de arbore (dacă există) se montează pe această linie.",
+   sp:[["Diametru arbore","≈ 0,5 m"],["Lagăre intermediare","2"]] },
+ { id:"stern", d:1, s:"lube", name:"Tubul etamboului", p:[-17,0,0], b:"sterntube",
+   t:"Traversează peretele pupa și corpul navei. Arborele port-elice se rotește în bucșe unse cu ulei; etanșările de la ambele capete împiedică ieșirea uleiului în mare și intrarea apei.",
+   sp:[["Ungere","ulei, tanc gravitațional"],["Etanșări","pupa și prova, cu inele de cauciuc"]],
+   r:"În apele SUA se cer lubrifianți acceptabili pentru mediu (EAL), conform VGP." },
+ { id:"prop", d:1, s:"prop", name:"Elice cu pas fix și cârmă", p:[-23.5,0,0], b:"propeller",
+   t:"Elice monobloc din bronz, cu patru pale. Turația și sensul de rotație al elicei sunt cele ale motorului; cârma se află imediat în pupa elicei.",
+   sp:[["Diametru","≈ 6,5 m"],["Număr de pale","4"],["Material","bronz Ni-Al"]] },
+ { id:"swp", d:1, s:"sw", name:"Pompe principale de apă de mare", p:[6,0,-10.5], b:"pumps3",
+   t:"Aspiră apă de mare din prizele de fund și o trimit prin răcitoarele centrale. Două pompe în funcțiune, una în rezervă cu pornire automată.",
+   sp:[["Număr","3 (2 + 1 rezervă)"],["Debit","≈ 450 m³/h fiecare"],["Presiune","≈ 2,5 bar"]] },
+ { id:"chest", d:1, s:"sw", name:"Prize de apă de mare", p:[10.5,0,-13], b:"seachest",
+   t:"Casete în bordaj cu grătar și filtre: priza joasă pentru marș și priza înaltă pentru ape puțin adânci sau mâloase. Au conexiune de abur sau aer pentru desfundare și protecție anti-fouling.",
+   sp:[["Număr","2 (joasă și înaltă)"],["Filtre","duble, comutabile"]] },
+ { id:"lop", d:1, s:"lube", name:"Pompe de ulei ungere ale motorului principal", p:[4,0,7.5], b:"pumps2",
+   t:"Aspiră uleiul din tancul de circulație din dublul fund și îl trimit prin răcitor și filtrul automat la lagăre, capul de cruce și pistoane (răcire).",
+   sp:[["Număr","2 (1 + 1 rezervă)"],["Presiune la intrarea în motor","≈ 2,5–3 bar"]] },
+ { id:"lotank", d:1, s:"lube", name:"Tancul de ulei de circulație", p:[0,-1.1,0], b:"lotank",
+   t:"Tanc în dublul fund, sub motor, separat de restul structurii prin coferdam. Uleiul se scurge gravitațional din carter în tanc.",
+   sp:[["Volum","≈ 20 m³"],["Poziție","dublu fund, sub motor"]] },
+ { id:"bal", d:1, s:"sw", name:"Pompe de balast și instalația de tratare a apei de balast", p:[-6,0,-10.5], b:"ballast",
+   t:"Umplu și golesc tancurile de balast în timpul operațiunilor de marfă. Instalația de tratare (filtrare + UV sau electroclorinare) elimină organismele vii înainte de deversare.",
+   sp:[["Debit pompe","≈ 2 × 1000 m³/h"],["Tratare","filtru 40 µm + UV"]],
+   r:"Convenția BWM 2004, standardul D-2." },
+ { id:"fire", d:1, s:"fire", name:"Pompe de incendiu, santină și serviciu general", p:[-6,0,9], b:"firepumps",
+   t:"Pompe centrifugale autoamorsante care alimentează magistrala de incendiu și pot aspira din santină. Pompa de incendiu de avarie se află în afara sălii mașinilor.",
+   sp:[["Număr","2"],["Presiune la hidranți","≥ 0,27 N/mm² (navă de mărfuri ≥ 6000 GT)"]],
+   r:"SOLAS II-2, Reg. 10." },
+ { id:"ows", d:1, s:"waste", name:"Separator de santină 15 ppm", p:[-11.5,0,6.5], b:"ows",
+   t:"Separă hidrocarburile din apele de santină. Apa se deversează peste bord doar dacă monitorul indică sub 15 ppm; altfel este recirculată automat în tancul de santină.",
+   sp:[["Capacitate","≈ 2,5 m³/h"],["Limită de deversare","15 ppm"]],
+   r:"MARPOL Anexa I, Reg. 14; deversările se trec în Oil Record Book." },
+ { id:"sep", d:2, s:"fuel", name:"Separatoare centrifugale de combustibil și ulei", p:[-10.5,5,-10.5], b:"separators",
+   t:"Curăță combustibilul greu (HFO) de apă și impurități solide prin centrifugare, după încălzire la ≈ 98 °C. Un separator suplimentar curăță continuu uleiul motorului principal.",
+   sp:[["Număr","2 combustibil + 1 ulei"],["Turație tambur","≈ 7000–10 000 rot/min"],["Temperatura HFO","≈ 98 °C"]] },
+ { id:"fmod", d:2, s:"fuel", name:"Modul de alimentare și circulație combustibil", p:[-4.5,5,-11.5], b:"fuelmodule",
+   t:"Pompe de alimentare și de circulație, încălzitoare cu abur, vâscozimetru și filtru automat. Aduce combustibilul la motor cu vâscozitatea de injecție de 10–15 cSt.",
+   sp:[["Presiune la motor","≈ 8–10 bar"],["Vâscozitate la injecție","10–15 cSt"]] },
+ { id:"cool", d:2, s:"sw", name:"Răcitoare centrale cu plăci", p:[9.5,5,-11], b:"coolers",
+   t:"Schimbătoare de căldură cu plăci de titan între apa de mare și circuitul de apă tehnică de joasă temperatură (LT). Apa de mare circulă numai prin aceste răcitoare, restul instalației fiind răcit cu apă dulce tratată.",
+   sp:[["Număr","2 × 100 %"],["Apă LT la ieșire","≈ 36 °C"]] },
+ { id:"fwg", d:2, s:"fw", name:"Generator de apă dulce", p:[12,5,-5.5], b:"fwg",
+   t:"Evaporator sub vid încălzit cu apa de răcire a cilindrilor (circuitul HT, ≈ 85 °C). Apa de mare fierbe la ≈ 40 °C, iar vaporii condensați dau apă tehnică; un salinometru deviază producția dacă salinitatea crește.",
+   sp:[["Producție","≈ 25 t/zi"],["Salinitate admisă","< 10 ppm"]] },
+ { id:"comp", d:2, s:"air", name:"Compresoare de aer de lansare", p:[-10,5,9.5], b:"compressors",
+   t:"Compresoare cu piston în două trepte care încarcă buteliile de aer de lansare la 30 bar; aerul servește și pentru comandă și serviciu.",
+   sp:[["Număr","2"],["Presiune","30 bar"]] },
+ { id:"airb", d:2, s:"air", name:"Butelii de aer de lansare", p:[-5,5,11.5], b:"airbottles",
+   t:"Rezervoare sub presiune pentru pornirea motorului principal și a diesel-generatoarelor.",
+   sp:[["Număr","2"],["Presiune","30 bar"],["Rezervă cerută","12 porniri consecutive (motor reversibil)"]],
+   r:"Reguli de clasificare / IACS UR M; capacitate fără reîncărcare." },
+ { id:"ht", d:2, s:"fw", name:"Pompe de apă tehnică HT și LT", p:[5.5,5,10], b:"pumps4",
+   t:"Circulă apa dulce tratată prin cămășile cilindrilor (HT, ≈ 85 °C) și prin răcitoarele de ulei, aer de baleaj și echipamentele auxiliare (LT).",
+   sp:[["Număr","2 HT + 2 LT"]] },
+ { id:"sew", d:2, s:"waste", name:"Instalație de tratare a apelor uzate", p:[11,5,10], b:"sewage",
+   t:"Tratare biologică a apelor fecaloid-menajere (aerare, decantare, dezinfecție) înainte de deversare.",
+   sp:[["Capacitate","≈ 25 persoane"]],
+   r:"MARPOL Anexa IV." },
+ { id:"tc", d:3, s:"air", name:"Turbosuflanta și răcitorul de aer de baleaj", p:[-7.4,9.3,2.9], b:"turbo",
+   t:"Turbina antrenată de gazele de evacuare rotește compresorul care trimite aerul de baleaj, prin răcitor, în colectorul de baleaj. La sarcini mici, suflantele auxiliare electrice preiau baleajul.",
+   sp:[["Turație","≈ 15 000 rot/min"],["Presiune aer de baleaj","≈ 3,5 bar la sarcină maximă"]] },
+ { id:"exh", d:3, s:"steam", name:"Colectorul de gaze de evacuare", p:[0,10.4,2.1], b:"exhrec",
+   t:"Colector comun în care se descarcă supapele de evacuare ale tuturor cilindrilor; egalizează pulsațiile de presiune înainte de turbina turbosuflantei.",
+   sp:[["Temperatură gaze","≈ 350–420 °C"]] },
+ { id:"dg", d:3, s:"elec", name:"Diesel-generatoare", p:[7,10,-10.5], b:"gensets",
+   t:"Grupuri cu motoare în patru timpi, de turație medie, care alimentează rețeaua navei. Numărul și puterea lor rezultă din bilanțul energetic; funcționează în paralel, cu repartiția sarcinii asigurată de PMS.",
+   sp:[["Număr","3"],["Putere","≈ 900 kW fiecare"],["Tensiune / frecvență","440 V / 60 Hz"],["Turație","720 rot/min"]],
+   r:"SOLAS II-1, Reg. 41: cu un grup oprit, celelalte trebuie să asigure serviciile esențiale." },
+ { id:"ecr", d:3, s:"elec", name:"Camera de comandă a mașinilor", p:[-8.5,10,10], b:"ecr",
+   t:"Încăpere izolată fonic și climatizată, cu pupitrul de comandă al motorului principal, sistemul de alarmă și monitorizare și tabloul principal de distribuție. Permite exploatarea cu sala nesupravegheată (UMS).",
+   sp:[["Echipare","pupitru, alarmă, TPD"],["Notație de clasă","UMS / E0"]] },
+ { id:"msb", d:3, s:"elec", name:"Tabloul principal de distribuție", p:[-8.5,10,13.2], b:"msb",
+   t:"Panourile generatoarelor (instrumente, sincronizare, întreruptoare ACB), pornitoarele grupate și plecările către consumatori, plus sistemul de gestiune a energiei (PMS).",
+   sp:[["Tensiune","440 V, 60 Hz"],["Schema rețelei","IT (neutru izolat)"]] },
+ { id:"boil", d:3, s:"steam", name:"Cazan auxiliar", p:[-11.5,10,-9.5], b:"boiler",
+   t:"Cazan ignitubular cu arzător pe combustibil, pentru abur în port, când cazanul recuperator nu funcționează. Aburul încălzește tancurile, combustibilul și apa sanitară.",
+   sp:[["Presiune abur","≈ 7 bar"],["Producție","≈ 2 t/h"]] },
+ { id:"shop", d:3, s:"prop", name:"Atelier mecanic", p:[9.5,10,10], b:"workshop",
+   t:"Strung, mașină de găurit, polizor, banc de lucru și sudură, pentru reparații la bord.",
+   sp:[["Echipare","strung, bormașină, banc"]] },
+ { id:"crane", d:3, s:"prop", name:"Pod rulant al motorului principal", p:[0,13.8,0.5], b:"crane",
+   t:"Pod rulant deasupra motorului, folosit la demontarea chiulaselor, pistoanelor și supapelor de evacuare.",
+   sp:[["Sarcină","≈ 5 t"]] },
+ { id:"tanks", d:4, s:"fuel", name:"Tancuri de decantare și de serviciu", p:[10.5,15,-9], b:"daytanks",
+   t:"Tancul de decantare permite depunerea apei și a sedimentelor; tancul de serviciu primește combustibilul separat și alimentează direct motoarele. Tancuri separate pentru HFO și pentru motorina (MGO) folosită în zonele ECA.",
+   sp:[["Autonomie tanc de serviciu","≥ 8 h la puterea maximă"],["Încălzire HFO","≈ 50–70 °C"]],
+   r:"SOLAS II-2, Reg. 4.2: cel puțin două tancuri de serviciu pentru fiecare tip de combustibil." },
+ { id:"egb", d:4, s:"steam", name:"Cazan recuperator pe gazele de evacuare", p:[-4,15,0], b:"egb",
+   t:"Montat în casing, pe traseul gazelor de evacuare ale motorului principal. În marș produce aburul necesar fără să ardă combustibil suplimentar.",
+   sp:[["Producție","≈ 1,5 t/h în marș"],["Temperatură gaze la ieșire","≈ 180 °C"]] },
+ { id:"funnel", d:4, s:"steam", name:"Coș și amortizoare de zgomot", p:[-4,21,0], b:"funnel",
+   t:"Tubulaturile de evacuare ale motorului principal, ale diesel-generatoarelor și ale cazanului auxiliar urcă prin casing până în coș, fiecare cu amortizor de zgomot.",
+   sp:[["Tubulaturi","motor principal, 3 DG, cazan"]] },
+ { id:"fans", d:4, s:"air", name:"Ventilatoare ale sălii mașinilor", p:[9,15,9], b:"fans",
+   t:"Introduc aer pentru ardere și răcirea încăperii; clapetele de închidere sunt acționabile din exterior, pentru stingerea incendiului.",
+   sp:[["Număr","4 (2 reversibile)"],["Debit total","≈ 250 000 m³/h"]] },
+ { id:"inc", d:4, s:"waste", name:"Incinerator", p:[2.5,15,11], b:"incinerator",
+   t:"Arde reziduurile petroliere (sludge) și deșeurile solide permise.",
+   sp:[["Capacitate","≈ 400 kW termic"]],
+   r:"MARPOL Anexa VI, Reg. 16; Anexa V." },
+ { id:"co2", d:4, s:"fire", name:"Instalație fixă de stingere cu CO₂", p:[-11.5,15,10.5], b:"co2",
+   t:"Baterie de butelii de CO₂ într-o încăpere separată, pe puntea principală. Descărcarea în sala mașinilor se face manual, după evacuarea personalului, cu alarmă prealabilă.",
+   sp:[["Butelii","≈ 60 × 45 kg"],["Descărcare","85 % din cantitate în 2 min"]],
+   r:"SOLAS II-2, Reg. 10; Codul FSS, cap. 5." },
+ { id:"steer", d:4, s:"hyd", name:"Instalația de guvernare (mașina cârmei)", p:[-23.5,15,0], b:"steering",
+   t:"Mașină electrohidraulică cu pistoane sau cu palete rotative, în compartimentul cârmei, deasupra cârmei. Are două grupuri de pompe, oricare putând roti cârma.",
+   sp:[["Timp de bandare","35° → 30° pe celălalt bord în ≤ 28 s"],["Grupuri de pompe","2"]],
+   r:"SOLAS II-1, Reg. 29." },
+];
+ITEMS.push(
+ { id:"bunker", d:1, s:"fuel", name:"Tancuri de combustibil (bunker)", p:[11,-1.1,6.5], b:"bunker",
+   t:"Tancuri în dublul fund și în bordaje, în care se depozitează combustibilul greu (HFO) și motorina (MGO). Sunt încălzite cu serpentine de abur, ca HFO să poată fi pompat.",
+   sp:[["Capacitate totală","≈ 2000 m³ HFO + 200 m³ MGO"],["Temperatură HFO","≈ 40–50 °C"]],
+   r:"MARPOL Anexa I, Reg. 12A: tancurile de combustibil se amplasează protejat, nu direct pe bordaj sau fund (navele noi cu ≥ 600 m³)." },
+ { id:"ftp", d:1, s:"fuel", name:"Pompe de transfer combustibil", p:[12.6,0,1.5], b:"ftpumps",
+   t:"Pompe cu roți dințate sau cu șurub care transferă combustibilul din tancurile de bunker în tancul de decantare și între tancuri.",
+   sp:[["Număr","2 (HFO și MGO)"],["Debit","≈ 30 m³/h"]] },
+ { id:"loc", d:1, s:"lube", name:"Răcitor de ulei și filtru automat", p:[8.6,0,6.6], b:"locooler",
+   t:"Răcitorul cu plăci menține uleiul la intrarea în motor la ≈ 45 °C (răcit cu apă LT). Filtrul automat cu autocurățare reține particulele peste ≈ 25–40 µm.",
+   sp:[["Temperatură ulei la intrare","≈ 45 °C"],["Finețe filtru","≈ 25–40 µm"]] },
+ { id:"bilget", d:1, s:"waste", name:"Puțuri și tanc de santină, tanc de reziduuri", p:[-11,-1.1,1.5], b:"bilgetank",
+   t:"Apele uleioase se adună în puțurile de santină din colțurile sălii și sunt pompate în tancul de santină din dublul fund. Reziduurile de la separatoare (sludge) se colectează separat, pentru incinerator sau predare la uscat.",
+   sp:[["Puțuri de santină","4 (colțurile sălii)"],["Tanc de santină","≈ 30 m³"],["Tanc de reziduuri","≈ 15 m³"]],
+   r:"SOLAS II-1, Reg. 35-1 (instalația de santină); MARPOL Anexa I, Reg. 12 (tanc de reziduuri)." },
+ { id:"exp", d:4, s:"fw", name:"Tanc de expansiune apă tehnică", p:[3.5,15,-3.2], b:"exptank",
+   t:"Tanc deschis, amplasat în punctul cel mai înalt al circuitului de răcire. Compensează dilatarea apei, menține presiunea statică pe aspirația pompelor și permite dezaerarea și dozarea inhibitorilor de coroziune.",
+   sp:[["Volum","≈ 2 m³"],["Înălțime peste pompe","≈ 10 m"]] },
+ { id:"hotwell", d:3, s:"steam", name:"Cisternă de condens și pompe de alimentare cazan", p:[-12.2,10,-5.4], b:"hotwell",
+   t:"Condensul care revine de la consumatori trece printr-un tanc de observație (pentru a detecta pătrunderea combustibilului) în cisterna de condens, de unde pompele de alimentare îl trimit înapoi în cazan.",
+   sp:[["Temperatură condens","≈ 60–80 °C"],["Pompe de alimentare","2"]] },
+);
+ITEMS.sort((a, b) => a.d - b.d);
+ITEMS.forEach((it, i) => it.n = i + 1);
+// ---------- instalații: explicații, pași de flux și trasee de tubulatură [x, y, z]
+const SYSTEMS = [
+ { id:"fuel", s:"fuel", r0:0.12, name:"Instalația de combustibil", short:"Bunker → decantare → separare → serviciu → injecție",
+   t:"Combustibilul greu (HFO) se depozitează în tancurile de bunker, este transferat în tancul de decantare, curățat de separatoare și trimis în tancul de serviciu. Modulul de alimentare îl aduce la presiunea și vâscozitatea de injecție și îl distribuie motorului principal și diesel-generatoarelor; surplusul revine în modul. În zonele ECA se trece pe motorină cu cel mult 0,10 % sulf.",
+   steps:[["bunker","Depozitare în tancurile de bunker, încălzite cu abur"],["ftp","Pompele de transfer duc combustibilul în tancul de decantare"],["tanks","Decantare: apa și impuritățile grele se depun și se purjează"],["sep","Separatoarele centrifugale curăță combustibilul încălzit la ≈ 98 °C"],["tanks","Tancul de serviciu alimentează instalația; preaplinul revine în decantare"],["fmod","Modulul: pompe de alimentare și circulație, încălzitor, vâscozimetru, filtru automat"],["me","Injecție în cilindrii motorului principal (10–15 cSt, presiune de injecție de ordinul a 1000 bar)"],["dg","Diesel-generatoarele sunt alimentate din același modul"]],
+   r:"MARPOL Anexa VI, Reg. 14 (sulf 0,50 % global, 0,10 % în ECA); SOLAS II-2, Reg. 4.2.",
+   routes:[
+    [[11,0.6,6.5],[12.6,0.6,6.5],[12.6,0.6,2.3]],
+    [[13.3,1.0,1.5],[14.4,1.0,1.5],[14.4,17.4,1.5],[12.4,17.4,1.5],[12.4,17.4,-6.4]],
+    [[11.9,15.4,-11.6],[11.9,14.6,-13.6],[-10.5,14.6,-13.6],[-10.5,6.9,-13.6],[-10.5,6.9,-11.2]],
+    [[-8.9,6.9,-10.5],[-8.9,7.3,-14.2],[-8.9,14.2,-14.2],[9.1,14.2,-14.2],[9.1,15.4,-11.6]],
+    [[8.4,15.4,-6.4],[8.4,7.2,-6.4],[-4.0,7.2,-6.4],[-4.0,6.4,-10.6]],
+    [[-3.2,6.4,-11.0],[-3.2,6.4,-3.6],[-3.2,8.4,-2.5],[6.2,8.4,-2.5]],
+    [[-5.8,6.2,-12.3],[-5.8,9.6,-12.3],[5.0,9.6,-12.3],[5.0,10.8,-12.3]],
+   ] },
+ { id:"lube", s:"lube", r0:0.12, name:"Instalația de ulei de ungere", short:"Tanc de circulație → pompe → răcitor → filtru → lagăre",
+   t:"Uleiul de sistem circulă în circuit închis: pompele îl aspiră din tancul de circulație, îl trimit prin răcitor și filtrul automat la lagărele paliere, de bielă și de cap de cruce și la răcirea pistoanelor, de unde revine gravitațional în tanc. Separatorul curăță continuu uleiul din tanc. Cămășile cilindrilor sunt unse separat, cu ulei de cilindru dozat de lubricatoare, care se consumă (ungere pierdută).",
+   steps:[["lotank","Tancul de circulație din dublul fund"],["lop","Pompele de ulei (una de rezervă, cu pornire automată)"],["loc","Răcire la ≈ 45 °C și filtrare automată"],["me","Lagăre, cap de cruce, răcirea pistoanelor; scurgere înapoi în tanc"],["sep","Separatorul de ulei curăță continuu conținutul tancului"]],
+   r:"Reguli de clasificare: alarmă la presiune scăzută și oprire automată a motorului (shutdown) la presiune foarte scăzută.",
+   routes:[
+    [[3.0,-0.3,1.7],[3.0,0.4,1.7],[3.0,0.4,7.5]],
+    [[4.8,0.9,7.5],[8.0,0.9,7.5],[8.0,0.9,6.9]],
+    [[8.6,2.0,5.9],[8.6,2.6,3.0],[6.2,2.6,2.4],[-6.0,2.6,2.4]],
+    [[-6.0,-0.3,-1.7],[-6.0,0.4,-1.7],[-6.0,0.4,-4.2],[-8.7,0.4,-4.2],[-8.7,6.6,-4.2],[-8.7,6.6,-9.8]],
+   ] },
+ { id:"sw", s:"sw", r0:0.2, name:"Răcire cu apă de mare", short:"Prize → pompe → răcitoare centrale → peste bord",
+   t:"Apa de mare intră prin prizele de fund și filtre, este pompată prin răcitoarele centrale cu plăci și refulată peste bord. În sistemul central de răcire apa de mare circulă numai prin răcitoarele centrale, iar restul instalației este răcit cu apă dulce tratată, ceea ce reduce mult coroziunea și depunerile.",
+   steps:[["chest","Prizele de apă de mare, cu grătar și filtre comutabile"],["swp","Pompele de apă de mare (două în funcțiune, una de rezervă)"],["cool","Răcitoarele centrale preiau căldura circuitului LT"],[null,"Refularea peste bord prin valva de bordaj, deasupra liniei de plutire"]],
+   r:"Valvele de bordaj sunt din oțel sau bronz și se pot închide de deasupra punții (SOLAS II-1, Reg. 12; reguli de clasificare).",
+   routes:[
+    [[10.5,1.3,-12.6],[10.5,0.6,-12.4],[3.6,0.6,-12.4]],
+    [[4.4,0.6,-12.4],[4.4,0.5,-11.2]],[[6.0,0.6,-12.4],[6.0,0.5,-11.2]],[[7.6,0.6,-12.4],[7.6,0.5,-11.2]],
+    [[4.4,1.4,-9.6],[4.4,1.4,-9.2],[8.8,1.4,-9.2],[8.8,6.2,-9.2],[9.2,6.2,-10.2]],
+    [[10.1,6.6,-11.8],[15.2,6.6,-11.8]],
+   ] },
+ { id:"fw", s:"fw", r0:0.14, name:"Răcire cu apă tehnică (LT și HT)", short:"Circuit LT ≈ 36 °C, circuit HT ≈ 85 °C, generator de apă",
+   t:"Apa dulce tratată circulă în două circuite. Circuitul de joasă temperatură (LT) răcește uleiul, aerul de baleaj și diesel-generatoarele și cedează căldura în răcitoarele centrale. Circuitul de înaltă temperatură (HT) răcește cămășile și chiulasele motorului principal; căldura lui este recuperată în generatorul de apă dulce. Tancul de expansiune compensează dilatarea și menține presiunea statică.",
+   steps:[["cool","Răcitoarele centrale: apa LT cedează căldura apei de mare"],["ht","Pompele LT și HT"],["loc","Circuitul LT răcește uleiul de ungere"],["tc","… și aerul de baleaj, după turbosuflantă"],["dg","… și diesel-generatoarele"],["me","Circuitul HT răcește cămășile și chiulasele (≈ 85 °C)"],["fwg","Căldura HT fierbe apa de mare sub vid în generatorul de apă"],["exp","Tancul de expansiune, în punctul cel mai înalt"]],
+   r:"Apa se tratează cu inhibitori de coroziune; temperatura HT se reglează cu valvă cu trei căi.",
+   routes:[
+    [[9.5,7.4,-10.4],[9.5,9.3,-9.6],[9.5,9.3,8.0],[4.1,9.3,8.0],[4.1,6.4,9.3]],
+    [[3.4,6.0,10.9],[2.0,6.0,10.9],[2.0,1.4,10.9],[8.6,1.4,10.9],[8.6,1.4,7.4]],
+    [[2.0,6.0,10.9],[2.0,8.8,10.9],[-6.4,8.8,10.9],[-6.4,8.8,4.4],[-6.4,9.2,3.8]],
+    [[7.0,6.2,9.0],[7.0,8.6,5.0],[7.0,8.6,1.4]],
+    [[6.6,9.7,-1.4],[11.4,9.7,-1.4],[11.4,7.0,-4.8]],
+    [[3.5,15.0,-3.2],[3.5,9.9,-3.2],[3.5,9.9,-1.4],[6.6,9.7,-1.4]],
+    [[9.0,9.3,-9.6],[9.0,9.3,-14.4],[3.4,9.3,-14.4],[3.4,10.8,-13.1]],
+   ] },
+ { id:"air", s:"air", r0:0.1, name:"Aer comprimat de lansare și comandă", short:"Compresoare → butelii 30 bar → pornire motoare",
+   t:"Compresoarele încarcă buteliile la 30 bar. Aerul de lansare deschide supapa principală de pornire și, prin distribuitor, supapele de pornire din chiulase, în ordinea de aprindere. Diesel-generatoarele au demaroare pneumatice. Prin stații de reducere se obțin aerul de comandă (≈ 7 bar, uscat) și aerul de serviciu.",
+   steps:[["comp","Compresoarele cu piston, în două trepte"],["airb","Buteliile de aer de lansare (30 bar)"],["me","Supapa principală de pornire și supapele din chiulase"],["dg","Demaroarele pneumatice ale diesel-generatoarelor"],[null,"Stația de reducere: aer de comandă și aer de serviciu"]],
+   r:"Capacitatea buteliilor: cel puțin 12 porniri alternative la motorul reversibil, fără reîncărcare (reguli de clasificare).",
+   routes:[
+    [[-9.6,6.3,9.5],[-9.6,6.3,11.5],[-7.8,6.3,11.5]],
+    [[-4.0,7.4,11.5],[-2.5,7.4,11.5],[-2.5,7.4,4.4],[-2.5,10.7,4.4],[-2.5,10.7,1.2]],
+    [[-4.0,5.9,11.5],[-4.0,5.9,12.8],[11.0,5.9,12.8],[11.0,9.0,12.8],[11.0,9.0,-12.0],[4.2,9.0,-12.0],[4.2,10.5,-12.0]],
+   ] },
+ { id:"steam", s:"steam", r0:0.12, name:"Abur și condens", short:"Cazane → încălzire → condens → cisternă → cazan",
+   t:"Aburul produs de cazanul auxiliar (în port) sau de cazanul recuperator (în marș) încălzește tancurile de combustibil, încălzitorul din modulul de alimentare, preîncălzitoarele separatoarelor și apa sanitară. Condensul revine prin tancul de observație în cisterna de condens, iar pompele de alimentare îl trimit înapoi în cazan.",
+   steps:[["boil","Cazanul auxiliar, cu arzător (în port)"],["egb","Cazanul recuperator pe gazele de evacuare (în marș)"],["tanks","Încălzirea tancurilor de decantare și de serviciu"],["fmod","Încălzitorul de combustibil din modul"],["hotwell","Condensul revine în cisterna de condens"],["boil","Pompele de alimentare readuc apa în cazan"]],
+   r:"Supapele de siguranță ale cazanelor și nivelul apei se verifică periodic (reguli de clasificare).",
+   routes:[
+    [[-11.5,14.0,-9.5],[-11.5,14.3,-7.0],[8.0,14.3,-7.0],[8.0,15.6,-7.0]],
+    [[-2.3,17.0,0],[-2.3,14.3,0],[-2.3,14.3,-7.0]],
+    [[-4.5,14.3,-7.0],[-4.5,7.6,-7.0],[-4.5,7.6,-10.6]],
+    [[7.4,13.9,-6.1],[-12.2,13.9,-6.1],[-12.2,11.3,-6.1]],
+    [[-12.2,10.6,-6.2],[-12.2,10.6,-8.3],[-11.5,10.6,-8.3]],
+   ] },
+ { id:"exh", s:"evac", r0:0.45, name:"Gaze de evacuare și aer de baleaj", short:"Cilindri → colector → turbină → cazan recuperator → coș",
+   t:"Gazele de evacuare ale cilindrilor se adună în colector și antrenează turbina turbosuflantei; compresorul ei trimite aerul de baleaj, prin răcitor, în colectorul de baleaj și de acolo în cilindri prin ferestre. După turbină, gazele trec prin cazanul recuperator și amortizorul de zgomot și ies prin coș. Diesel-generatoarele și cazanul auxiliar au tubulaturi proprii până în coș.",
+   steps:[["me","Supapele de evacuare ale cilindrilor"],["exh","Colectorul de gaze de evacuare"],["tc","Turbina și compresorul turbosuflantei, răcitorul de aer de baleaj"],["egb","Cazanul recuperator"],["funnel","Amortizoare de zgomot și coș"],["dg","Tubulaturile diesel-generatoarelor"]],
+   r:"MARPOL Anexa VI, Reg. 13 și 14: NOₓ (Tier II / III) și SOₓ (combustibil conform sau scruber).",
+   routes:[
+    [[-7.4,12.3,2.9],[-7.4,13.9,2.9],[-4.0,13.9,0.4],[-4.0,15.2,0]],
+    [[3.8,12.4,-13.1],[3.8,13.6,-13.1],[-1.8,13.6,-13.1],[-1.8,13.6,-2.6],[-1.8,25.5,-2.6]],
+    [[3.8,12.4,-10.5],[3.8,13.4,-10.5],[-2.6,13.4,-10.5],[-2.6,13.4,-2.8],[-2.6,25.5,-2.8]],
+    [[3.8,12.4,-7.9],[3.8,13.2,-7.9],[-3.4,13.2,-7.9],[-3.4,13.2,-2.9],[-3.4,25.5,-2.9]],
+    [[-11.5,14.4,-9.5],[-11.5,16.6,-9.5],[-6.0,16.6,-3.6],[-6.0,25.5,-3.6]],
+   ] },
+ { id:"bilge", s:"waste", r0:0.12, name:"Santină și ape uleioase", short:"Puțuri → pompă → tanc de santină → separator 15 ppm",
+   t:"Scurgerile din sala mașinilor se adună în puțurile de santină. Pompa de santină le trimite în tancul de santină, de unde separatorul de 15 ppm extrage apa curată; aceasta se deversează peste bord numai dacă monitorul arată sub 15 ppm, altfel revine automat în tanc. Reziduurile se ard în incinerator sau se predau la instalațiile de primire din port.",
+   steps:[["bilget","Puțurile de santină din colțurile sălii"],["fire","Pompa de santină (pompă de serviciu general)"],["bilget","Tancul de santină din dublul fund"],["ows","Separatorul de 15 ppm cu monitor și valvă cu trei căi"],[null,"Deversare peste bord numai sub 15 ppm, cu nava în marș"],["inc","Reziduurile (sludge) se ard în incinerator"]],
+   r:"MARPOL Anexa I, Reg. 14 și 15; înregistrare în Oil Record Book; SOLAS II-1, Reg. 35-1.",
+   routes:[
+    [[14,0.4,12],[14,0.4,14.2],[-14,0.4,14.2],[-14,0.4,12]],
+    [[-14,0.4,12],[-14.6,0.4,12],[-14.6,0.4,-12],[-14,0.4,-12]],
+    [[14,0.4,-12],[14.6,0.4,-12],[14.6,0.4,12.0],[14,0.4,12]],
+    [[-6.8,0.4,14.2],[-6.8,0.4,9.6]],
+    [[-5.2,1.0,9.6],[-9.4,1.0,9.6],[-9.4,-0.2,3.4]],
+    [[-11.5,-0.2,3.4],[-11.5,0.4,5.9]],
+    [[-10.8,1.3,6.5],[-10.8,1.3,15.3]],
+    [[-13.4,-0.2,1.5],[-14.2,0.4,1.5],[-14.2,15.6,1.5],[1.8,15.6,1.5],[1.8,15.6,10.4]],
+   ] },
+ { id:"ballast", s:"sw", r0:0.24, name:"Balast și tratarea apei de balast", short:"Priză → pompe de balast → BWTS → tancuri",
+   t:"Pompele de balast aspiră apă de mare și o trimit, prin instalația de tratare (filtru și lămpi UV), în tancurile de balast din dublul fund și din bordaje; la debalastare apa este tratată din nou. Balastul compensează lipsa mărfii, pentru pescaj, asietă și stabilitate.",
+   steps:[["chest","Aspirație din priza de apă de mare"],["bal","Pompele de balast și instalația de tratare (filtru 40 µm + UV)"],[null,"Magistrala de balast spre tancurile din dublul fund și bordaje"]],
+   r:"Convenția BWM 2004, standardul D-2; jurnalul de balast (Ballast Water Record Book).",
+   routes:[
+    [[10.5,0.3,-13.9],[-7.0,0.3,-13.9],[-7.0,0.3,-11.3]],
+    [[-5.0,0.3,-13.9],[-5.0,0.3,-11.3]],
+    [[-6.0,1.8,-9.6],[-3.4,1.8,-9.6],[-3.4,1.8,-10.3]],
+    [[-0.3,0.6,-10.5],[-0.3,0.6,-7.8],[15.2,0.6,-7.8]],
+   ] },
+ { id:"fire", s:"fire", r0:0.15, name:"Stingerea incendiilor", short:"Pompe de incendiu → magistrală → hidranți; CO₂",
+   t:"Pompele de incendiu aspiră din priza de apă de mare și presurizează magistrala de incendiu, cu hidranți pe fiecare punte și pe puntea deschisă. Pentru sala mașinilor există în plus instalația fixă cu CO₂: buteliile din încăperea separată descarcă, prin tubulatura de sub plafon și duze, cantitatea necesară pentru inundarea totală a încăperii.",
+   steps:[["chest","Aspirație din priza de apă de mare"],["fire","Pompele de incendiu"],[null,"Magistrala de incendiu și hidranții de pe fiecare punte"],["co2","Instalația fixă cu CO₂ și duzele de sub plafon"]],
+   r:"SOLAS II-2, Reg. 10; Codul FSS, cap. 5 (CO₂: 85 % din cantitate în 2 minute).",
+   routes:[
+    [[10.5,0.2,-14.5],[-13.9,0.2,-14.5],[-13.9,0.2,9.0],[-7.4,0.2,9.0]],
+    [[-5.2,1.2,9.0],[-3.0,1.2,9.0],[-3.0,1.2,14.7],[-3.0,16.3,14.7],[14.0,16.3,14.7]],
+    [[-11.5,15.9,10.5],[-11.5,14.7,10.5],[-11.5,14.7,-12.2],[12.5,14.7,-12.2],[12.5,14.7,12.2],[-11.5,14.7,12.2]],
+   ],
+   marks:[[-3.0,6.0,14.7],[-3.0,11.0,14.7],[-3.0,1.0,14.7],[6.0,16.3,14.7]] },
+ { id:"elec", s:"elec", r0:0.07, name:"Producerea și distribuția energiei electrice", short:"Diesel-generatoare → TPD → consumatori",
+   t:"Diesel-generatoarele alimentează barele tabloului principal de distribuție (TPD), unde sunt sincronizate și cuplate în paralel. Din TPD pleacă alimentările către pornitoarele pompelor, compresoarelor, ventilatoarelor și către tablourile secundare. Cablurile urmează paturi de cabluri sub plafonul fiecărei punți.",
+   steps:[["dg","Generatoarele sincrone ale diesel-generatoarelor"],["msb","Tabloul principal de distribuție, cu sincronizare și PMS"],["ecr","Supraveghere din camera de comandă"],["fire","Plecări către consumatori (pompe, compresoare, ventilatoare)"]],
+   r:"SOLAS II-1, Reg. 41 (sursa principală) și Reg. 43 (sursa de avarie, în afara sălii mașinilor).",
+   routes:[
+    [[8.7,11.8,-13.1],[8.7,13.4,-13.1],[8.7,13.4,13.0],[-5.0,13.4,13.0],[-5.0,12.3,13.2]],
+    [[8.7,11.8,-10.5],[8.7,13.4,-10.5]],[[8.7,11.8,-7.9],[8.7,13.4,-7.9]],
+    [[-12.0,12.0,13.6],[-13.7,12.0,13.6],[-13.7,0.9,13.6],[-13.7,0.9,9.0],[-7.3,0.9,9.0]],
+    [[-13.7,6.3,13.6],[-13.7,6.3,9.5],[-10.6,6.3,9.5]],
+    [[-13.7,1.6,13.6],[-13.7,1.6,-12.6],[7.6,1.6,-12.6],[7.6,1.6,-11.0]],
+   ] },
+];
+
+const $ = (id) => document.getElementById(id);
+let deck = 0, sel = null, iso = null;
+const state = { rot: true, hull: true, pipes: true };
+
+// ---------- panou lateral
+function renderDecks() {
+  $("decks").innerHTML = DECKS.map((d, i) => `<button aria-pressed="${i === deck}" data-i="${i}">${d.short}</button>`).join("");
+  $("decks").querySelectorAll("button").forEach((b) => b.onclick = () => setDeck(+b.dataset.i));
+  const s = $("elev"), W = s.clientWidth || 360, H = 150, L = 8, R = 8;
+  const X = (x) => L + (x + 27) / 43 * (W - L - R - 34), Y = (y) => H - 14 - (y + 3) / 30 * (H - 24);
+  const bands = [1, 2, 3, 4].map((i) => {
+    const y0 = DECKS[i].y, y1 = i < 4 ? DECKS[i + 1].y : 26, on = deck === i;
+    return `<g class="band" data-i="${i}"><rect x="${X(-15)}" y="${Y(y1)}" width="${X(15) - X(-15)}" height="${Y(y0) - Y(y1)}" fill="${on ? "#d8481c" : "currentColor"}" opacity="${on ? .16 : .04}"/>
+      <line x1="${X(-15)}" x2="${X(15)}" y1="${Y(y0)}" y2="${Y(y0)}" stroke="currentColor" stroke-width="${on ? 2.2 : 1}" opacity=".7"/>
+      <text x="${X(15) + 4}" y="${Y(y0) - 3}" fill="currentColor">${DECKS[i].short}</text></g>`;
+  }).join("");
+  s.innerHTML = `<g style="color:var(--ink)">
+    <path d="M${X(-27)},${Y(6)} L${X(-15)},${Y(26)} L${X(15)},${Y(26)} L${X(15)},${Y(-3)} L${X(-12)},${Y(-3)} Q${X(-20)},${Y(-3)} ${X(-27)},${Y(2)} Z" fill="none" stroke="currentColor" opacity=".35"/>
+    ${bands}
+    <rect x="${X(-8)}" y="${Y(11.4)}" width="${X(8) - X(-8)}" height="${Y(0) - Y(11.4)}" fill="#8fa39a"/>
+    <rect x="${X(-6)}" y="${Y(26)}" width="${X(-2) - X(-6)}" height="${Y(15) - Y(26)}" fill="#b9c0c6" opacity=".8"/>
+    <line x1="${X(-8)}" x2="${X(-23.5)}" y1="${Y(1.4)}" y2="${Y(1.4)}" stroke="#8fa39a" stroke-width="3"/>
+    <circle cx="${X(-23.5)}" cy="${Y(1.4)}" r="${(Y(0) - Y(3.2))}" fill="none" stroke="#8fa39a" stroke-width="2"/>
+    <text x="${X(-1)}" y="${Y(6)}" text-anchor="middle" fill="#15191c">motor principal</text></g>`;
+  s.querySelectorAll(".band").forEach((g) => g.onclick = () => setDeck(+g.dataset.i));
+}
+function renderList() {
+  const items = deck ? ITEMS.filter((it) => it.d === deck) : ITEMS;
+  $("listTitle").textContent = deck ? `${DECKS[deck].name} (${DECKS[deck].short}) · ${items.length} echipamente` : `Toată sala · ${items.length} echipamente`;
+  $("list").innerHTML = items.map((it) => `<li><button data-id="${it.id}" class="${sel === it ? "sel" : ""}" style="--c:${SYS[it.s].c}"><span class="num">${it.n}</span><span class="dot"></span><span>${it.name}</span></button></li>`).join("");
+  $("list").querySelectorAll("button").forEach((b) => b.onclick = () => select(ITEMS.find((x) => x.id === b.dataset.id), true));
+}
+function renderCard() {
+  const it = sel, c = $("card");
+  if (!it) { c.innerHTML = `<p class="note">Alegeți un echipament din listă sau din model.</p>`; return; }
+  c.style.setProperty("--c", SYS[it.s].c);
+  c.innerHTML = `<h3>${it.n}. ${it.name}</h3>
+    <div class="chips"><span class="chip"><i class="dot" style="--c:${SYS[it.s].c}"></i>${SYS[it.s].n}</span><span class="chip">${DECKS[it.d].name}, ${DECKS[it.d].short}</span></div>
+    <p>${it.t}</p>
+    <table>${it.sp.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join("")}</table>
+    ${it.r ? `<div class="rule">${it.r}</div>` : ""}
+    ${(() => { const ss = SYSTEMS.filter((S) => S.steps.some((x) => x[0] === it.id)); return ss.length ? `<div class="lbl" style="margin-top:10px">Face parte din instalațiile</div><div class="chips" style="margin-top:4px">${ss.map((S) => `<button class="chip link" data-s="${S.id}"><i class="dot" style="--c:${SYS[S.s].c}"></i>${S.name}</button>`).join("")}</div>` : ""; })()}`;
+  c.querySelectorAll(".chip.link").forEach((b) => b.onclick = () => { setTab("sys"); if (deck) setDeck(0, true); isolate(b.dataset.s, true); });
+}
+$("legend").innerHTML = Object.values(SYS).map((s) => `<span><i class="dot" style="--c:${s.c}"></i>${s.n}</span>`).join("");
+
+// ---------- scena 3D
+let ok = !!window.THREE;
+let renderer, scene, camera, controls, clip, hullGroup, spin = [], pick = [], groups = {}, sysGroups = {}, flows = {}, pickPipes = [];
+const view = document.querySelector(".view"), canvas = $("c");
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+} catch (e) { ok = false; }
+if (!ok) { $("err").style.display = "flex"; }
+else {
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+  renderer.localClippingEnabled = false;
+  clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 40);
+  renderer.clippingPlanes = [clip];
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1b2024);
+  camera = new THREE.PerspectiveCamera(40, 1, 0.5, 400);
+  controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.62; controls.minDistance = 8; controls.maxDistance = 140;
+  scene.add(new THREE.HemisphereLight(0xeef4ff, 0x30363a, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(30, 50, 25); scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(-30, 20, -20); scene.add(fill);
+
+  const M = (c, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.62, metalness: 0.18 }, o));
+  const box = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof c === "object" ? c : M(c)); m.position.set(x, y, z); g.add(m); return m; };
+  const cyl = (g, r, h, c, x, y, z, ax = "y", seg = 24, r2) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r2 ?? r, r, h, seg), typeof c === "object" ? c : M(c));
+    if (ax === "x") m.rotation.z = Math.PI / 2; if (ax === "z") m.rotation.x = Math.PI / 2;
+    m.position.set(x, y, z); g.add(m); return m;
+  };
+  const GREY = "#9aa6a2", DARK = "#4b5458", MACH = "#8fa39a";
+  const motor = (g, x, y, z, h = 0.8, r = 0.3) => { cyl(g, r, h, GREY, x, y + h / 2, z); cyl(g, r * 0.8, 0.1, DARK, x, y + h + 0.05, z); };
+  const pump = (g, x, z, c, s = 1) => { box(g, 1.0 * s, 0.2, 1.0 * s, DARK, x, 0.1, z); cyl(g, 0.34 * s, 0.55 * s, c, x, 0.48 * s, z); cyl(g, 0.12 * s, 0.9 * s, c, x + 0.5 * s, 0.45 * s, z, "x"); motor(g, x, 0.75 * s, z, 0.85 * s, 0.3 * s); };
+  const vessel = (g, r, h, c, x, y, z) => { cyl(g, r, h, c, x, y + h / 2, z); const s = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), M(c)); s.position.set(x, y + h, z); g.add(s); };
+
+  const B = {
+    engine(g) {
+      const C = M(MACH), D = M("#6f817a");
+      box(g, 16.4, 1.6, 4.4, D, 0, 0.8, 0);
+      box(g, 15.2, 3.8, 4.0, C, 0, 3.5, 0);
+      for (let i = 0; i < 7; i++) box(g, 0.25, 3.8, 4.15, D, -6.9 + i * 2.3, 3.5, 0);
+      box(g, 15.0, 2.4, 3.3, C, 0, 6.6, 0);
+      cyl(g, 0.8, 14.2, MACH, 0, 6.9, 2.3, "x");
+      box(g, 14.2, 2.0, 2.9, C, 0, 8.8, 0);
+      for (let i = 0; i < 6; i++) {
+        const x = -5.75 + i * 2.3;
+        cyl(g, 0.72, 0.6, "#5f6f69", x, 10.1, 0);
+        cyl(g, 0.28, 1.0, "#c8ccc6", x, 10.9, 0);
+        cyl(g, 0.22, 1.7, "#7f8b87", x, 10.25, 1.0, "z");
+      }
+      box(g, 1.2, 1.2, 1.2, D, 8.6, 1.2, -1.2);
+    },
+    thrust(g) { box(g, 1.6, 2.2, 3.0, "#6f817a", 0, 1.1, 0); cyl(g, 0.9, 1.2, "#5c6a65", 0, 1.4, 0, "x"); },
+    shaft(g) {
+      const sh = new THREE.Group(); cyl(sh, 0.28, 14.5, "#b9bdb8", 0, 0, 0, "x"); sh.position.set(-3.3, 1.4, 0); g.add(sh); spin.push(sh);
+      for (const x of [-1.4, 1.8]) { box(g, 0.9, 1.0, 1.4, "#6f817a", x, 0.5, 0); cyl(g, 0.5, 0.8, "#6f817a", x, 1.4, 0, "x"); }
+      cyl(g, 0.55, 0.15, "#5c6a65", 2.6, 1.4, 0, "x");
+    },
+    sterntube(g) { cyl(g, 0.6, 7, "#c5a434", 0, 1.4, 0, "x"); cyl(g, 0.9, 0.5, "#8a7a2a", 2.4, 1.4, 0, "x"); },
+    propeller(g) {
+      const p = new THREE.Group(), BR = M("#c9a35b", { metalness: 0.6, roughness: 0.35 });
+      cyl(p, 0.6, 1.4, BR, 0, 0, 0, "x");
+      for (let i = 0; i < 4; i++) {
+        const b = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), BR); b.scale.set(0.12, 1.55, 0.75);
+        const a = i * Math.PI / 2; b.position.set(0, Math.cos(a) * 1.7, Math.sin(a) * 1.7); b.rotation.x = -a; b.rotateY(0.45); p.add(b);
+      }
+      p.position.set(0, 1.4, 0); g.add(p); spin.push(p);
+      box(g, 0.45, 7.5, 3.6, "#7b8a85", -3.2, 1.6, 0); cyl(g, 0.25, 9, "#5c6a65", -3.2, 9.8, 0);
+    },
+    pumps3(g) { for (let i = 0; i < 3; i++) pump(g, i * 1.6 - 1.6, 0, SYS.sw.c, 1.15); },
+    pumps2(g) { for (let i = 0; i < 2; i++) pump(g, i * 1.6 - 0.8, 0, SYS.lube.c); },
+    pumps4(g) { for (let i = 0; i < 4; i++) pump(g, i * 1.4 - 2.1, 0, SYS.fw.c, 0.9); },
+    seachest(g) { box(g, 3.0, 2.0, 0.9, SYS.sw.c, 0, 1.0, 0); cyl(g, 0.35, 1.6, "#2b6b44", -0.6, 2.4, 0.2); cyl(g, 0.35, 1.6, "#2b6b44", 0.6, 2.4, 0.2); },
+    lotank(g) { box(g, 13, 1.8, 3.6, M(SYS.lube.c, { transparent: true, opacity: 0.55 }), 0, 0, 0); },
+    ballast(g) { pump(g, -1, 0, SYS.sw.c, 1.3); pump(g, 1, 0, SYS.sw.c, 1.3); box(g, 1.4, 1.6, 1.0, "#3f8f5f", 3.2, 0.8, 0); cyl(g, 0.35, 1.8, "#e8ecee", 4.6, 0.6, 0, "x"); },
+    firepumps(g) { pump(g, -0.8, 0, SYS.fire.c, 1.1); pump(g, 0.8, 0, SYS.fire.c, 1.1); },
+    ows(g) { vessel(g, 0.5, 1.4, SYS.waste.c, -0.4, 0, 0); vessel(g, 0.4, 1.2, SYS.waste.c, 0.6, 0, 0); box(g, 0.5, 0.8, 0.3, "#e8ecee", 1.3, 1.2, 0); },
+    separators(g) { for (let i = 0; i < 3; i++) { const x = i * 1.8 - 1.8; box(g, 1.3, 1.0, 1.1, DARK, x, 0.5, 0); cyl(g, 0.48, 0.8, i === 2 ? SYS.lube.c : SYS.fuel.c, x, 1.4, 0, "y", 24, 0.32); } },
+    fuelmodule(g) { box(g, 3.4, 0.2, 1.6, DARK, 0, 0.1, 0); pump(g, -1.1, -0.3, SYS.fuel.c, 0.8); pump(g, -0.1, -0.3, SYS.fuel.c, 0.8); vessel(g, 0.3, 1.4, SYS.fuel.c, 1.0, 0.2, 0.2); cyl(g, 0.22, 1.6, "#c8ccc6", 1.0, 0.8, -0.5, "x"); },
+    coolers(g) { for (const z of [-0.8, 0.8]) { box(g, 1.0, 2.2, 0.9, SYS.sw.c, 0, 1.1, z); box(g, 1.2, 2.4, 0.1, DARK, 0, 1.2, z - 0.5); box(g, 1.2, 2.4, 0.1, DARK, 0, 1.2, z + 0.5); } },
+    fwg(g) { cyl(g, 0.8, 2.4, SYS.fw.c, 0, 1.2, 0); cyl(g, 0.5, 1.2, "#7fa8e8", 1.1, 0.6, 0); },
+    compressors(g) { for (const x of [-1, 1]) { box(g, 1.4, 0.3, 1.0, DARK, x, 0.15, 0); box(g, 0.8, 1.0, 0.8, SYS.air.c, x - 0.2, 0.8, 0); motor(g, x + 0.45, 0.3, 0, 0.7, 0.28); } },
+    airbottles(g) { cyl(g, 0.65, 3.6, SYS.air.c, -0.9, 0.9, 0, "x"); cyl(g, 0.65, 3.6, SYS.air.c, -0.9, 2.4, 0, "x"); box(g, 0.3, 3.0, 1.2, DARK, -2.5, 1.5, 0); box(g, 0.3, 3.0, 1.2, DARK, 0.7, 1.5, 0); },
+    sewage(g) { box(g, 2.6, 1.8, 1.4, SYS.waste.c, 0, 0.9, 0); pump(g, 1.8, 0, "#3a3a3a", 0.7); },
+    turbo(g) {
+      cyl(g, 1.0, 1.8, "#a3aaa6", 0, 2.0, 0, "x"); cyl(g, 0.9, 0.9, "#7f8b87", 1.3, 2.0, 0, "x", 24, 1.2); cyl(g, 0.7, 1.2, "#c7ccc8", -1.4, 2.0, 0, "x");
+      box(g, 2.0, 2.0, 1.8, SYS.air.c, 0.5, 0.0, 0);
+    },
+    exhrec(g) { cyl(g, 0.8, 13.5, "#c4c9cc", 0, 0, 0, "x"); },
+    gensets(g) {
+      for (let i = 0; i < 3; i++) {
+        const z = (i - 1) * 2.6;
+        box(g, 6.4, 0.4, 1.9, DARK, 0, 0.2, z); box(g, 3.6, 1.8, 1.4, MACH, -1.2, 1.3, z); box(g, 3.4, 0.4, 1.0, "#6f817a", -1.2, 2.4, z);
+        cyl(g, 0.8, 1.8, SYS.elec.c, 1.7, 1.3, z, "x"); cyl(g, 0.45, 0.6, "#a3aaa6", -3.2, 2.3, z, "x");
+      }
+    },
+    ecr(g) {
+      const W = M("#dfe6ea", { transparent: true, opacity: 0.22, depthWrite: false });
+      box(g, 7.5, 3.0, 7.5, W, 0, 1.5, 0); box(g, 7.5, 0.1, 7.5, "#5b6a70", 0, 0.05, 0);
+      box(g, 3.6, 1.0, 0.9, "#59656b", 0, 0.5, -1.2); box(g, 3.6, 0.6, 0.15, "#1f2a30", 0, 1.3, -0.95);
+    },
+    msb(g) { for (let i = 0; i < 6; i++) box(g, 1.05, 2.2, 0.7, i === 2 || i === 3 ? "#d7dbdc" : "#c9ced0", i * 1.1 - 2.75, 1.1, 0); },
+    boiler(g) { vessel(g, 1.2, 3.6, SYS.steam.c, 0, 0, 0); box(g, 1.0, 1.0, 0.8, "#c46a2a", 1.5, 1.6, 0); cyl(g, 0.35, 4, "#9aa1a6", 0, 6.3, 0); },
+    workshop(g) { box(g, 2.6, 1.0, 0.8, "#6a7a8a", -1, 0.5, 0); box(g, 2.2, 0.9, 1.0, "#a0a8ad", 1.6, 0.45, -1.6); cyl(g, 0.15, 1.6, "#4b5458", 1.6, 1.6, -1.6); },
+    crane(g) { for (const z of [-3.2, 4.2]) box(g, 16, 0.4, 0.4, "#d6b52c", 0, 0, z); box(g, 0.6, 0.5, 7.8, "#d6b52c", -2, -0.1, 0.5); box(g, 0.6, 0.6, 0.6, "#2b2b2b", -2, -0.6, 0.5); },
+    daytanks(g) { const C = M(SYS.fuel.c, { transparent: true, opacity: 0.85 }); box(g, 2.4, 3.6, 5.5, C, -1.4, 1.8, 0); box(g, 2.4, 3.6, 5.5, C, 1.4, 1.8, 0); box(g, 1.6, 3.0, 2.4, "#5b4630", 0, 1.5, 4.4); },
+    egb(g) { cyl(g, 1.7, 5.5, SYS.steam.c, 0, 2.75, 0); cyl(g, 1.0, 0.9, "#8f969b", 0, 5.9, 0); },
+    funnel(g) {
+      const f = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 3.2, 6, 4), M("#f0f2f2")); f.rotation.y = Math.PI / 4; f.scale.set(1, 1, 1.8); f.position.set(0, 3, 0); g.add(f);
+      box(g, 3.6, 0.6, 6.4, "#2b2b2b", 0, 6.1, 0);
+      for (const [x, z, r] of [[0, 0, 0.55], [1.0, 1.4, 0.3], [1.0, -1.4, 0.3], [-1.0, 1.4, 0.3], [-1.0, -1.4, 0.25]]) cyl(g, r, 2.2, "#7c8287", x, 6.8, z);
+    },
+    fans(g) { for (let i = 0; i < 4; i++) { const x = (i % 2) * 2.2 - 1.1, z = Math.floor(i / 2) * 2.2 - 1.1; cyl(g, 0.6, 1.2, SYS.air.c, x, 0.6, z); motor(g, x, 1.2, z, 0.6, 0.3); } },
+    incinerator(g) { cyl(g, 0.8, 2.2, SYS.waste.c, 0, 1.1, 0); box(g, 0.8, 1.0, 0.8, "#c46a2a", 1.2, 0.5, 0); cyl(g, 0.2, 2, "#7c8287", 0, 3.2, 0); },
+    co2(g) { for (let r = 0; r < 3; r++) for (let k = 0; k < 8; k++) cyl(g, 0.13, 1.5, SYS.fire.c, k * 0.32 - 1.1, 0.75, r * 0.32 - 0.3, "y", 12); box(g, 3.2, 0.15, 1.2, DARK, 0, 1.6, 0); },
+    bunker(g) { box(g, 7, 1.8, 8, M(SYS.fuel.c, { transparent: true, opacity: 0.45, depthWrite: false }), 0, 0, 0); },
+    ftpumps(g) { for (let i = 0; i < 2; i++) pump(g, 0, i * 1.5 - 0.75, SYS.fuel.c, 0.9); },
+    locooler(g) { box(g, 0.9, 1.8, 0.8, SYS.lube.c, 0, 0.9, 0); box(g, 1.1, 2.0, 0.1, DARK, 0, 1.0, -0.45); box(g, 1.1, 2.0, 0.1, DARK, 0, 1.0, 0.45); vessel(g, 0.35, 1.2, SYS.lube.c, 0, 0, 1.4); },
+    bilgetank(g) {
+      box(g, 5, 1.8, 4, M("#2b2b2b", { transparent: true, opacity: 0.5, depthWrite: false }), 0, 0, 0);
+      for (const [x, z] of [[-14, -12], [-14, 12], [14, -12], [14, 12]]) box(g, 1.0, 0.5, 1.0, "#1d1d1d", x - this.p[0], 0.85, z - this.p[2]);
+    },
+    exptank(g) { box(g, 1.8, 1.4, 1.2, SYS.fw.c, 0, 0.7, 0); },
+    hotwell(g) { box(g, 1.6, 1.2, 1.2, SYS.steam.c, 0, 0.6, 0); pump(g, 1.4, 0.5, SYS.steam.c, 0.6); pump(g, 1.4, -0.5, SYS.steam.c, 0.6); },
+    steering(g) { box(g, 2.6, 0.9, 3.4, SYS.hyd.c, 0, 0.45, 0); cyl(g, 0.35, 1.2, "#5c6a65", 0, 1.3, 0); for (const z of [-1.2, 1.2]) pump(g, 2.0, z, SYS.hyd.c, 0.7); },
+  };
+
+  // corp, pereți, punți
+  hullGroup = new THREE.Group(); scene.add(hullGroup);
+  const sec = new THREE.Shape(); const hb = 15.5;
+  sec.moveTo(-hb, 26); sec.lineTo(-hb, 1); sec.quadraticCurveTo(-hb, -3, -hb + 4, -3); sec.lineTo(hb - 4, -3); sec.quadraticCurveTo(hb, -3, hb, 1); sec.lineTo(hb, 26);
+  const hullGeo = new THREE.ExtrudeGeometry(sec, { depth: 30, bevelEnabled: false, curveSegments: 10 });
+  const hull = new THREE.Mesh(hullGeo, M("#c6d0d4", { transparent: true, opacity: 0.07, side: THREE.DoubleSide, depthWrite: false }));
+  hull.rotation.y = -Math.PI / 2; hull.position.set(15, 0, 0); hullGroup.add(hull);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(hullGeo, 30), new THREE.LineBasicMaterial({ color: 0x7d8b92, transparent: true, opacity: 0.55 }));
+  edges.rotation.copy(hull.rotation); edges.position.copy(hull.position); hullGroup.add(edges);
+  const stern = new THREE.Mesh(new THREE.CylinderGeometry(5, 15.5, 12, 4, 1, true), M("#c6d0d4", { transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false }));
+  stern.rotation.z = Math.PI / 2; stern.rotation.x = Math.PI / 4; stern.scale.set(1, 1, 0.75); stern.position.set(-21, 12, 0); hullGroup.add(stern);
+  const plates = [];
+  window.__plates = plates;
+  const gridTex = (() => {
+    const cv = document.createElement("canvas"); cv.width = cv.height = 64; const x = cv.getContext("2d");
+    x.fillStyle = "#7e898e"; x.fillRect(0, 0, 64, 64); x.strokeStyle = "#5d676c"; x.lineWidth = 3;
+    for (let i = 0; i <= 64; i += 16) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 64); x.stroke(); x.beginPath(); x.moveTo(0, i); x.lineTo(64, i); x.stroke(); }
+    const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(12, 12); return t;
+  })();
+  const plate = (y, hole, op) => {
+    const s = new THREE.Shape(); s.moveTo(-15, -hb); s.lineTo(15, -hb); s.lineTo(15, hb); s.lineTo(-15, hb); s.lineTo(-15, -hb);
+    if (hole) { const h = new THREE.Path(); h.moveTo(hole[0], hole[2]); h.lineTo(hole[0], hole[3]); h.lineTo(hole[1], hole[3]); h.lineTo(hole[1], hole[2]); h.lineTo(hole[0], hole[2]); s.holes.push(h); }
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(s), M("#8b969b", { map: gridTex, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: op > 0.9 }));
+    m.rotation.x = Math.PI / 2; m.position.y = y; scene.add(m); if (y > 0) plates.push(m);
+  };
+  plate(0, null, 0.85); plate(5, [-8.6, 8.6, -3.2, 4.4], 0.92); plate(10, [-8.8, 8.8, -3.2, 4.4], 0.92); plate(15, [-7.5, 0.5, -4.5, 4.5], 0.92);
+  for (const x of [-15, 15]) { const w = new THREE.Mesh(new THREE.PlaneGeometry(31, 29), M("#c6d0d4", { transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false })); w.rotation.y = Math.PI / 2; w.position.set(x, 11.5, 0); hullGroup.add(w); }
+
+  // echipamente
+  for (const it of ITEMS) {
+    const g = new THREE.Group(); B[it.b].call(it, g); g.position.set(...it.p); g.userData.id = it.id; scene.add(g); groups[it.id] = g;
+    g.traverse((o) => { if (o.isMesh) { o.userData.id = it.id; pick.push(o); } });
+    const bb = new THREE.Box3().setFromObject(g); it.top = new THREE.Vector3((bb.min.x + bb.max.x) / 2, bb.max.y + 0.4, (bb.min.z + bb.max.z) / 2);
+    if (it.id === "funnel" || it.id === "exh") it.top.y = bb.max.y + 0.4;
+  }
+  // tubulaturi
+  const UP = new THREE.Vector3(0, 1, 0);
+  for (const S of SYSTEMS) {
+    const g = new THREE.Group(), col = SYS[S.s].c, r = S.r0;
+    const mat = M(col, { roughness: 0.45, metalness: 0.3 }), paths = [];
+    for (const rt of S.routes) {
+      const pts = rt.map((p) => new THREE.Vector3(...p));
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1], len = a.distanceTo(b); if (len < 1e-3) continue;
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 10), mat);
+        m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize()); g.add(m);
+      }
+      for (const p of pts) { const k = new THREE.Mesh(new THREE.SphereGeometry(r * 1.18, 10, 8), mat); k.position.copy(p); g.add(k); }
+      const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+      paths.push({ pts, cum, L: cum[cum.length - 1] });
+    }
+    for (const p of S.marks || []) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.55, 0.4), mat); m.position.set(...p); g.add(m); }
+    g.traverse((o) => { if (o.isMesh) { o.userData.sys = S.id; pickPipes.push(o); } });
+    scene.add(g); sysGroups[S.id] = g;
+    const fg = new THREE.Group(), fm = new THREE.MeshBasicMaterial({ color: new THREE.Color(col).lerp(new THREE.Color(0xffffff), 0.6) }), parts = [];
+    const fgeo = new THREE.SphereGeometry(Math.max(0.1, r * 0.8), 8, 6);
+    for (const P of paths) { const n = Math.max(2, Math.round(P.L / 1.5)); for (let k = 0; k < n; k++) { const m = new THREE.Mesh(fgeo, fm); fg.add(m); parts.push({ P, u: k / n, m }); } }
+    fg.visible = false; scene.add(fg); flows[S.id] = { g: fg, parts };
+    const bb = new THREE.Box3().setFromObject(g); S.box = bb;
+  }
+}
+function ghost(g, on) {
+  g.traverse((o) => {
+    if (!o.isMesh) return; const m = o.material;
+    if (!m.userData.orig) m.userData.orig = { t: m.transparent, o: m.opacity, d: m.depthWrite };
+    const q = m.userData.orig;
+    if (on) { m.transparent = true; m.opacity = Math.min(q.o, 0.09); m.depthWrite = false; }
+    else { m.transparent = q.t; m.opacity = q.o; m.depthWrite = q.d; }
+    m.needsUpdate = true;
+  });
+}
+function plateOpacity() { if (!ok) return; for (const m of window.__plates) { m.material.opacity = iso ? 0.22 : (deck ? 0.92 : 0.5); m.material.depthWrite = !!deck && !iso; } }
+function isolate(sid, fly) {
+  iso = sid || null;
+  const S = SYSTEMS.find((x) => x.id === iso);
+  if (S && sel) select(null);
+  const ids = new Set(S ? S.steps.map((x) => x[0]).filter(Boolean) : []);
+  if (ok) {
+    for (const it of ITEMS) ghost(groups[it.id], !!S && !ids.has(it.id));
+    for (const x of SYSTEMS) { sysGroups[x.id].visible = S ? x.id === iso : state.pipes; flows[x.id].g.visible = !!S && x.id === iso; }
+    plateOpacity();
+    if (S && fly) { const c = S.box.getCenter(new THREE.Vector3()), sz = S.box.getSize(new THREE.Vector3()).length(); camTo([c.x + sz * 0.95, c.y + sz * 0.7, c.z + sz * 1.1], [c.x, c.y, c.z]); }
+  }
+  try { history.replaceState(null, "", "#" + (S ? "inst-" + S.id : DECKS[deck].id)); } catch (e) {}
+  renderSysGrid(); renderSysCard();
+}
+function renderSysGrid() {
+  $("sysgrid").innerHTML = SYSTEMS.map((S) => `<button data-s="${S.id}" class="${iso === S.id ? "sel" : ""}" style="--c:${SYS[S.s].c}">${S.name}<small>${S.short}</small></button>`).join("");
+  $("sysgrid").querySelectorAll("button").forEach((b) => b.onclick = () => { if (deck) setDeck(0, true); isolate(iso === b.dataset.s ? null : b.dataset.s, true); if (iso) $("syscard").scrollIntoView({ behavior: "smooth", block: "start" }); });
+}
+function renderSysCard() {
+  const S = SYSTEMS.find((x) => x.id === iso), c = $("syscard");
+  if (!S) { c.innerHTML = `<p class="note">Nicio instalație izolată: în model sunt afișate toate tubulaturile${state.pipes ? "" : " (ascunse acum din butonul Tubulaturi)"}.</p>`; return; }
+  c.className = "card"; c.style.setProperty("--c", SYS[S.s].c);
+  c.innerHTML = `<h3>${S.name}</h3>
+    <div class="chips"><span class="chip"><i class="dot" style="--c:${SYS[S.s].c}"></i>${SYS[S.s].n}</span><span class="chip">${S.routes.length} trasee de tubulatură</span></div>
+    <p>${S.t}</p>
+    <div class="lbl">Schema fluxului (apăsați pe un pas pentru echipament)</div>
+    <ol class="flow" style="--c:${SYS[S.s].c}">${S.steps.map(([id, d], i) => { const it = ITEMS.find((x) => x.id === id);
+      return `<li><span class="k">${i + 1}</span>${it ? `<button data-id="${id}"><b>${it.name}</b><span class="d">${d}</span></button>` : `<div style="padding:2px 4px"><b>${d}</b></div>`}</li>`; }).join("")}</ol>
+    <div class="rule">${S.r}</div>
+    <div class="btnrow" style="margin-top:10px"><button id="isoOff">Arată toate instalațiile</button></div>`;
+  c.querySelectorAll(".flow button").forEach((b) => b.onclick = () => select(ITEMS.find((x) => x.id === b.dataset.id), true, true));
+  $("isoOff").onclick = () => isolate(null);
+}
+function setTab(t) {
+  $("tabDecks").setAttribute("aria-selected", t === "decks"); $("tabSys").setAttribute("aria-selected", t === "sys");
+  $("paneDecks").hidden = t !== "decks"; $("paneSys").hidden = t !== "sys";
+}
+$("tabDecks").onclick = () => setTab("decks");
+$("tabSys").onclick = () => setTab("sys");
+
+// ---------- etichete
+const pinsEl = $("pins");
+pinsEl.innerHTML = ITEMS.map((it) => `<div class="pin" id="pin_${it.id}" style="--c:${SYS[it.s].c};display:none">${it.n}<span class="tt">${it.name}</span></div>`).join("");
+ITEMS.forEach((it) => $("pin_" + it.id).onclick = () => select(it, false));
+const v3 = ok ? new THREE.Vector3() : null;
+function placePins() {
+  const r = canvas.getBoundingClientRect();
+  for (const it of ITEMS) {
+    const el = $("pin_" + it.id);
+    const S = iso && SYSTEMS.find((x) => x.id === iso);
+    const show = S ? S.steps.some((x) => x[0] === it.id) && (!deck || it.d === deck) : (deck ? it.d === deck : (it === sel || ["me", "dg", "prop", "tc", "ecr", "funnel"].includes(it.id)));
+    if (!show || !ok) { el.style.display = "none"; continue; }
+    v3.copy(it.top).project(camera);
+    if (v3.z > 1 || Math.abs(v3.x) > 1.1 || Math.abs(v3.y) > 1.1) { el.style.display = "none"; continue; }
+    const top = (1 - v3.y) / 2 * r.height; if (top < (r.width > 700 ? 100 : 80) && it !== sel) { el.style.display = "none"; continue; }
+    el.style.display = "flex"; el.style.left = ((v3.x + 1) / 2 * r.width) + "px"; el.style.top = ((1 - v3.y) / 2 * r.height) + "px";
+    el.classList.toggle("sel", it === sel);
+  }
+}
+
+// ---------- interacțiune
+let anim = null;
+function camTo(pos, tgt) { if (!ok) return; anim = { t: 0, p0: camera.position.clone(), t0: controls.target.clone(), p1: new THREE.Vector3(...pos), t1: new THREE.Vector3(...tgt) }; }
+function deckView(i) {
+  if (!i) return [[42, 30, 50], [-3, 11, 0]];
+  const y = DECKS[i].y; return [[24, y + 17, 30], [-1, y + 1.5, 0]];
+}
+function setDeck(i, keepCam) {
+  deck = i;
+  if (ok) { clip.constant = i ? DECKS[i].y + (i === 4 ? 30 : 4.75) : 40; plateOpacity(); }
+  if (!keepCam) camTo(...deckView(i));
+  if (sel && i && sel.d !== i) select(null);
+  if (!iso) try { history.replaceState(null, "", "#" + DECKS[i].id); } catch (e) {}
+  renderDecks(); renderList();
+}
+function highlight(it, on) {
+  const g = groups[it.id]; if (!g) return;
+  g.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissive.setHex(on ? 0x4a1d0c : 0x000000); });
+}
+function select(it, fly, keepTab) {
+  if (sel) highlight(sel, false);
+  sel = it;
+  if (it) {
+    highlight(it, true);
+    if (deck && it.d !== deck) setDeck(it.d, true);
+    if (fly && ok) { const t = it.top; camTo([t.x + 13, t.y + 9, t.z + (t.z >= 0 ? 15 : -15)], [t.x, t.y - 1.2, t.z]); }
+  }
+  renderCard(); renderList();
+}
+if (ok) {
+  let down = null;
+  canvas.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY]; canvas.style.cursor = "grabbing"; });
+  canvas.addEventListener("pointerup", (e) => {
+    canvas.style.cursor = "grab";
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+    const r = canvas.getBoundingClientRect(), ray = new THREE.Raycaster();
+    ray.setFromCamera({ x: (e.clientX - r.left) / r.width * 2 - 1, y: -((e.clientY - r.top) / r.height) * 2 + 1 }, camera);
+    const vis = (o) => { if (o.userData.sys) return o.parent.visible; const m = o.material; return !(m.transparent && m.opacity < 0.1); };
+    const hit = ray.intersectObjects(pick.concat(pickPipes), false).find((h) => h.point.y <= clip.constant + 0.01 && vis(h.object));
+    if (!hit) return;
+    if (hit.object.userData.sys) { setTab("sys"); isolate(hit.object.userData.sys, false); }
+    else select(ITEMS.find((x) => x.id === hit.object.userData.id), false);
+  });
+  controls.addEventListener("start", () => { anim = null; });
+  const resize = () => { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  new ResizeObserver(resize).observe(view); resize();
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) { state.rot = false; $("bRot").setAttribute("aria-pressed", "false"); }
+  const clock = new THREE.Clock();
+  const loop = () => {
+    const dt = Math.min(0.05, clock.getDelta());
+    if (anim) {
+      anim.t = Math.min(1, anim.t + dt / (reduce ? 0.01 : 0.9)); const k = 1 - (1 - anim.t) ** 3;
+      camera.position.lerpVectors(anim.p0, anim.p1, k); controls.target.lerpVectors(anim.t0, anim.t1, k);
+      if (anim.t >= 1) anim = null;
+    }
+    if (state.rot) for (const s of spin) s.rotation.x += dt * 1.6;
+    if (iso) for (const f of flows[iso].parts) {
+      const P = f.P; f.u = (f.u + dt * (reduce ? 0 : 2.2) / P.L) % 1; const d = f.u * P.L;
+      let i = 1; while (i < P.cum.length - 1 && P.cum[i] < d) i++;
+      const a = P.pts[i - 1], b = P.pts[i], k = (d - P.cum[i - 1]) / Math.max(1e-6, P.cum[i] - P.cum[i - 1]);
+      f.m.position.lerpVectors(a, b, k);
+    }
+    controls.update(); renderer.render(scene, camera); placePins();
+    requestAnimationFrame(loop);
+  };
+  const [p0, t0] = deckView(0); camera.position.set(...p0); controls.target.set(...t0);
+  loop();
+}
+$("bRot").onclick = (e) => { state.rot = !state.rot; e.currentTarget.setAttribute("aria-pressed", state.rot); };
+$("bHull").onclick = (e) => { state.hull = !state.hull; e.currentTarget.setAttribute("aria-pressed", state.hull); if (hullGroup) hullGroup.visible = state.hull; };
+$("bReset").onclick = () => { isolate(null); setDeck(0); select(ITEMS[0], false); };
+$("bPipes").onclick = (e) => { state.pipes = !state.pipes; e.currentTarget.setAttribute("aria-pressed", state.pipes); if (!iso && ok) for (const x of SYSTEMS) sysGroups[x.id].visible = state.pipes; renderSysCard(); };
+new ResizeObserver(() => renderDecks()).observe($("elev"));
+
+const start = DECKS.findIndex((d) => "#" + d.id === location.hash);
+setDeck(start > 0 ? start : 0, true);
+if (ok && start > 0) { const [p, t] = deckView(start); camera.position.set(...p); controls.target.set(...t); }
+select(start > 0 ? ITEMS.find((x) => x.d === start) : ITEMS[0], false);
+renderSysGrid(); renderSysCard();
+const hs = location.hash.startsWith("#inst-") ? location.hash.slice(6) : null;
+if (hs && SYSTEMS.some((x) => x.id === hs)) { setTab("sys"); isolate(hs, false); if (ok) { const S = SYSTEMS.find((x) => x.id === hs), c = S.box.getCenter(new THREE.Vector3()), sz = S.box.getSize(new THREE.Vector3()).length(); camera.position.set(c.x + sz * 0.75, c.y + sz * 0.55, c.z + sz * 0.85); controls.target.copy(c); } }
+window.addEventListener("hashchange", () => { const i = DECKS.findIndex((d) => "#" + d.id === location.hash); if (i >= 0 && i !== deck) setDeck(i); });
+}
+</script>
+</body>
+</html>

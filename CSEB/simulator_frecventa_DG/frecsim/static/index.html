@@ -20,6 +20,12 @@
     <span class="sub">Grup diesel-generator 400 kW · 500 kVA · 400 V · 50 Hz · 1500 rot/min</span>
   </div>
   <div class="topctl">
+    <a class="course-back" id="course-back" href="../../../index.html" hidden>← Înapoi la curs</a>
+    <script>
+      if (location.pathname.endsWith("/static/index.html")) {
+        document.getElementById("course-back").hidden = false;
+      }
+    </script>
     <span class="lcd small" id="clock">t = 0,0 s</span>
     <label class="ctl">Timp
       <select id="speed">
