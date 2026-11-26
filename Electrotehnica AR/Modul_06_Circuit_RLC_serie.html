@@ -20,7 +20,9 @@
     .card { background:var(--panel); border:1px solid var(--line); border-radius:1rem; padding:1.3rem; }
     .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
     .card p:last-child { margin-bottom:0; }
-    .formula { background:var(--soft); border-left:4px solid var(--blue); border-radius:.3rem; font-family:Consolas,monospace; font-weight:700; padding:.7rem 1rem; overflow-wrap:anywhere; }
+    math { font-family:"Cambria Math","STIX Two Math",serif; }
+    .formula { background:var(--soft); border-left:4px solid var(--blue); border-radius:.3rem; display:flex; flex-wrap:wrap; align-items:center; gap:1rem 2.5rem; padding:1rem 1.25rem; overflow-x:auto; }
+    .formula math { font-size:1.3rem; margin:0; }
     .note { border-left:4px solid var(--teal); }
     .circuit { display:block; width:100%; max-width:720px; margin:auto; }
     .circuit text { fill:var(--ink); font:15px system-ui,sans-serif; text-anchor:middle; }
@@ -85,20 +87,63 @@
   </div>
 
   <h2>2. Reactanță și impedanță</h2>
-  <p>Reactanța arată opoziția bobinei sau a condensatorului la curentul alternativ. La frecvența f, pulsația este ω = 2πf.</p>
-  <div class="formula">X<sub>L</sub> = 2πfL &nbsp; · &nbsp; X<sub>C</sub> = 1 / (2πfC) &nbsp; [Ω]</div>
-  <p>X<sub>L</sub> crește cu frecvența, iar X<sub>C</sub> scade. Reactanța totală este X = X<sub>L</sub> − X<sub>C</sub>. Impedanța complexă și modulul ei sunt:</p>
-  <div class="formula">Z = R + j(X<sub>L</sub> − X<sub>C</sub>) &nbsp; · &nbsp; |Z| = √(R² + X²)</div>
+  <p>Reactanța arată opoziția bobinei sau a condensatorului la curentul alternativ. La frecvența f, pulsația este <math aria-label="omega egal cu 2 pi f"><mi>ω</mi><mo>=</mo><mn>2</mn><mi>π</mi><mi>f</mi></math>.</p>
+  <div class="formula">
+    <math display="block" aria-label="X L egal cu 2 pi f L">
+      <msub><mi>X</mi><mi>L</mi></msub><mo>=</mo><mn>2</mn><mi>π</mi><mi>f</mi><mi>L</mi>
+    </math>
+    <math display="block" aria-label="X C egal cu 1 supra 2 pi f C">
+      <msub><mi>X</mi><mi>C</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi><mi>f</mi><mi>C</mi></mrow></mfrac>
+    </math>
+    <span>[Ω]</span>
+  </div>
+  <p>X<sub>L</sub> crește cu frecvența, iar X<sub>C</sub> scade. Reactanța totală este <math aria-label="X egal cu X L minus X C"><mi>X</mi><mo>=</mo><msub><mi>X</mi><mi>L</mi></msub><mo>−</mo><msub><mi>X</mi><mi>C</mi></msub></math>. Impedanța complexă și modulul ei sunt:</p>
+  <div class="formula">
+    <math display="block" aria-label="Z egal cu R plus j ori X L minus X C">
+      <mi>Z</mi><mo>=</mo><mi>R</mi><mo>+</mo><mi>j</mi><mo>(</mo><msub><mi>X</mi><mi>L</mi></msub><mo>−</mo><msub><mi>X</mi><mi>C</mi></msub><mo>)</mo>
+    </math>
+    <math display="block" aria-label="Modulul lui Z egal cu radical din R la pătrat plus X la pătrat">
+      <mo>|</mo><mi>Z</mi><mo>|</mo><mo>=</mo><msqrt><msup><mi>R</mi><mn>2</mn></msup><mo>+</mo><msup><mi>X</mi><mn>2</mn></msup></msqrt>
+    </math>
+  </div>
   <p>În triunghiul impedanțelor, R este cateta orizontală, X este cateta verticală cu semn, iar |Z| este ipotenuza. Dacă X este negativ, triunghiul se află sub axa orizontală.</p>
 
   <h2>3. Defazaj și rezonanță</h2>
-  <div class="formula">φ = atan2(X<sub>L</sub> − X<sub>C</sub>, R) &nbsp; · &nbsp; I = U / |Z|</div>
-  <p>Aici φ este <strong>faza tensiunii sursei față de curent</strong>. Pentru X &gt; 0 circuitul este inductiv și curentul rămâne în urmă; pentru X &lt; 0 este capacitiv și curentul este înaintea tensiunii.</p>
+  <div class="formula">
+    <math display="block" aria-label="Fi egal cu arctangenta lui X L minus X C supra R">
+      <mi>φ</mi><mo>=</mo><mi mathvariant="normal">arctan</mi><mo>(</mo><mfrac><mrow><msub><mi>X</mi><mi>L</mi></msub><mo>−</mo><msub><mi>X</mi><mi>C</mi></msub></mrow><mi>R</mi></mfrac><mo>)</mo>
+    </math>
+    <math display="block" aria-label="I egal cu U supra modulul lui Z">
+      <mi>I</mi><mo>=</mo><mfrac><mi>U</mi><mrow><mo>|</mo><mi>Z</mi><mo>|</mo></mrow></mfrac>
+    </math>
+  </div>
+  <p>Aici φ este <strong>faza tensiunii sursei față de curent</strong>. Pentru <math><mi>X</mi><mo>&gt;</mo><mn>0</mn></math> circuitul este inductiv și curentul rămâne în urmă; pentru <math><mi>X</mi><mo>&lt;</mo><mn>0</mn></math> este capacitiv și curentul este înaintea tensiunii.</p>
   <div class="card note">
     <h3>Rezonanța serie</h3>
-    <p>La f<sub>0</sub> = 1 / (2π√LC), reactanțele sunt egale: X<sub>L</sub> = X<sub>C</sub>. Impedanța devine |Z| = R, φ = 0°, iar curentul este maxim pentru o tensiune dată. Tensiunile pe bobină și condensator se opun în fază și pot fi fiecare mai mari decât tensiunea sursei.</p>
+    <p>La frecvența de rezonanță:</p>
+    <div class="formula">
+      <math display="block" aria-label="f zero egal cu 1 supra 2 pi radical din L C">
+        <msub><mi>f</mi><mn>0</mn></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi><msqrt><mi>L</mi><mi>C</mi></msqrt></mrow></mfrac>
+      </math>
+      <math display="block" aria-label="X L egal cu X C">
+        <msub><mi>X</mi><mi>L</mi></msub><mo>=</mo><msub><mi>X</mi><mi>C</mi></msub>
+      </math>
+    </div>
+    <p>Impedanța devine <math><mo>|</mo><mi>Z</mi><mo>|</mo><mo>=</mo><mi>R</mi></math>, <math><mi>φ</mi><mo>=</mo><mn>0</mn><mo>°</mo></math>, iar curentul este maxim pentru o tensiune dată. Tensiunile pe bobină și condensator se opun în fază și pot fi fiecare mai mari decât tensiunea sursei.</p>
   </div>
-  <p>Puterea activă este P = UI cos φ = I²R (W), puterea reactivă este Q = I²X (var), iar puterea aparentă este S = UI (VA). Semnul lui Q indică regimul inductiv (+) sau capacitiv (−).</p>
+  <p>Pentru puterea activă P, reactivă Q și aparentă S:</p>
+  <div class="formula">
+    <math display="block" aria-label="P egal cu U I cosinus fi egal cu I la pătrat R, în wați">
+      <mi>P</mi><mo>=</mo><mi>U</mi><mi>I</mi><mi>cos</mi><mi>φ</mi><mo>=</mo><msup><mi>I</mi><mn>2</mn></msup><mi>R</mi><mtext> (W)</mtext>
+    </math>
+    <math display="block" aria-label="Q egal cu I la pătrat X, în vari">
+      <mi>Q</mi><mo>=</mo><msup><mi>I</mi><mn>2</mn></msup><mi>X</mi><mtext> (var)</mtext>
+    </math>
+    <math display="block" aria-label="S egal cu U I, în volt-amperi">
+      <mi>S</mi><mo>=</mo><mi>U</mi><mi>I</mi><mtext> (VA)</mtext>
+    </math>
+  </div>
+  <p>Semnul lui Q indică regimul inductiv (+) sau capacitiv (−).</p>
 
   <h2>4. Simulator interactiv</h2>
   <p>Modifică valorile și urmărește cum se schimbă triunghiul și undele. Simulatorul folosește valori efective (RMS), componente ideale și regim sinusoidal staționar; nu modelează tranzitoriul de pornire.</p>
@@ -120,7 +165,7 @@
       <div class="metrics">
         <div class="metric"><span>X<sub>L</sub> · reactanță inductivă</span><strong id="xl"></strong></div>
         <div class="metric"><span>X<sub>C</sub> · reactanță capacitivă</span><strong id="xc"></strong></div>
-        <div class="metric"><span>X = X<sub>L</sub> − X<sub>C</sub></span><strong id="reactance"></strong></div>
+        <div class="metric"><span><math><mi>X</mi><mo>=</mo><msub><mi>X</mi><mi>L</mi></msub><mo>−</mo><msub><mi>X</mi><mi>C</mi></msub></math></span><strong id="reactance"></strong></div>
         <div class="metric"><span>|Z| · impedanță</span><strong id="impedance"></strong></div>
         <div class="metric"><span>I · curent efectiv</span><strong id="current"></strong></div>
         <div class="metric"><span>φ · faza tensiunii față de curent</span><strong id="phase"></strong></div>
@@ -144,7 +189,7 @@
             <line id="triangle-r" class="svg-r"/><line id="triangle-x" class="svg-x"/><line id="triangle-z" class="svg-z"/>
             <text class="svg-label" x="30" y="145">0</text>
           </svg>
-          <div class="legend"><span class="r">R</span><span class="x">X = X<sub>L</sub> − X<sub>C</sub></span><span class="z">|Z|</span></div>
+          <div class="legend"><span class="r">R</span><span class="x"><math><mi>X</mi><mo>=</mo><msub><mi>X</mi><mi>L</mi></msub><mo>−</mo><msub><mi>X</mi><mi>C</mi></msub></math></span><span class="z">|Z|</span></div>
           <p>Cateta X este orientată în sus pentru regim inductiv și în jos pentru regim capacitiv.</p>
         </div>
         <div class="visual">
@@ -158,7 +203,7 @@
             <text class="svg-label" x="35" y="242">0</text><text class="svg-label" x="315" y="242">T</text><text class="svg-label" x="585" y="242">2T</text>
           </svg>
           <div class="legend"><span class="voltage">Tensiune u(t)</span><span class="current">Curent i(t)</span></div>
-          <p>Amplitudinile sunt normalizate separat pentru a compara fazele; T = 1/f. Curbele reprezintă două perioade.</p>
+          <p>Amplitudinile sunt normalizate separat pentru a compara fazele; <math aria-label="T egal cu 1 supra f"><mi>T</mi><mo>=</mo><mfrac><mn>1</mn><mi>f</mi></mfrac></math>. Curbele reprezintă două perioade.</p>
         </div>
       </div>
     </div>
