@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Modulul 2 din cursul de electrotehnică de bază: rezistență, rezistivitate și gruparea rezistoarelor.">
-    <title>Modulul 2: Rezistența electrică | Electrotehnică de bază</title>
+    <meta name="description" content="Modulul 2 de electrotehnică: rezistoare, variația rezistenței cu temperatura și condensatoare.">
+    <title>Modulul 2: Elemente de circuit | Electrotehnică de bază</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
     <style>
@@ -20,38 +20,42 @@
       .lead, .muted { color:var(--muted); }
       .lead { font-size:17px; max-width:72ch; }
       .card { background:var(--panel); border:1px solid var(--line); border-radius:6px; margin-top:1.25rem; padding:14px 16px; }
-      .formula { background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--copper); border-radius:6px; color:var(--ink); font-family:var(--f-mono); font-size:14px; font-weight:600; margin:1rem 0; padding:12px 14px; text-align:center; }
+      math { font-family:"Cambria Math","STIX Two Math",serif; }
+      .formula { background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--copper); border-radius:6px; color:var(--ink); margin:1rem 0; overflow-x:auto; padding:12px 14px; text-align:center; }
+      .formula math { font-size:1.3rem; margin:0; }
       .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); }
-      .circuit { align-items:center; display:flex; flex-wrap:wrap; gap:.7rem; justify-content:center; min-height:105px; }
-      .wire { background:var(--wire); height:3px; width:42px; }
-      .resistor { border:3px solid var(--drop); border-radius:4px; color:var(--drop); font-family:var(--f-mono); font-weight:800; padding:.3rem .6rem; }
-      .parallel { display:grid; gap:.55rem; }
-      .parallel-row { align-items:center; display:flex; }
+      .circuit svg { display:block; height:auto; margin:auto; max-width:480px; width:100%; }
+      .circuit path { fill:none; stroke:var(--wire); stroke-width:3; }
+      .circuit rect { fill:var(--panel); stroke:var(--drop); stroke-width:3; }
+      .circuit text { fill:var(--drop); font:700 16px var(--f-mono); text-anchor:middle; }
       .check { border-left:5px solid var(--ok); }
+      .warning { border-left:5px solid var(--warn); }
       ul { padding-left:1.3rem; }
       @media (max-width:700px) { body { padding:16px 14px 32px; } .eyebrow { margin-top:1.5rem; } }
+      @media (max-width:400px) { .formula { padding:10px 8px; } .formula math { font-size:1.05rem; } }
     </style>
   </head>
   <body>
     <main>
       <a href="index.html">← Înapoi la module</a>
       <p class="eyebrow">Modulul 02</p>
-      <h1>Rezistența electrică și rezistoarele</h1>
+      <h1>Elemente de circuit: rezistoare și condensatoare</h1>
       <p class="lead">
-        Acest modul explică opoziția la trecerea curentului electric, materialele din
-        care sunt realizate conductoarele și modurile principale de grupare a rezistoarelor.
+        Descoperă cum rezistoarele limitează curentul, cum variază rezistența cu temperatura
+        și cum condensatoarele stochează energie electrică.
       </p>
 
       <h2>1. Rezistența electrică</h2>
       <p>
         Rezistența electrică, notată cu <strong>R</strong>, exprimă opoziția unui conductor
         la trecerea curentului electric. Unitatea sa de măsură este ohmul, notat cu
-        <strong>Ω</strong>. Conform legii lui Ohm:
+        <strong>Ω</strong>. Pentru un rezistor ohmic, la temperatură constantă, se aplică legea lui Ohm:
       </p>
-      <div class="formula">R = U / I</div>
+      <div class="formula"><math display="block" aria-label="R egal cu U supra I"><mi>R</mi><mo>=</mo><mfrac><mi>U</mi><mi>I</mi></mfrac></math></div>
       <p class="muted">U este tensiunea în volți (V), iar I este intensitatea curentului în amperi (A).</p>
       <div class="card">
-        Dacă la bornele unui rezistor de 10 Ω se aplică 20 V, curentul este I = U / R = 20 / 10 = 2 A.
+        Dacă la bornele unui rezistor de 10 Ω se aplică 20 V, curentul este
+        <math><mi>I</mi><mo>=</mo><mfrac><mi>U</mi><mi>R</mi></mfrac><mo>=</mo><mfrac><mn>20</mn><mn>10</mn></mfrac><mo>=</mo><mn>2</mn><mtext> A</mtext></math>.
       </div>
 
       <h2>2. Rezistivitatea</h2>
@@ -60,7 +64,7 @@
         Cu cât rezistivitatea este mai mică, cu atât materialul conduce mai bine curentul.
         Cuprul și aluminiul sunt folosite frecvent ca materiale conductoare.
       </p>
-      <div class="formula">R = ρ · l / S</div>
+      <div class="formula"><math display="block" aria-label="R egal cu rho ori l supra S"><mi>R</mi><mo>=</mo><mi>ρ</mi><mfrac><mi>l</mi><mi>S</mi></mfrac></math></div>
       <div class="grid">
         <div class="card"><strong>ρ</strong><br><span class="muted">rezistivitatea materialului, în Ω·m</span></div>
         <div class="card"><strong>l</strong><br><span class="muted">lungimea conductorului, în m</span></div>
@@ -71,31 +75,86 @@
         lungime, un conductor cu secțiune mai mare are o rezistență mai mică.
       </p>
 
-      <h2>3. Rezistoare grupate în serie</h2>
+      <h2>3. Variația rezistenței cu temperatura</h2>
+      <p>La majoritatea metalelor, rezistența crește odată cu temperatura. Într-un interval limitat în jurul unei temperaturi de referință, variația se poate aproxima prin:</p>
+      <div class="formula"><math display="block" aria-label="R la temperatura T este aproximativ R la temperatura de referință ori unu plus alfa ori T minus T zero"><mi>R</mi><mo>(</mo><mi>T</mi><mo>)</mo><mo>≈</mo><msub><mi>R</mi><mn>0</mn></msub><mo>[</mo><mn>1</mn><mo>+</mo><mi>α</mi><mo>(</mo><mi>T</mi><mo>−</mo><msub><mi>T</mi><mn>0</mn></msub><mo>)</mo><mo>]</mo></math></div>
+      <p><strong>R<sub>0</sub></strong> este rezistența la temperatura de referință <strong>T<sub>0</sub></strong>, iar <strong>α</strong> este coeficientul de temperatură la acea referință, în 1/°C sau 1/K. Diferența de temperatură are aceeași valoare numerică în °C și K. Relația liniară este o aproximație, nu o lege valabilă la orice temperatură.</p>
+      <div class="card">
+        <strong>Exemplu:</strong> un conductor de cupru are 100 Ω la 20 °C. Cu α ≈ 0,00393/°C, pentru o creștere de 40 °C factorul de corecție este 1,1572:
+        <div class="formula"><math display="block" aria-label="R la 60 de grade Celsius este aproximativ 100 ori 1,1572, egal cu 115,72 ohmi"><mi>R</mi><mo>≈</mo><mn>100</mn><mo>⋅</mo><mn>1,1572</mn><mo>=</mo><mn>115,72</mn><mtext> Ω</mtext></math></div>
+      </div>
+      <p>Un coeficient pozitiv înseamnă că rezistența crește cu temperatura; unul negativ indică scăderea ei. Termistoarele <strong>NTC</strong> și <strong>PTC</strong> sunt folosite pentru măsurare sau protecție, dar variația lor poate fi neliniară și se citește din fișa tehnică. O sondă Pt100 are 100 Ω la 0 °C și un coeficient pozitiv.</p>
+
+      <h2>4. Rezistoare reale și puterea disipată</h2>
+      <p>Rezistorul transformă energia electrică în principal în căldură. Pentru un rezistor ohmic, puterea este:</p>
+      <div class="formula"><math display="block" aria-label="P egal cu U I egal cu I la pătrat R egal cu U la pătrat supra R"><mi>P</mi><mo>=</mo><mi>U</mi><mi>I</mi><mo>=</mo><msup><mi>I</mi><mn>2</mn></msup><mi>R</mi><mo>=</mo><mfrac><msup><mi>U</mi><mn>2</mn></msup><mi>R</mi></mfrac></math></div>
+      <div class="grid">
+        <div class="card"><strong>Valoare nominală și toleranță</strong><br><span class="muted">Toleranța arată abaterea permisă față de valoarea nominală: de exemplu, 100 Ω ±5% înseamnă între 95 Ω și 105 Ω.</span></div>
+        <div class="card"><strong>Putere nominală</strong><br><span class="muted">Alege o putere nominală peste puterea calculată și ține cont de reducerea admisă la temperaturi ridicate, conform fișei tehnice.</span></div>
+        <div class="card"><strong>Tipuri</strong><br><span class="muted">Rezistoarele cu peliculă sunt folosite frecvent în electronică; cele bobinate pot suporta puteri mai mari. Potențiometrele permit reglarea rezistenței.</span></div>
+      </div>
+      <p>De exemplu, la 12 V pe un rezistor de 100 Ω, puterea este <math><mi>P</mi><mo>=</mo><mfrac><msup><mn>12</mn><mn>2</mn></msup><mn>100</mn></mfrac><mo>=</mo><mn>1,44</mn><mtext> W</mtext></math>. Un rezistor de 0,25 W nu este potrivit; se alege unul dimensionat corespunzător condițiilor de răcire și temperatură.</p>
+
+      <h2>5. Rezistoare grupate în serie</h2>
       <p>
         Într-o grupare serie, rezistoarele sunt parcurse de același curent. Rezistența
         echivalentă este suma rezistențelor individuale.
       </p>
-      <div class="formula">R<sub>ech</sub> = R<sub>1</sub> + R<sub>2</sub> + ... + R<sub>n</sub></div>
-      <div class="card circuit" aria-label="Două rezistoare grupate în serie">
-        <span class="wire"></span><span class="resistor">R1</span><span class="wire"></span><span class="resistor">R2</span><span class="wire"></span>
+      <div class="formula"><math display="block" aria-label="R echivalent egal cu R unu plus R doi până la R n"><msub><mi>R</mi><mtext>ech</mtext></msub><mo>=</mo><msub><mi>R</mi><mn>1</mn></msub><mo>+</mo><msub><mi>R</mi><mn>2</mn></msub><mo>+</mo><mo>⋯</mo><mo>+</mo><msub><mi>R</mi><mi>n</mi></msub></math></div>
+      <div class="card circuit">
+        <svg viewBox="0 0 480 100" role="img" aria-label="Două rezistoare R1 și R2 conectate în serie pe aceeași ramură">
+          <path d="M20 50H100 M180 50H300 M380 50H460"/>
+          <rect x="100" y="35" width="80" height="30" rx="3"/><rect x="300" y="35" width="80" height="30" rx="3"/>
+          <text x="140" y="56">R1</text><text x="340" y="56">R2</text>
+        </svg>
       </div>
       <p>Două rezistoare de 4 Ω și 6 Ω în serie au rezistența echivalentă de 10 Ω.</p>
 
-      <h2>4. Rezistoare grupate în paralel</h2>
+      <h2>6. Rezistoare grupate în paralel</h2>
       <p>
         Într-o grupare paralel, tensiunea este aceeași la bornele fiecărui rezistor, iar
         curentul se împarte între ramuri.
       </p>
-      <div class="formula">1 / R<sub>ech</sub> = 1 / R<sub>1</sub> + 1 / R<sub>2</sub> + ... + 1 / R<sub>n</sub></div>
-      <div class="card circuit" aria-label="Două rezistoare grupate în paralel">
-        <span class="wire"></span><div class="parallel"><div class="parallel-row"><span class="resistor">R1</span></div><div class="parallel-row"><span class="resistor">R2</span></div></div><span class="wire"></span>
+      <div class="formula"><math display="block" aria-label="Unu supra R echivalent egal cu unu supra R unu plus unu supra R doi și așa mai departe"><mfrac><mn>1</mn><msub><mi>R</mi><mtext>ech</mtext></msub></mfrac><mo>=</mo><mfrac><mn>1</mn><msub><mi>R</mi><mn>1</mn></msub></mfrac><mo>+</mo><mfrac><mn>1</mn><msub><mi>R</mi><mn>2</mn></msub></mfrac><mo>+</mo><mo>⋯</mo><mo>+</mo><mfrac><mn>1</mn><msub><mi>R</mi><mi>n</mi></msub></mfrac></math></div>
+      <div class="card circuit">
+        <svg viewBox="0 0 480 130" role="img" aria-label="Două rezistoare R1 și R2 conectate în paralel între aceleași două noduri">
+          <path d="M20 65H120 M120 65V30H200 M280 30H360V65 M120 65V100H200 M280 100H360V65 M360 65H460"/>
+          <rect x="200" y="15" width="80" height="30" rx="3"/><rect x="200" y="85" width="80" height="30" rx="3"/>
+          <text x="240" y="36">R1</text><text x="240" y="106">R2</text>
+        </svg>
       </div>
       <p>
         Pentru două rezistoare se poate folosi relația rapidă:
-        R<sub>ech</sub> = (R<sub>1</sub> · R<sub>2</sub>) / (R<sub>1</sub> + R<sub>2</sub>).
+        <math><msub><mi>R</mi><mtext>ech</mtext></msub><mo>=</mo><mfrac><mrow><msub><mi>R</mi><mn>1</mn></msub><mo>⋅</mo><msub><mi>R</mi><mn>2</mn></msub></mrow><mrow><msub><mi>R</mi><mn>1</mn></msub><mo>+</mo><msub><mi>R</mi><mn>2</mn></msub></mrow></mfrac></math>.
         Rezistența echivalentă în paralel este întotdeauna mai mică decât cea mai mică rezistență din grup.
       </p>
+
+      <h2>7. Condensatorul și capacitatea electrică</h2>
+      <p>Un condensator are două armături conductoare separate printr-un material izolator, numit dielectric. El stochează energie în câmpul electric. Capacitatea <strong>C</strong> leagă modulul sarcinii de pe o armătură de tensiunea dintre armături:</p>
+      <div class="formula"><math display="block" aria-label="C egal cu Q supra U"><mi>C</mi><mo>=</mo><mfrac><mi>Q</mi><mi>U</mi></mfrac></math></div>
+      <p>Capacitatea se măsoară în farazi (F), sarcina Q în coulombi (C), iar tensiunea U în volți (V). Valori uzuale sunt microfaradul (µF), nanofaradul (nF) și picofaradul (pF): <math><mn>1</mn><mtext> µF</mtext><mo>=</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>6</mn></mrow></msup><mtext> F</mtext></math>, <math><mn>1</mn><mtext> nF</mtext><mo>=</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>9</mn></mrow></msup><mtext> F</mtext></math>, <math><mn>1</mn><mtext> pF</mtext><mo>=</mo><msup><mn>10</mn><mrow><mo>−</mo><mn>12</mn></mrow></msup><mtext> F</mtext></math>.</p>
+      <p>Pentru două plăci paralele mari, separate de un dielectric uniform, neglijând efectele de margine:</p>
+      <div class="formula"><math display="block" aria-label="C egal cu epsilon ori A supra d"><mi>C</mi><mo>=</mo><mi>ε</mi><mfrac><mi>A</mi><mi>d</mi></mfrac></math></div>
+      <p>A este aria unei plăci, d este distanța dintre plăci, iar ε este permitivitatea dielectricului. O arie mai mare sau un dielectric cu permitivitate mai mare crește capacitatea; o distanță mai mare o reduce.</p>
+      <p>Energia stocată de un condensator ideal este:</p>
+      <div class="formula"><math display="block" aria-label="W egal cu o jumătate C U la pătrat"><mi>W</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>C</mi><msup><mi>U</mi><mn>2</mn></msup></math></div>
+      <div class="card">De exemplu, un condensator de 1000 µF încărcat la 12 V stochează <math><mi>W</mi><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo>⋅</mo><mn>0,001</mn><mo>⋅</mo><msup><mn>12</mn><mn>2</mn></msup><mo>=</mo><mn>0,072</mn><mtext> J</mtext></math>.</div>
+
+      <h2>8. Condensatoare în paralel și în serie</h2>
+      <p>În paralel, tensiunea este aceeași pe fiecare condensator, iar capacitățile se adună:</p>
+      <div class="formula"><math display="block" aria-label="C echivalent în paralel egal cu C unu plus C doi și așa mai departe"><msub><mi>C</mi><mtext>ech</mtext></msub><mo>=</mo><msub><mi>C</mi><mn>1</mn></msub><mo>+</mo><msub><mi>C</mi><mn>2</mn></msub><mo>+</mo><mo>⋯</mo><mo>+</mo><msub><mi>C</mi><mi>n</mi></msub></math></div>
+      <p>În serie, condensatoarele ideale, inițial neîncărcate, au sarcini de același modul, iar tensiunile se adună:</p>
+      <div class="formula"><math display="block" aria-label="Unu supra C echivalent în serie egal cu unu supra C unu plus unu supra C doi și așa mai departe"><mfrac><mn>1</mn><msub><mi>C</mi><mtext>ech</mtext></msub></mfrac><mo>=</mo><mfrac><mn>1</mn><msub><mi>C</mi><mn>1</mn></msub></mfrac><mo>+</mo><mfrac><mn>1</mn><msub><mi>C</mi><mn>2</mn></msub></mfrac><mo>+</mo><mo>⋯</mo><mo>+</mo><mfrac><mn>1</mn><msub><mi>C</mi><mi>n</mi></msub></mfrac></math></div>
+      <p>Două condensatoare de 100 µF și 200 µF au 300 µF în paralel și aproximativ 66,7 µF în serie. În serie, tensiunea nu se împarte neapărat egal: trebuie respectată tensiunea nominală a fiecărui condensator.</p>
+
+      <h2>9. Încărcarea și comportamentul în curent alternativ</h2>
+      <p>Într-un circuit serie RC ideal, alimentat de o sursă continuă, un condensator inițial descărcat se încarcă treptat prin rezistor. Constanta de timp și tensiunea la borne sunt:</p>
+      <div class="formula"><math display="block" aria-label="Tau egal cu R C, iar U C de t egal cu U sursă ori unu minus e la minus t supra tau"><mi>τ</mi><mo>=</mo><mi>R</mi><mi>C</mi><mspace width="2em"></mspace><msub><mi>u</mi><mi>C</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mi>U</mi><mo>(</mo><mn>1</mn><mo>−</mo><msup><mi>e</mi><mrow><mo>−</mo><mfrac><mi>t</mi><mi>τ</mi></mfrac></mrow></msup><mo>)</mo></math></div>
+      <p>După o constantă de timp tensiunea ajunge la aproximativ 63% din tensiunea sursei; după cinci constante, la aproximativ 99,3%. Pentru 1 kΩ și 100 µF, τ este 0,1 s. În regim staționar de curent continuu, curentul prin condensatorul ideal este zero.</p>
+      <p>În regim sinusoidal, reactanța capacitivă depinde de frecvență:</p>
+      <div class="formula"><math display="block" aria-label="X C egal cu unu supra 2 pi f C"><msub><mi>X</mi><mi>C</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi><mi>f</mi><mi>C</mi></mrow></mfrac></math></div>
+      <p>Pentru un condensator ideal, la frecvență pozitivă, reactanța scade când frecvența crește, iar curentul este înaintea tensiunii cu 90°. Condensatoarele reale au și pierderi, curent de scurgere și limite de tensiune.</p>
+      <div class="card warning"><strong>Siguranță:</strong> un condensator poate rămâne încărcat după întreruperea alimentării. Nu depăși tensiunea nominală și respectă polaritatea componentelor polarizate; intervențiile asupra circuitelor potențial periculoase se lasă personalului calificat.</div>
 
       <div class="card check">
         <strong>Verifică-te:</strong>
@@ -103,6 +162,9 @@
           <li>Ce se întâmplă cu rezistența unui fir dacă îi mărim lungimea?</li>
           <li>Care este rezistența echivalentă a două rezistoare de 3 Ω și 7 Ω în serie?</li>
           <li>Într-o grupare paralel, ce mărime este egală pe toate ramurile?</li>
+          <li>Cum variază, de regulă, rezistența unui conductor metalic când temperatura crește?</li>
+          <li>Ce capacitate echivalentă au două condensatoare de 100 µF legate în serie?</li>
+          <li>Ce reprezintă constanta de timp a unui circuit RC?</li>
         </ul>
       </div>
     </main>
