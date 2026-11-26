@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Circuitul RLC serie: teorie, triunghiul impedanțelor și simulator de defazaj și rezonanță.">
+  <title>Modulul 06: Circuitul RLC serie | Electrotehnică de bază</title>
+  <style>
+    :root { color-scheme:light; --bg:#f7f9fc; --panel:#fff; --ink:#17233c; --muted:#52647e; --line:#dce5f0; --blue:#365ee8; --red:#c34434; --teal:#087f72; --soft:#eef3ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { max-width:1100px; margin:auto; padding:3rem 6vw 5rem; }
+    a { color:var(--blue); font-weight:700; }
+    .eyebrow { color:var(--blue); font-size:.78rem; font-weight:800; letter-spacing:.1em; margin:2.5rem 0 .5rem; text-transform:uppercase; }
+    h1 { font-size:clamp(2.2rem,5vw,3.8rem); letter-spacing:-.05em; line-height:1.05; margin:0; }
+    h2 { font-size:1.65rem; letter-spacing:-.03em; margin:2.8rem 0 .7rem; }
+    h3 { margin:.1rem 0 .65rem; font-size:1.08rem; }
+    p { margin:.6rem 0 1rem; }
+    .lead { color:var(--muted); font-size:1.1rem; max-width:72ch; margin:1.2rem 0 2rem; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:1rem; padding:1.3rem; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+    .card p:last-child { margin-bottom:0; }
+    .formula { background:var(--soft); border-left:4px solid var(--blue); border-radius:.3rem; font-family:Consolas,monospace; font-weight:700; padding:.7rem 1rem; overflow-wrap:anywhere; }
+    .note { border-left:4px solid var(--teal); }
+    .circuit { display:block; width:100%; max-width:720px; margin:auto; }
+    .circuit text { fill:var(--ink); font:15px system-ui,sans-serif; text-anchor:middle; }
+    .circuit path,.circuit circle,.circuit rect { stroke:var(--ink); stroke-width:3; fill:none; }
+    .simulator { display:grid; grid-template-columns:minmax(220px,300px) minmax(0,1fr); gap:1rem; align-items:start; }
+    .controls { display:grid; gap:.9rem; }
+    label { display:grid; gap:.25rem; font-size:.9rem; font-weight:700; }
+    label small { color:var(--muted); font-weight:400; }
+    input { width:100%; padding:.6rem .7rem; color:var(--ink); background:var(--panel); border:1px solid #aebcd0; border-radius:.45rem; font:inherit; }
+    input:invalid { border-color:var(--red); }
+    button { border:0; border-radius:.5rem; padding:.7rem .9rem; cursor:pointer; font:inherit; font-weight:700; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid #8eabff; outline-offset:2px; }
+    .primary { color:white; background:var(--blue); }
+    .secondary { color:var(--ink); background:var(--soft); }
+    .error { color:#a32b20; font-weight:700; margin:0; }
+    .result-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:.5rem; }
+    .badge { background:var(--soft); border-radius:999px; color:#2749ac; font-size:.85rem; font-weight:800; padding:.25rem .7rem; }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; margin:1rem 0; }
+    .metric { background:var(--bg); border-radius:.6rem; padding:.7rem; min-width:0; }
+    .metric span { color:var(--muted); display:block; font-size:.78rem; }
+    .metric strong { display:block; font-size:1.05rem; overflow-wrap:anywhere; }
+    .visuals { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem; }
+    .visual svg { display:block; width:100%; height:auto; background:#f9fbff; border:1px solid var(--line); border-radius:.6rem; }
+    .visual p { color:var(--muted); font-size:.88rem; }
+    .legend { display:flex; flex-wrap:wrap; gap:.3rem 1rem; font-size:.83rem; font-weight:700; }
+    .legend span::before { content:""; display:inline-block; width:1rem; height:.2rem; background:currentColor; vertical-align:middle; margin-right:.3rem; }
+    .r, .voltage { color:var(--blue); } .x, .current { color:var(--red); } .z { color:var(--teal); }
+    .svg-axis { stroke:#bbc8da; stroke-width:1.5; } .svg-r { stroke:var(--blue); } .svg-x { stroke:var(--red); } .svg-z { stroke:var(--teal); }
+    .svg-r,.svg-x,.svg-z { fill:none; stroke-width:3; stroke-linejoin:round; }
+    .svg-z { stroke-width:2; stroke-dasharray:7 4; }
+    .svg-current { fill:none; stroke:var(--red); stroke-width:3; stroke-dasharray:8 5; }
+    .svg-label { fill:var(--muted); font:13px system-ui,sans-serif; }
+    .small { color:var(--muted); font-size:.9rem; }
+    [hidden] { display:none !important; }
+    @media (max-width:800px) { .grid { grid-template-columns:1fr; } .simulator { grid-template-columns:1fr; } }
+    @media (max-width:600px) { main { padding:2rem 1.1rem 3rem; } .visuals { grid-template-columns:1fr; } .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  </style>
+</head>
+<body>
+<main>
+  <a href="index.html">← Înapoi la module</a>
+  <p class="eyebrow">Electrotehnică de bază · Modulul 06</p>
+  <h1>Circuitul RLC serie</h1>
+  <p class="lead">Descoperă cum rezistența, bobina și condensatorul influențează curentul alternativ, defazajul și rezonanța.</p>
+
+  <h2>1. Componentele în serie</h2>
+  <div class="card">
+    <svg class="circuit" viewBox="0 0 720 160" role="img" aria-label="Sursă de tensiune alternativă conectată în serie cu rezistorul R, bobina L și condensatorul C">
+      <path d="M75 62V25H200 M280 25H340 M420 25H488 M512 25H645V135H75V98"/>
+      <circle cx="75" cy="80" r="18"/><path d="M64 80c4-10 7-10 11 0s7 10 11 0"/>
+      <rect x="200" y="12" width="80" height="26"/>
+      <path d="M340 25c0-22 20-22 20 0c0-22 20-22 20 0c0-22 20-22 20 0c0-22 20-22 20 0M488 8v34M512 8v34"/>
+      <text x="240" y="65">R</text><text x="380" y="65">L</text><text x="500" y="65">C</text>
+      <text x="360" y="125">Același curent I prin toate componentele →</text>
+    </svg>
+    <p>O sursă sinusoidală alimentează un rezistor, o bobină și un condensator legate în serie. <strong>Același curent</strong> trece prin fiecare componentă, dar tensiunile lor nu sunt în general în fază.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Rezistorul R</h3><p>Tensiunea U<sub>R</sub> este în fază cu curentul. Rezistența se măsoară în ohmi (Ω).</p></div>
+    <div class="card"><h3>Bobina L</h3><p>Tensiunea U<sub>L</sub> este înaintea curentului cu 90° pentru o bobină ideală. L se măsoară în henry (H).</p></div>
+    <div class="card"><h3>Condensatorul C</h3><p>Tensiunea U<sub>C</sub> este în urma curentului cu 90° pentru un condensator ideal. C se măsoară în farazi (F).</p></div>
+  </div>
+
+  <h2>2. Reactanță și impedanță</h2>
+  <p>Reactanța arată opoziția bobinei sau a condensatorului la curentul alternativ. La frecvența f, pulsația este ω = 2πf.</p>
+  <div class="formula">X<sub>L</sub> = 2πfL &nbsp; · &nbsp; X<sub>C</sub> = 1 / (2πfC) &nbsp; [Ω]</div>
+  <p>X<sub>L</sub> crește cu frecvența, iar X<sub>C</sub> scade. Reactanța totală este X = X<sub>L</sub> − X<sub>C</sub>. Impedanța complexă și modulul ei sunt:</p>
+  <div class="formula">Z = R + j(X<sub>L</sub> − X<sub>C</sub>) &nbsp; · &nbsp; |Z| = √(R² + X²)</div>
+  <p>În triunghiul impedanțelor, R este cateta orizontală, X este cateta verticală cu semn, iar |Z| este ipotenuza. Dacă X este negativ, triunghiul se află sub axa orizontală.</p>
+
+  <h2>3. Defazaj și rezonanță</h2>
+  <div class="formula">φ = atan2(X<sub>L</sub> − X<sub>C</sub>, R) &nbsp; · &nbsp; I = U / |Z|</div>
+  <p>Aici φ este <strong>faza tensiunii sursei față de curent</strong>. Pentru X &gt; 0 circuitul este inductiv și curentul rămâne în urmă; pentru X &lt; 0 este capacitiv și curentul este înaintea tensiunii.</p>
+  <div class="card note">
+    <h3>Rezonanța serie</h3>
+    <p>La f<sub>0</sub> = 1 / (2π√LC), reactanțele sunt egale: X<sub>L</sub> = X<sub>C</sub>. Impedanța devine |Z| = R, φ = 0°, iar curentul este maxim pentru o tensiune dată. Tensiunile pe bobină și condensator se opun în fază și pot fi fiecare mai mari decât tensiunea sursei.</p>
+  </div>
+  <p>Puterea activă este P = UI cos φ = I²R (W), puterea reactivă este Q = I²X (var), iar puterea aparentă este S = UI (VA). Semnul lui Q indică regimul inductiv (+) sau capacitiv (−).</p>
+
+  <h2>4. Simulator interactiv</h2>
+  <p>Modifică valorile și urmărește cum se schimbă triunghiul și undele. Simulatorul folosește valori efective (RMS), componente ideale și regim sinusoidal staționar; nu modelează tranzitoriul de pornire.</p>
+  <div class="simulator">
+    <form class="card controls" id="controls" novalidate>
+      <h3>Parametrii circuitului</h3>
+      <label for="voltage">Tensiunea sursei U (V RMS)<input id="voltage" type="number" min="0.1" max="1000" step="any" value="230" required><small>0,1–1000 V</small></label>
+      <label for="resistance">Rezistența R (Ω)<input id="resistance" type="number" min="1" max="1000" step="any" value="100" required><small>1–1000 Ω</small></label>
+      <label for="inductance">Inductanța L (mH)<input id="inductance" type="number" min="1" max="2000" step="any" value="200" required><small>1–2000 mH</small></label>
+      <label for="capacitance">Capacitatea C (µF)<input id="capacitance" type="number" min="1" max="2000" step="any" value="100" required><small>1–2000 µF</small></label>
+      <label for="frequency">Frecvența f (Hz)<input id="frequency" type="number" min="0.1" max="10000" step="any" value="50" required><small>0,1–10000 Hz</small></label>
+      <p class="error" id="error" role="alert" hidden>Introdu valori numerice în intervalele indicate pentru toate câmpurile.</p>
+      <button class="primary" id="resonance" type="button">Setează frecvența de rezonanță</button>
+      <button class="secondary" type="reset">Restabilește valorile inițiale</button>
+    </form>
+
+    <div id="results" class="card">
+      <div class="result-head"><h3>Rezultate calculate</h3><span class="badge" id="regime"></span></div>
+      <div class="metrics">
+        <div class="metric"><span>X<sub>L</sub> · reactanță inductivă</span><strong id="xl"></strong></div>
+        <div class="metric"><span>X<sub>C</sub> · reactanță capacitivă</span><strong id="xc"></strong></div>
+        <div class="metric"><span>X = X<sub>L</sub> − X<sub>C</sub></span><strong id="reactance"></strong></div>
+        <div class="metric"><span>|Z| · impedanță</span><strong id="impedance"></strong></div>
+        <div class="metric"><span>I · curent efectiv</span><strong id="current"></strong></div>
+        <div class="metric"><span>φ · faza tensiunii față de curent</span><strong id="phase"></strong></div>
+        <div class="metric"><span>U<sub>R</sub> · tensiune efectivă</span><strong id="ur"></strong></div>
+        <div class="metric"><span>U<sub>L</sub> · tensiune efectivă</span><strong id="ul"></strong></div>
+        <div class="metric"><span>U<sub>C</sub> · tensiune efectivă</span><strong id="uc"></strong></div>
+        <div class="metric"><span>P · putere activă</span><strong id="power"></strong></div>
+        <div class="metric"><span>Q · putere reactivă</span><strong id="reactive-power"></strong></div>
+        <div class="metric"><span>S · putere aparentă</span><strong id="apparent-power"></strong></div>
+        <div class="metric"><span>cos φ · factor de putere</span><strong id="power-factor"></strong></div>
+        <div class="metric"><span>f<sub>0</sub> · frecvență de rezonanță</span><strong id="resonant-frequency"></strong></div>
+      </div>
+      <p id="phase-description" aria-live="polite"></p>
+      <div class="visuals">
+        <div class="visual">
+          <h3>Triunghiul impedanțelor</h3>
+          <svg viewBox="0 0 440 250" role="img" aria-labelledby="triangle-title triangle-description">
+            <title id="triangle-title">Triunghiul impedanțelor</title>
+            <desc id="triangle-description"></desc>
+            <line class="svg-axis" x1="30" y1="125" x2="410" y2="125"/>
+            <line id="triangle-r" class="svg-r"/><line id="triangle-x" class="svg-x"/><line id="triangle-z" class="svg-z"/>
+            <text class="svg-label" x="30" y="145">0</text>
+          </svg>
+          <div class="legend"><span class="r">R</span><span class="x">X = X<sub>L</sub> − X<sub>C</sub></span><span class="z">|Z|</span></div>
+          <p>Cateta X este orientată în sus pentru regim inductiv și în jos pentru regim capacitiv.</p>
+        </div>
+        <div class="visual">
+          <h3>Tensiune și curent în timp</h3>
+          <svg viewBox="0 0 640 250" role="img" aria-labelledby="wave-title wave-description">
+            <title id="wave-title">Tensiunea sursei și curentul în timp</title>
+            <desc id="wave-description"></desc>
+            <line class="svg-axis" x1="35" y1="125" x2="610" y2="125"/>
+            <line class="svg-axis" x1="35" y1="25" x2="35" y2="225"/>
+            <path id="voltage-wave" class="svg-r"/><path id="current-wave" class="svg-current"/>
+            <text class="svg-label" x="35" y="242">0</text><text class="svg-label" x="315" y="242">T</text><text class="svg-label" x="585" y="242">2T</text>
+          </svg>
+          <div class="legend"><span class="voltage">Tensiune u(t)</span><span class="current">Curent i(t)</span></div>
+          <p>Amplitudinile sunt normalizate separat pentru a compara fazele; T = 1/f. Curbele reprezintă două perioade.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <noscript><p class="error">Activează JavaScript pentru a folosi simulatorul.</p></noscript>
+
+  <h2>5. Experimentează</h2>
+  <div class="card">
+    <ol>
+      <li>Apasă „Setează frecvența de rezonanță”. Observă X<sub>L</sub>, X<sub>C</sub> și defazajul.</li>
+      <li>Redu frecvența sub f<sub>0</sub>. De ce devine circuitul capacitiv și ce se întâmplă cu faza curentului?</li>
+      <li>Crește frecvența peste f<sub>0</sub>. Urmărește semnul lui X și poziția triunghiului.</li>
+      <li>La rezonanță, modifică R. Compară curentul și tensiunile U<sub>L</sub> și U<sub>C</sub>.</li>
+    </ol>
+  </div>
+</main>
+<script>
+  const form = document.getElementById('controls');
+  const fields = ['voltage', 'resistance', 'inductance', 'capacitance', 'frequency'];
+  const element = id => document.getElementById(id);
+  const number = value => new Intl.NumberFormat('ro-RO', Math.abs(value) < 1 && value !== 0
+    ? { maximumSignificantDigits: 3 }
+    : { maximumFractionDigits: 2 }).format(value);
+  const show = (id, value, unit) => { element(id).textContent = `${number(value)}${unit ? ' ' + unit : ''}`; };
+
+  function line(id, x1, y1, x2, y2) {
+    const node = element(id);
+    for (const [name, value] of Object.entries({ x1, y1, x2, y2 })) node.setAttribute(name, value);
+  }
+
+  function wave(phase) {
+    const points = [];
+    for (let i = 0; i <= 240; i++) {
+      const t = i / 240 * 4 * Math.PI;
+      points.push(`${i === 0 ? 'M' : 'L'}${(35 + i / 240 * 575).toFixed(2)},${(125 - 82 * Math.sin(t - phase)).toFixed(2)}`);
+    }
+    return points.join(' ');
+  }
+
+  function update() {
+    const valid = fields.every(id => element(id).validity.valid && Number.isFinite(element(id).valueAsNumber));
+    element('error').hidden = valid;
+    element('results').hidden = !valid;
+    if (!valid) return;
+
+    const u = element('voltage').valueAsNumber;
+    const r = element('resistance').valueAsNumber;
+    const l = element('inductance').valueAsNumber / 1000;
+    const c = element('capacitance').valueAsNumber / 1000000;
+    const f = element('frequency').valueAsNumber;
+    const omega = 2 * Math.PI * f;
+    const xl = omega * l;
+    const xc = 1 / (omega * c);
+    const difference = xl - xc;
+    const resonant = Math.abs(difference) <= 1e-10 * Math.max(xl, xc);
+    const x = resonant ? 0 : difference;
+    const z = Math.hypot(r, x);
+    const phase = Math.atan2(x, r);
+    const current = u / z;
+    const f0 = 1 / (2 * Math.PI * Math.sqrt(l * c));
+    const regime = resonant ? 'Rezonanță' : x > 0 ? 'Inductiv' : 'Capacitiv';
+    const description = resonant ? 'La rezonanță, tensiunea și curentul sunt în fază.' : x > 0 ? 'Curentul rămâne în urma tensiunii.' : 'Curentul este înaintea tensiunii.';
+
+    show('xl', xl, 'Ω'); show('xc', xc, 'Ω'); show('reactance', x, 'Ω');
+    show('impedance', z, 'Ω'); show('current', current, 'A'); show('phase', phase * 180 / Math.PI, '°');
+    show('ur', current * r, 'V'); show('ul', current * xl, 'V'); show('uc', current * xc, 'V');
+    show('power', current * current * r, 'W'); show('reactive-power', current * current * x, 'var');
+    show('apparent-power', u * current, 'VA'); show('power-factor', r / z, ''); show('resonant-frequency', f0, 'Hz');
+    element('regime').textContent = regime;
+    element('phase-description').textContent = description;
+
+    const scale = Math.min(330 / r, 100 / Math.max(Math.abs(x), 1e-12));
+    const endX = 45 + r * scale;
+    const endY = 125 - x * scale;
+    line('triangle-r', 45, 125, endX, 125);
+    line('triangle-x', endX, 125, endX, endY);
+    line('triangle-z', 45, 125, endX, endY);
+    element('triangle-description').textContent = `${regime}: R = ${number(r)} Ω, X = ${number(x)} Ω, |Z| = ${number(z)} Ω, φ = ${number(phase * 180 / Math.PI)}°.`;
+    element('voltage-wave').setAttribute('d', wave(0));
+    element('current-wave').setAttribute('d', wave(phase));
+    element('wave-description').textContent = `${description} Defazajul tensiunii față de curent este ${number(phase * 180 / Math.PI)}°. Amplitudinile sunt normalizate separat.`;
+  }
+
+  form.addEventListener('input', update);
+  form.addEventListener('submit', event => event.preventDefault());
+  form.addEventListener('reset', () => setTimeout(update, 0));
+  element('resonance').addEventListener('click', () => {
+    const l = element('inductance');
+    const c = element('capacitance');
+    if (!l.validity.valid || !c.validity.valid || !Number.isFinite(l.valueAsNumber) || !Number.isFinite(c.valueAsNumber)) {
+      update();
+      return;
+    }
+    element('frequency').value = 1 / (2 * Math.PI * Math.sqrt(l.valueAsNumber / 1000 * c.valueAsNumber / 1000000));
+    update();
+  });
+  update();
+</script>
+</body>
+</html>
