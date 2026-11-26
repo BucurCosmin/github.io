@@ -30,8 +30,23 @@
       .circuit text { fill:var(--drop); font:700 16px var(--f-mono); text-anchor:middle; }
       .check { border-left:5px solid var(--ok); }
       .warning { border-left:5px solid var(--warn); }
+      .rc-layout { display:grid; grid-template-columns:minmax(220px,300px) minmax(0,1fr); gap:1rem; }
+      .rc-controls label { display:block; font-weight:600; margin:.8rem 0 .25rem; }
+      .rc-controls input:not([type=range]), .rc-controls select { background:var(--panel); border:1px solid var(--line); border-radius:4px; color:var(--ink); font:inherit; padding:.45rem; width:100%; }
+      .rc-controls input[type=range] { width:100%; accent-color:var(--copper); }
+      .rc-controls button { background:var(--copper); border:0; border-radius:4px; color:#fff; cursor:pointer; font:600 1rem var(--f-body); margin-top:.7rem; padding:.55rem .9rem; }
+      .rc-results { display:grid; gap:.5rem; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+      .rc-results div { background:var(--soft); border-radius:4px; padding:.65rem; }
+      .rc-results span { color:var(--muted); display:block; font-size:.9rem; }
+      .rc-results strong { font-family:var(--f-mono); overflow-wrap:anywhere; }
+      .rc-chart { display:block; height:auto; margin:1rem auto 0; max-width:700px; width:100%; }
+      .rc-chart text { fill:var(--muted); font:14px var(--f-body); }
+      .rc-chart .axis { fill:none; stroke:var(--line); stroke-width:2; }
+      .rc-chart .curve { fill:none; stroke:var(--cur); stroke-width:3; }
+      .rc-chart .marker { fill:var(--drop); }
+      .rc-error { color:var(--drop); font-weight:600; }
       ul { padding-left:1.3rem; }
-      @media (max-width:700px) { body { padding:16px 14px 32px; } .eyebrow { margin-top:1.5rem; } }
+      @media (max-width:700px) { body { padding:16px 14px 32px; } .eyebrow { margin-top:1.5rem; } .rc-layout { grid-template-columns:1fr; } }
       @media (max-width:400px) { .formula { padding:10px 8px; } .formula math { font-size:1.05rem; } }
     </style>
   </head>
@@ -147,13 +162,13 @@
       <div class="formula"><math display="block" aria-label="Unu supra C echivalent în serie egal cu unu supra C unu plus unu supra C doi și așa mai departe"><mfrac><mn>1</mn><msub><mi>C</mi><mtext>ech</mtext></msub></mfrac><mo>=</mo><mfrac><mn>1</mn><msub><mi>C</mi><mn>1</mn></msub></mfrac><mo>+</mo><mfrac><mn>1</mn><msub><mi>C</mi><mn>2</mn></msub></mfrac><mo>+</mo><mo>⋯</mo><mo>+</mo><mfrac><mn>1</mn><msub><mi>C</mi><mi>n</mi></msub></mfrac></math></div>
       <p>Două condensatoare de 100 µF și 200 µF au 300 µF în paralel și aproximativ 66,7 µF în serie. În serie, tensiunea nu se împarte neapărat egal: trebuie respectată tensiunea nominală a fiecărui condensator.</p>
 
-      <h2>9. Încărcarea și comportamentul în curent alternativ</h2>
+      <h2>9. Încărcarea și descărcarea în curent continuu</h2>
       <p>Într-un circuit serie RC ideal, alimentat de o sursă continuă, un condensator inițial descărcat se încarcă treptat prin rezistor. Constanta de timp și tensiunea la borne sunt:</p>
       <div class="formula"><math display="block" aria-label="Tau egal cu R C, iar U C de t egal cu U sursă ori unu minus e la minus t supra tau"><mi>τ</mi><mo>=</mo><mi>R</mi><mi>C</mi><mspace width="2em"></mspace><msub><mi>u</mi><mi>C</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mi>U</mi><mo>(</mo><mn>1</mn><mo>−</mo><msup><mi>e</mi><mrow><mo>−</mo><mfrac><mi>t</mi><mi>τ</mi></mfrac></mrow></msup><mo>)</mo></math></div>
       <p>După o constantă de timp tensiunea ajunge la aproximativ 63% din tensiunea sursei; după cinci constante, la aproximativ 99,3%. Pentru 1 kΩ și 100 µF, τ este 0,1 s. În regim staționar de curent continuu, curentul prin condensatorul ideal este zero.</p>
-      <p>În regim sinusoidal, reactanța capacitivă depinde de frecvență:</p>
-      <div class="formula"><math display="block" aria-label="X C egal cu unu supra 2 pi f C"><msub><mi>X</mi><mi>C</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>2</mn><mi>π</mi><mi>f</mi><mi>C</mi></mrow></mfrac></math></div>
-      <p>Pentru un condensator ideal, la frecvență pozitivă, reactanța scade când frecvența crește, iar curentul este înaintea tensiunii cu 90°. Condensatoarele reale au și pierderi, curent de scurgere și limite de tensiune.</p>
+      <p>La descărcare, sursa este deconectată, iar condensatorul, încărcat inițial la tensiunea U<sub>0</sub>, este conectat la rezistor. Tensiunea și curentul scad exponențial; sensul curentului este opus celui de la încărcare:</p>
+      <div class="formula"><math display="block" aria-label="u C de t egal cu U zero ori e la minus t supra tau"><msub><mi>u</mi><mi>C</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><msub><mi>U</mi><mn>0</mn></msub><msup><mi>e</mi><mrow><mo>−</mo><mfrac><mi>t</mi><mi>τ</mi></mfrac></mrow></msup></math></div>
+      <p>După o constantă de timp rămâne aproximativ 36,8% din tensiunea inițială; după cinci constante, aproximativ 0,7%. În modelul ideal, atingerea exactă a tensiunii finale necesită un timp infinit. Condensatoarele reale au și pierderi, curent de scurgere și limite de tensiune.</p>
       <div class="card warning"><strong>Siguranță:</strong> un condensator poate rămâne încărcat după întreruperea alimentării. Nu depăși tensiunea nominală și respectă polaritatea componentelor polarizate; intervențiile asupra circuitelor potențial periculoase se lasă personalului calificat.</div>
 
       <div class="card check">
@@ -167,6 +182,48 @@
           <li>Ce reprezintă constanta de timp a unui circuit RC?</li>
         </ul>
       </div>
+
+      <h2>10. Laborator: încărcarea și descărcarea unui condensator</h2>
+      <p>Modifică rezistența, capacitatea și tensiunea, apoi deplasează cursorul sau pornește animația. La încărcare condensatorul este inițial descărcat și conectat la sursa continuă; la descărcare sursa este deconectată, iar condensatorul pornește de la tensiunea aleasă. Modelul presupune componente ideale.</p>
+      <div class="card rc-layout">
+        <div class="rc-controls">
+          <label for="rc-mode">Proces</label>
+          <select id="rc-mode"><option value="charge">Încărcare</option><option value="discharge">Descărcare</option></select>
+          <label for="rc-resistance">Rezistență R (kΩ)</label>
+          <input id="rc-resistance" type="number" min="0.001" max="1000000" step="any" value="1">
+          <label for="rc-capacitance">Capacitate C (µF)</label>
+          <input id="rc-capacitance" type="number" min="0.001" max="1000000" step="any" value="100">
+          <label for="rc-voltage">Tensiunea sursei / inițială (V)</label>
+          <input id="rc-voltage" type="number" min="0.01" max="1000" step="any" value="12">
+          <label for="rc-time">Momentul observat (0–5τ)</label>
+          <input id="rc-time" type="range" min="0" max="5" step="0.01" value="0">
+          <button type="button" id="rc-play">Pornește animația</button>
+          <p class="muted">Animația parcurge 5τ în 10 secunde pe ecran, indiferent de timpul calculat.</p>
+          <p id="rc-error" class="rc-error" role="alert" hidden></p>
+          <noscript><p class="rc-error">Activează JavaScript pentru a folosi simulatorul.</p></noscript>
+        </div>
+        <div id="rc-output" hidden>
+          <div class="rc-results">
+            <div><span>Constanta de timp τ</span><strong id="rc-tau"></strong></div>
+            <div><span>Timpul observat</span><strong id="rc-observed-time"></strong></div>
+            <div><span>Tensiunea condensatorului</span><strong id="rc-observed-voltage"></strong></div>
+            <div><span>Curentul prin rezistor</span><strong id="rc-current"></strong></div>
+            <div><span id="rc-target-label"></span><strong id="rc-target"></strong></div>
+          </div>
+          <p class="muted">Curentul pozitiv indică sensul de încărcare; la descărcare este negativ.</p>
+          <svg class="rc-chart" viewBox="0 0 640 280" role="img" aria-labelledby="rc-chart-title rc-chart-desc">
+            <title id="rc-chart-title">Tensiunea condensatorului în timp</title>
+            <desc id="rc-chart-desc">Curba tensiunii relative între zero și cinci constante de timp; punctul marchează momentul ales.</desc>
+            <path class="axis" d="M55 20V240H610"></path>
+            <text x="5" y="25">100%</text><text x="24" y="245">0%</text>
+            <text x="52" y="262">0</text><text x="575" y="262">5τ</text>
+            <path id="rc-curve" class="curve"></path>
+            <circle id="rc-marker" class="marker" r="6"></circle>
+          </svg>
+          <p class="muted">Graficul arată tensiunea ca procent din tensiunea aleasă. 100% la încărcare și 0% la descărcare sunt limite ideale, nu sunt atinse exact într-un timp finit.</p>
+        </div>
+      </div>
     </main>
+    <script src="simulator_rc.js"></script>
   </body>
 </html>
