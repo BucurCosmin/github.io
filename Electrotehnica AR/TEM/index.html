@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Laborator interactiv despre câmp magnetic, bobine și tensiune indusă.">
+  <title>Modulul 05: Bobina și tensiunea electromotoare indusă | Electrotehnică de bază</title>
+  <link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#fundamente" data-open-tab="fundamente" aria-label="FluxLab, fundamente">
+      <span class="brand-mark">Φ</span><span>FLUX<span class="brand-light">LAB</span></span>
+    </a>
+    <a class="back-link" href="../index.html">← Înapoi la module</a>
+    <div class="course-label">ELECTROTEHNICĂ DE BAZĂ <b>·</b> MODULUL 05</div>
+    <button id="themeButton" class="icon-button" aria-label="Comută contrastul">◐</button>
+  </header>
+
+  <main>
+    <nav class="tab-bar" aria-label="Capitolele laboratorului" role="tablist">
+      <button class="tab active" id="tab-fundamente" role="tab" aria-controls="panel-fundamente" aria-selected="true" data-tab="fundamente"><span>01</span> Fundamente</button>
+      <button class="tab" id="tab-inductie" role="tab" aria-controls="panel-inductie" aria-selected="false" data-tab="inductie"><span>02</span> Inducție</button>
+      <button class="tab" id="tab-circuit" role="tab" aria-controls="panel-circuit" aria-selected="false" data-tab="circuit"><span>03</span> Circuit RL</button>
+      <button class="tab" id="tab-evaluare" role="tab" aria-controls="panel-evaluare" aria-selected="false" data-tab="evaluare"><span>04</span> Evaluare</button>
+      <span class="tab-meta">3 simulări · 12 minute</span>
+    </nav>
+
+    <section id="panel-fundamente" class="tab-panel active" role="tabpanel" aria-labelledby="tab-fundamente">
+      <div class="hero compact-hero">
+        <div class="hero-copy">
+          <span class="eyebrow">LABORATOR INTERACTIV DE ELECTROMAGNETISM</span>
+          <h1>Înțelege câmpul.<br><em>Predicția urmează.</em></h1>
+          <p>Pornește de la liniile de câmp, descoperă direcția forței magnetice și ajungi la bobina reală: o componentă ce stochează energie magnetică și se opune variației curentului.</p>
+          <button class="button primary next-tab" data-target="inductie">Intră în experiment <span>↘</span></button>
+        </div>
+        <div class="hero-visual">
+          <iframe class="coil-reference-frame" src="bobina_3d_camp_magnetic_simplificat.html" title="Model 3D interactiv al bobinei și al liniilor de câmp magnetic"></iframe>
+        </div>
+      </div>
+
+      <div class="fundamental-grid">
+        <article class="concept-card featured permanent-card">
+          <div class="concept-top"><span>NOȚIUNEA 01</span><b>B</b></div>
+          <h2>Magneții permanenți</h2>
+          <p>Un magnet permanent creează în jurul său un câmp magnetic. În exteriorul magnetului, liniile de câmp ies din polul <strong>nord (N)</strong> și intră în polul <strong>sud (S)</strong>.</p>
+          <div class="magnet-scene" role="img" aria-label="Magnet permanent cu linii de câmp care ies din polul nord și intră în polul sud">
+            <svg viewBox="0 0 440 250" aria-hidden="true">
+              <defs>
+                <linearGradient id="magnetNorth" x1="0" x2="1"><stop stop-color="#ef6847"/><stop offset="1" stop-color="#f18b6e"/></linearGradient>
+                <linearGradient id="magnetSouth" x1="0" x2="1"><stop stop-color="#3858d7"/><stop offset="1" stop-color="#5b78ed"/></linearGradient>
+                <marker id="fieldArrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#667044"/></marker>
+                <marker id="fieldArrowReverse" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#667044"/></marker>
+              </defs>
+              <path class="outside-line" d="M304 133 C362 22 78 22 136 133" marker-end="url(#fieldArrow)" />
+              <path class="outside-line" d="M304 133 C420 1 20 1 136 133" marker-end="url(#fieldArrow)" />
+              <path class="outside-line" d="M304 133 C362 244 78 244 136 133" marker-end="url(#fieldArrow)" />
+              <path class="outside-line" d="M304 133 C420 265 20 265 136 133" marker-end="url(#fieldArrow)" />
+              <path class="outside-line dashed" d="M160 133H280" marker-end="url(#fieldArrow)" />
+              <path class="visible-flow" d="M224 51l-14 5 10 9z M224 215l-14-5 10-9z M224 134l-15-7 3 14z" />
+              <g transform="translate(132 104)">
+                <path d="M0 0h86v58H0z" fill="url(#magnetSouth)" />
+                <path d="M86 0h86v58H86z" fill="url(#magnetNorth)" />
+                <path d="M0 0l-10 10v58l10-10zM172 0l10 10v58l-10-10z" fill="#172019" opacity=".24" />
+                <path d="M0 58h172l10 10H-10z" fill="#172019" opacity=".12" />
+                <text x="43" y="39">S</text><text x="129" y="39">N</text>
+                <text class="magnet-caption" x="4" y="-15">INTERIOR: S → N</text>
+              </g>
+            </svg>
+            <span class="direction-key"><i>→</i> Sensul convențional al liniilor de câmp: N → S</span>
+          </div>
+          <div class="formula-row"><span>VECȚORUL INDUCȚIEI</span><strong>B [tesla, T]</strong></div>
+        </article>
+
+        <article class="concept-card hand-card">
+          <div class="concept-top"><span>NOȚIUNEA 02</span><b>✋</b></div>
+          <h2>Regula mâinii drepte</h2>
+          <p>Câmpul magnetic creat de curentul dintr-un conductor este circular, în jurul firului. Degetul mare indică sensul curentului <strong>I</strong>, iar degetele îndoite indică sensul câmpului <strong>B</strong>.</p>
+          <div class="hand-reference" role="img" aria-label="Imagine cu regula mâinii drepte pentru un conductor">
+            <img src="assets/regula-mainii-drepte.png" alt="Mână dreaptă în jurul unui conductor parcurs de curent și sensul liniilor de câmp">
+            <span>Imagine de referință furnizată pentru explicația conductorului</span>
+          </div>
+          <p class="mini-note"><b>Notă 3D:</b> firul trece prin centrul câmpului circular. Sensul câmpului se inversează dacă se inversează sensul curentului.</p>
+        </article>
+
+        <article class="concept-card">
+          <div class="concept-top"><span>NOȚIUNEA 03</span><b>L</b></div>
+          <h2>Inductanța unei bobine</h2>
+          <p>Inductanța măsoară cât de mult flux magnetic generează bobina pentru curentul care o traversează. Unitatea de măsură este henry (H).</p>
+          <div class="formula-row"><span>DEFINIȚIE</span><strong>L = NΦ / I</strong></div>
+          <h3>De ce depinde?</h3>
+          <ul class="dependency-list">
+            <li><span>01</span><div><b>Numărul de spire, N</b><small>L crește cu N² la aceeași geometrie.</small></div></li>
+            <li><span>02</span><div><b>Aria și lungimea bobinei</b><small>Aria mai mare mărește L; lungimea mai mare îl reduce.</small></div></li>
+            <li><span>03</span><div><b>Miezul magnetic, μ</b><small>Un miez ferromagnetic poate crește mult inductanța.</small></div></li>
+          </ul>
+          <div class="formula-chip">SOLENOID: L ≈ μN²A / ℓ</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="panel-inductie" class="tab-panel" role="tabpanel" aria-labelledby="tab-inductie" hidden>
+      <div class="section-heading tab-heading">
+        <div><span class="section-number">02 / TENSIUNEA INDUSĂ</span><h2>Un flux variabil produce<br>o <em>forță electromotoare.</em></h2></div>
+        <p>Mută magnetul prin bobină. Cu cât fluxul se modifică mai repede, cu atât tensiunea indusă este mai mare. Urmărește și inversarea semnului.</p>
+      </div>
+      <div class="lab-layout">
+        <div class="sim-card">
+          <div class="card-topline"><span><i class="status-dot"></i> SIMULARE ÎN TIMP REAL</span><button id="resetMagnet" class="icon-button" title="Resetează simularea" aria-label="Resetează simularea">↺</button></div>
+          <div class="simulation-stage"><canvas id="coilCanvas"></canvas><div class="stage-instruction">TRAGE MAGNETUL <span>↔</span></div></div>
+          <div class="readout-strip">
+            <div><span>FLUX MAGNETIC</span><strong id="fluxReadout">178</strong><small>mWb</small></div>
+            <div><span>VARIAȚIE DE FLUX</span><strong id="fluxRateReadout">+0</strong><small>mWb/s</small></div>
+            <div class="voltage-reading"><span>TENSIUNE INDUSĂ</span><strong id="voltageReadout">0.00</strong><small>V</small></div>
+          </div>
+          <div class="emf-chart">
+            <div>
+              <span>VARIAȚIA TENSIUNII ÎN TIMP</span>
+              <label class="axis-toggle">Axă verticală
+                <select id="axisMode"><option value="auto">Automată</option><option value="fixed">Fixă</option></select>
+              </label>
+              <label class="fixed-scale" id="fixedScaleControl"><span id="fixedScaleLabel">±0.50 V</span><input id="fixedScaleInput" type="range" min="0.1" max="2" value="0.5" step="0.1" aria-label="Limita axe de tensiune"></label>
+              <span class="live-chart-label"><i></i> ε(t)</span>
+            </div>
+            <canvas id="voltageChartCanvas" aria-label="Graficul tensiunii induse în funcție de timp"></canvas>
+          </div>
+        </div>
+        <aside class="lab-controls">
+          <div class="control-heading"><span>01</span><div><strong>Controlează sistemul</strong><small>Modifică parametrii experimentului</small></div></div>
+          <fieldset class="motion-mode">
+            <legend>Tipul mișcării magnetului</legend>
+            <label><input type="radio" name="motionMode" value="linear" checked><span>↔ Mișcare liniară</span></label>
+            <label><input type="radio" name="motionMode" value="rotation"><span>↻ Rotație în bobină</span></label>
+          </fieldset>
+          <label class="slider-control"><span>Număr de spire <output id="turnsOutput">120</output></span><input id="turnsInput" type="range" min="20" max="240" value="120" step="10"><span class="range-labels"><small>20</small><small>240 spire</small></span></label>
+          <label class="slider-control" id="linearSpeedControl"><span>Viteza liniară <output id="speedOutput">1.0×</output></span><input id="speedInput" type="range" min="0" max="2" value="1" step="0.1"><span class="range-labels"><small>Oprit</small><small>2×</small></span></label>
+          <label class="slider-control hidden-control" id="rotationSpeedControl"><span>Viteza unghiulară <output id="rotationOutput">1.5 rad/s</output></span><input id="rotationInput" type="range" min="-3" max="3" value="1.5" step="0.1"><span class="range-labels"><small>↺ −3 rad/s</small><small>+3 rad/s ↻</small></span></label>
+          <label class="slider-control"><span>Inducția magnetică <output id="strengthOutput">0.80 T</output></span><input id="strengthInput" type="range" min="0.1" max="1.5" value="0.8" step="0.05"><span class="range-labels"><small>0.10 T</small><small>1.50 T</small></span></label>
+          <div class="playback"><button id="playButton" class="button dark"><span>▶</span> Pornește mișcarea</button><button id="reverseButton" class="button outline" aria-label="Inversează direcția">⇄</button></div>
+          <div class="note"><span>i</span><p><strong>Observă semnul.</strong> Tensiunea se inversează când fluxul începe să scadă. Acesta este efectul descris de legea lui Lenz.</p></div>
+        </aside>
+      </div>
+      <div class="formula-grid">
+        <article class="formula-card"><span>LEGEA LUI FARADAY</span><div class="formula">ε = −N <span class="fraction"><b>dΦ<sub>B</sub></b><b>dt</b></span></div><p>Forța electromotoare este proporțională cu viteza de variație a fluxului și cu numărul de spire.</p></article>
+        <article class="formula-card"><span>FLUXUL MAGNETIC</span><div class="formula">Φ<sub>B</sub> = BA cos θ</div><p>Fluxul arată cât câmp magnetic străbate o suprafață. Depinde de B, aria A și orientarea θ.</p></article>
+        <article class="formula-card dark-card"><span>EXPERIMENT RAPID</span><h3>Dublează numărul spirelor.<br>Ce se întâmplă cu tensiunea?</h3><button class="text-button" id="doubleTurns">Dublează și observă <span>↗</span></button></article>
+      </div>
+    </section>
+
+    <section id="panel-circuit" class="tab-panel" role="tabpanel" aria-labelledby="tab-circuit" hidden>
+      <div class="section-heading tab-heading">
+        <div><span class="section-number">03 / RĂSPUNSUL BOBINEI</span><h2>Energia magnetică se opune<br><em>schimbării bruște.</em></h2></div>
+        <p>Închide comutatorul. Curentul nu ajunge instantaneu la valoarea finală: câmpul magnetic al bobinei se construiește progresiv.</p>
+      </div>
+      <div class="theory-grid">
+        <div class="scope-card">
+          <div class="scope-header"><span>TRANZITORIU RL</span><div class="legend"><i></i> CURENT <i></i> TENSIUNE BOBINĂ</div></div>
+          <canvas id="scopeCanvas"></canvas>
+          <div class="scope-footer"><span><b id="tauReadout">20.0</b> ms <small>CONSTANTA DE TIMP τ</small></span><span><b id="steadyReadout">2.00</b> A <small>CURENT STAȚIONAR</small></span></div>
+        </div>
+        <div class="scope-controls">
+          <span class="eyebrow">PARAMETRII CIRCUITULUI</span><h3>Observă răspunsul.</h3>
+          <p>Modifică L și R înainte sau în timpul experimentului. Curbele sunt normalizate pentru a arăta formele lor.</p>
+          <label class="compact-control"><span>Inductanță <output id="inductanceOutput">0.20 H</output></span><input id="inductanceInput" type="range" min="0.05" max="0.8" value="0.2" step="0.05"></label>
+          <label class="compact-control"><span>Rezistență <output id="resistanceOutput">10 Ω</output></span><input id="resistanceInput" type="range" min="2" max="30" value="10" step="1"></label>
+          <label class="compact-control"><span>Tensiune sursă <output id="supplyOutput">20 V</output></span><input id="supplyInput" type="range" min="5" max="50" value="20" step="1"></label>
+          <button id="switchButton" class="button dark wide">Închide comutatorul</button>
+          <div class="equations"><div><span>CONSTANTĂ DE TIMP</span><b>τ = L/R</b></div><div><span>CURENT</span><b>i(t) = V/R (1−e<sup>−t/τ</sup>)</b></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-evaluare" class="tab-panel" role="tabpanel" aria-labelledby="tab-evaluare" hidden>
+      <div class="section-heading tab-heading">
+        <div><span class="section-number">04 / VERIFICAREA CUNOȘTINȚELOR</span><h2>Transformă observația<br>în <em>explicație.</em></h2></div>
+        <p>Trei întrebări despre fenomenele simulate. Folosește formulele și observațiile din experimente pentru a alege răspunsul corect.</p>
+      </div>
+      <div class="quiz-shell">
+        <div class="quiz-progress"><div><span>EVALUARE DE LABORATOR</span><strong id="progressLabel">Întrebarea 1 din 3</strong></div><div class="progress-dots"><i class="current"></i><i></i><i></i></div><span id="scoreLabel">PUNCTAJ 0/3</span></div>
+        <div class="quiz-content">
+          <div class="question-meta"><span id="questionNumber">ÎNTREBAREA 01</span><span>ALEGE UN SINGUR RĂSPUNS</span></div>
+          <h3 id="questionText"></h3><div id="answerList" class="answers"></div>
+          <div class="quiz-footer"><p id="feedback" role="status">Alege răspunsul potrivit pe baza legii lui Faraday.</p><button id="checkAnswer" class="button primary" disabled>Verifică răspunsul <span>→</span></button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><a class="brand" href="#fundamente" data-open-tab="fundamente"><span class="brand-mark">Φ</span><span>FLUX<span class="brand-light">LAB</span></span></a><p>Învață prin experimentare.</p><span>LABORATOR INTERACTIV DE ELECTROMAGNETISM</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
