@@ -20,7 +20,9 @@
       .lead, .muted { color:var(--muted); }
       .lead { font-size:17px; max-width:72ch; }
       .card { background:var(--panel); border:1px solid var(--line); border-radius:6px; margin-top:1.25rem; padding:14px 16px; }
-      .formula { background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--copper); border-radius:6px; color:var(--ink); font-family:var(--f-mono); font-size:14px; font-weight:600; margin:1rem 0; padding:12px 14px; text-align:center; }
+      math { font-family:"Cambria Math","STIX Two Math",serif; }
+      .formula { background:var(--panel); border:1px solid var(--line); border-left:5px solid var(--copper); border-radius:6px; color:var(--ink); margin:1rem 0; overflow-x:auto; padding:12px 14px; text-align:center; }
+      .formula math { font-size:1.3rem; margin:0; }
       .vector { display:inline-block; font-style:italic; position:relative; }
       .vector::after { content:"→"; font-size:.72em; left:50%; line-height:1; position:absolute; top:-.72em; transform:translateX(-50%); }
       .grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); }
@@ -36,6 +38,26 @@
       .arrow { color:var(--cur); font-size:2.3rem; font-weight:800; }
       ul { padding-left:1.3rem; }
       .check { border-left:5px solid var(--ok); }
+      .field-lab { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(240px,1fr); gap:1rem; align-items:start; }
+      .field-canvas { background:#fff; border:1px solid var(--line); display:block; width:100%; height:auto; touch-action:none; cursor:crosshair; }
+      .lab-controls { display:grid; gap:1rem; }
+      .lab-controls fieldset { border:1px solid var(--line); border-radius:6px; display:grid; gap:.3rem; margin:0; }
+      .lab-controls legend { font-weight:700; }
+      .lab-buttons { display:flex; flex-wrap:wrap; gap:.4rem; }
+      .lab-controls button { background:var(--panel); border:1px solid var(--line); border-radius:5px; color:var(--ink); cursor:pointer; font:inherit; padding:.45rem .7rem; }
+      .lab-controls button:hover { border-color:var(--copper); }
+      .lab-controls input[type=number] { background:var(--panel); border:1px solid var(--line); border-radius:5px; color:var(--ink); font:inherit; padding:.4rem; width:8rem; }
+      .lab-controls input[type=range] { width:100%; accent-color:var(--copper); }
+      .lab-controls label { display:block; }
+      .lab-controls input:focus-visible, .lab-controls button:focus-visible { outline:3px solid var(--cur); outline-offset:2px; }
+      .lab-status { color:var(--muted); font-size:.9rem; min-height:2.8em; overflow-wrap:anywhere; }
+      .lab-table { overflow-x:auto; }
+      .lab-table table { border-collapse:collapse; font-size:.85rem; width:100%; }
+      .lab-table th, .lab-table td { border-bottom:1px solid var(--line); padding:.3rem; text-align:right; white-space:nowrap; }
+      .lab-table th:first-child, .lab-table td:first-child { text-align:left; }
+      .lab-table button[aria-pressed=true] { border-color:var(--copper); font-weight:700; }
+      .lab-error { color:var(--drop); font-weight:700; }
+      @media (max-width:800px) { .field-lab { grid-template-columns:1fr; } }
       @media (max-width:700px) { body { padding:16px 14px 32px; } .eyebrow { margin-top:1.5rem; } }
     </style>
   </head>
@@ -57,7 +79,7 @@
         introduce o sarcină de probă pozitivă q<sub>0</sub>, asupra ei acționează forța
         electrică <span class="vector">F</span>. Câmpul electric este definit local prin:
       </p>
-      <div class="formula"><span class="vector">E</span>(P) = lim<sub>q<sub>0</sub>→0</sub> <span class="vector">F</span> / q<sub>0</sub></div>
+      <div class="formula"><math display="block" aria-label="Vectorul E în P este limita când q zero tinde la zero a vectorului F supra q zero"><mover><mi>E</mi><mo>→</mo></mover><mo>(</mo><mi>P</mi><mo>)</mo><mo>=</mo><munder><mi>lim</mi><mrow><msub><mi>q</mi><mn>0</mn></msub><mo>→</mo><mn>0</mn></mrow></munder><mfrac><mover><mi>F</mi><mo>→</mo></mover><msub><mi>q</mi><mn>0</mn></msub></mfrac></math></div>
       <p>
         Așadar, <span class="vector">E</span> este un <strong>vector</strong>: are modul,
         direcție și sens. Sensul său este cel al forței care ar acționa asupra unei sarcini
@@ -69,12 +91,12 @@
         Pentru o sarcină punctiformă Q, aflată într-un mediu cu permitivitatea ε, legea lui
         Coulomb și definiția câmpului conduc la expresia vectorială:
       </p>
-      <div class="formula"><span class="vector">E</span>(<span class="vector">r</span>) = (1 / 4πε) · Q / r² · <span class="vector">u</span><sub>r</sub></div>
+      <div class="formula"><math display="block" aria-label="Vectorul E în r egal cu 1 supra 4 pi epsilon ori Q supra r la pătrat ori vectorul unitar radial"><mover><mi>E</mi><mo>→</mo></mover><mo>(</mo><mover><mi>r</mi><mo>→</mo></mover><mo>)</mo><mo>=</mo><mfrac><mn>1</mn><mrow><mn>4</mn><mi>π</mi><mi>ε</mi></mrow></mfrac><mo>⋅</mo><mfrac><mi>Q</mi><msup><mi>r</mi><mn>2</mn></msup></mfrac><mo>⋅</mo><msub><mover><mi>u</mi><mo>→</mo></mover><mi>r</mi></msub></math></div>
       <p>
         Vectorul unitar <span class="vector">u</span><sub>r</sub> indică direcția radială,
         de la sarcina sursă spre punctul observat. Pentru Q &gt; 0, câmpul este orientat
         spre exterior; pentru Q &lt; 0, sensul său este spre sarcină. În vid,
-        1/(4πε<sub>0</sub>) = k ≈ 8,99 · 10<sup>9</sup> N·m²/C².
+        <math aria-label="1 supra 4 pi epsilon zero egal cu k aproximativ 8,99 ori 10 la puterea 9"><mfrac><mn>1</mn><mrow><mn>4</mn><mi>π</mi><msub><mi>ε</mi><mn>0</mn></msub></mrow></mfrac><mo>=</mo><mi>k</mi><mo>≈</mo><mn>8,99</mn><mo>⋅</mo><msup><mn>10</mn><mn>9</mn></msup></math> N·m²/C².
       </p>
       <div class="grid">
         <div class="card"><strong>Dependență de distanță</strong><br><span class="muted">Dacă distanța se dublează, modulul câmpului devine de patru ori mai mic.</span></div>
@@ -132,13 +154,12 @@
         Câmpul produs de mai multe sarcini este suma vectorială a câmpurilor produse de
         fiecare sarcină în parte. Pentru N sarcini punctiforme:
       </p>
-      <div class="formula"><span class="vector">E</span><sub>total</sub>(P) = Σ<sub>i=1</sub><sup>N</sup> <span class="vector">E</span><sub>i</sub>(P)</div>
+      <div class="formula"><math display="block" aria-label="Vectorul E total în P egal cu suma de la i egal 1 la N a vectorilor E i în P"><msub><mover><mi>E</mi><mo>→</mo></mover><mtext>total</mtext></msub><mo>(</mo><mi>P</mi><mo>)</mo><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><msub><mover><mi>E</mi><mo>→</mo></mover><mi>i</mi></msub><mo>(</mo><mi>P</mi><mo>)</mo></math></div>
       <p>
         Suma trebuie efectuată pe componente. De exemplu, dacă într-un punct
-        <span class="vector">E</span><sub>1</sub> = 3<span class="vector">i</span> N/C și
-        <span class="vector">E</span><sub>2</sub> = −4<span class="vector">j</span> N/C,
-        atunci <span class="vector">E</span><sub>total</sub> =
-        3<span class="vector">i</span> − 4<span class="vector">j</span> N/C, iar modulul este 5 N/C.
+        <math><msub><mover><mi>E</mi><mo>→</mo></mover><mn>1</mn></msub><mo>=</mo><mn>3</mn><mover><mi>i</mi><mo>→</mo></mover></math> N/C și
+        <math><msub><mover><mi>E</mi><mo>→</mo></mover><mn>2</mn></msub><mo>=</mo><mo>−</mo><mn>4</mn><mover><mi>j</mi><mo>→</mo></mover></math> N/C,
+        atunci <math><msub><mover><mi>E</mi><mo>→</mo></mover><mtext>total</mtext></msub><mo>=</mo><mn>3</mn><mover><mi>i</mi><mo>→</mo></mover><mo>−</mo><mn>4</mn><mover><mi>j</mi><mo>→</mo></mover></math> N/C, iar modulul este 5 N/C.
       </p>
 
       <h2>5. Potențial electric și tensiune</h2>
@@ -146,11 +167,11 @@
         În electrostatică, câmpul este conservativ. Diferența de potențial dintre punctele
         A și B se definește prin integrala de linie:
       </p>
-      <div class="formula">V(B) − V(A) = −∫<sub>A</sub><sup>B</sup> <span class="vector">E</span> · d<span class="vector">l</span></div>
+      <div class="formula"><math display="block" aria-label="V de B minus V de A egal cu minus integrala de la A la B din vectorul E produs scalar cu d l vector"><mi>V</mi><mo>(</mo><mi>B</mi><mo>)</mo><mo>−</mo><mi>V</mi><mo>(</mo><mi>A</mi><mo>)</mo><mo>=</mo><mo>−</mo><msubsup><mo>∫</mo><mi>A</mi><mi>B</mi></msubsup><mover><mi>E</mi><mo>→</mo></mover><mo>⋅</mo><mi>d</mi><mover><mi>l</mi><mo>→</mo></mover></math></div>
       <p>
         Relația arată că vectorul câmp este orientat spre scăderea potențialului. Pentru un
         câmp uniform între plăci, dacă deplasarea are loc pe direcția câmpului,
-        U = E · d în modul.
+        <math><mi>U</mi><mo>=</mo><mi>E</mi><mo>⋅</mo><mi>d</mi></math> în modul.
       </p>
 
       <h2>6. Câmpul electric imprimat</h2>
@@ -207,7 +228,7 @@
         reprezintă lucrul efectuat de forțele câmpului imprimat pentru a transporta o unitate
         de sarcină prin interiorul sursei.
       </p>
-      <div class="formula">ε = W<sub>imprimat</sub> / q</div>
+      <div class="formula"><math display="block" aria-label="Epsilon egal cu lucrul imprimat supra q"><mi>ε</mi><mo>=</mo><mfrac><msub><mi>W</mi><mtext>imprimat</mtext></msub><mi>q</mi></mfrac></math></div>
       <p class="muted">Tensiunea electromotoare se măsoară în volți (V).</p>
 
       <div class="card check">
@@ -215,10 +236,59 @@
         <ul>
           <li>Precizează direcția câmpului unei sarcini punctiforme pozitive și a uneia negative.</li>
           <li>De ce liniile de câmp electric nu se pot intersecta?</li>
-          <li>Calculează modulul câmpului rezultant pentru 3<span class="vector">i</span> − 4<span class="vector">j</span> N/C.</li>
+          <li>Calculează modulul câmpului rezultant pentru <math><mn>3</mn><mover><mi>i</mi><mo>→</mo></mover><mo>−</mo><mn>4</mn><mover><mi>j</mi><mo>→</mo></mover></math> N/C.</li>
           <li>Ce rol are câmpul electric imprimat într-o pilă Volta?</li>
         </ul>
       </div>
+
+      <h2>10. Laborator: câmpul electrostatic în vid</h2>
+      <p>Adaugă sau mută sarcini punctiforme și explorează câmpul, potențialul și forțele dintre ele. Domeniul reprezentat este de la −1 m la +1 m pe fiecare axă. Aproape de sarcini, modelul folosește o rază de netezire de 0,02 m pentru a evita singularitatea.</p>
+      <div class="card field-lab">
+        <div>
+          <canvas id="electric-canvas" class="field-canvas" width="640" height="640" aria-label="Diagramă interactivă a câmpului electrostatic"></canvas>
+          <p class="muted">Clic pe zona liberă: adaugă o sarcină; trage o sarcină pentru a o muta. Straturile se recalculează la eliberare. Selectează o sarcină pentru a-i modifica valoarea sau a o șterge. Funcționează și prin atingere.</p>
+          <p class="muted">Axa x crește spre dreapta, iar y în sus. Săgețile verzi indică forțele rezultante, cu lungimi reprezentate la scară relativă.</p>
+          <p id="field-status" class="lab-status">Deplasează cursorul peste diagramă pentru a vedea câmpul și potențialul.</p>
+          <p id="field-scale" class="lab-status"></p>
+        </div>
+        <div class="lab-controls">
+          <fieldset>
+            <legend>Straturi afișate</legend>
+            <label><input id="show-field" type="checkbox"> Hartă intensitate |E|</label>
+            <label><input id="show-vectors" type="checkbox"> Vectori E</label>
+            <label><input id="show-potential" type="checkbox" checked> Hartă potențial V</label>
+            <label><input id="show-contours" type="checkbox" checked> Echipotențiale</label>
+            <label><input id="show-lines" type="checkbox" checked> Linii de câmp</label>
+            <label><input id="show-forces" type="checkbox" checked> Forțe Coulomb</label>
+          </fieldset>
+          <label for="new-charge">Sarcina nouă: <output id="new-charge-value">+2,0 nC</output>
+            <input id="new-charge" type="range" min="-10" max="10" step="0.5" value="2">
+          </label>
+          <div class="lab-buttons">
+            <button type="button" id="preset-dipole">Dipol</button>
+            <button type="button" id="preset-quadrupole">Cvadrupol</button>
+            <button type="button" id="preset-capacitor">Condensator</button>
+            <button type="button" id="clear-charges">Șterge tot</button>
+          </div>
+          <fieldset>
+            <legend>Sarcina selectată</legend>
+            <p id="selection-label" class="muted">Selectează o sarcină din diagramă sau din tabel.</p>
+            <label for="selected-charge">Valoare q (nC): <input id="selected-charge" type="number" min="-10" max="10" step="0.5" disabled></label>
+            <p id="charge-error" class="lab-error" role="alert" hidden>Introdu o valoare diferită de zero, între −10 și +10 nC, în pași de 0,5 nC.</p>
+            <div class="lab-buttons"><button type="button" id="apply-charge" disabled>Aplică valoarea</button><button type="button" id="delete-charge" disabled>Șterge sarcina</button></div>
+          </fieldset>
+          <div class="lab-table">
+            <table>
+              <caption>Sarcini și forțe rezultante</caption>
+              <thead><tr><th>Sarcină</th><th>q (nC)</th><th>x (m)</th><th>y (m)</th><th>|F| (N)</th><th>θ</th></tr></thead>
+              <tbody id="charge-rows"></tbody>
+            </table>
+          </div>
+          <p id="charge-total" class="muted"></p>
+        </div>
+      </div>
+      <noscript><p class="lab-error">Activează JavaScript pentru a folosi laboratorul interactiv.</p></noscript>
     </main>
+    <script src="camp_electric_web.js"></script>
   </body>
 </html>
